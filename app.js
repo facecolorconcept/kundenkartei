@@ -169,6 +169,7 @@
     $('#login').hidden = true;
     $('#app').hidden = false;
     setStatus();
+    if (window.FCC && FCC.ready) FCC.ready();
     if (Store.kontaktFehler) toast('Google Kontakte konnten nicht geladen werden. ' + Store.kontaktFehler, true);
     if (window.innerWidth > 820 && Store.list()[0]) {
       const first = [...Store.list()].sort((a, b) => a.nachname.localeCompare(b.nachname, 'de'))[0];
@@ -404,7 +405,7 @@
       busy(e.currentTarget, 'Speichert …', async () => {
         let target = c;
         if (c) Object.assign(c, v);
-        else target = { id: uid(), behandlungen: [], dokumente: [], ...v };
+        else target = { id: uid(), erstellt: today(), behandlungen: [], dokumente: [], ...v };
         await Store.save(target);
         close();
         if (!c) { activeId = target.id; active = target; }
@@ -587,6 +588,13 @@
   });
 
   function render() { renderList(); renderDetail(); }
+
+  // Modul „Kundenkartei“ anmelden. Andere Bereiche (z. B. die Übersicht) können darüber Kundinnen öffnen.
+  window.FCC = window.FCC || {};
+  FCC.openCustomer = id => { FCC.show('kartei'); openCustomer(id); };
+  FCC.newCustomer = () => { FCC.show('kartei'); openCustomerSheet(null); };
+  if (FCC.register) FCC.register({ id: 'kartei', titel: 'Kundenkartei', el: 'main', order: 2, render: () => render(),
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="11" r="2.5"/><path d="M5.5 17c.8-2 2-3 3.5-3s2.7 1 3.5 3M14.5 9.5h4M14.5 13h4"/></svg>' });
 
   // Hinweis „Zum Home-Bildschirm“ auf dem iPhone, solange die Kartei im Safari-Tab läuft
   (function installHint() {

@@ -1,7 +1,10 @@
 // Speicher der Kundenkartei: Google Drive (echter Betrieb) oder Browser (Beispielmodus).
 (function () {
   const C = window.FCC_CONFIG || {};
-  const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/calendar.events';
+  // Mit fester Ordner-ID braucht die Kartei Zugriff auf Drive, weil sie den Ordner nicht selbst angelegt hat.
+  const SCOPES = (C.ROOT_FOLDER_ID ? 'https://www.googleapis.com/auth/drive' : 'https://www.googleapis.com/auth/drive.file') +
+    ' https://www.googleapis.com/auth/calendar.events';
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   const API = 'https://www.googleapis.com/drive/v3';
   const UP = 'https://www.googleapis.com/upload/drive/v3';
   const CAL = 'https://www.googleapis.com/calendar/v3';
@@ -124,7 +127,13 @@
     },
 
     async start() {
-      this.rootId = await this.folder(C.ROOT_FOLDER_NAME || 'Facecolorconcept Kartei');
+      if (C.ROOT_FOLDER_ID) {
+        try { await this.json(`${API}/files/${C.ROOT_FOLDER_ID}?fields=id`); }
+        catch (e) { throw new Error('Der Kartei-Ordner in Google Drive ist nicht erreichbar. Bist du mit dem Google-Konto angemeldet, dem der Ordner gehört?'); }
+        this.rootId = C.ROOT_FOLDER_ID;
+      } else {
+        this.rootId = await this.folder(C.ROOT_FOLDER_NAME || 'Facecolorconcept Kartei');
+      }
       const f = (await this.find(`name='${INDEX}' and '${this.rootId}' in parents and trashed=false`))[0];
       if (f) {
         this.indexId = f.id;
@@ -142,13 +151,39 @@
     },
 
     // Liest alle Akten neu ein, z. B. wenn auf einem zweiten Gerät gespeichert wurde
+    // Übernimmt dabei auch Akten aus der alten Apps-Script-Kartei (kundenakte.json); die alte Datei bleibt liegen.
     async rebuildIndex() {
-      const files = await this.find(`name='kundin.json' and trashed=false`);
-      const list = [];
-      for (const f of files) {
-        try { list.push(entry(await (await this.api(`${API}/files/${f.id}?alt=media`)).json(), f.id)); } catch (e) {}
+      const read = async id => (await this.api(`${API}/files/${id}?alt=media`)).json();
+      const folders = await this.find(`'${this.rootId}' in parents and mimeType='${FOLDER}' and trashed=false`);
+      this.index = [];
+      for (const f of folders) {
+        if (f.name === 'Administration') continue;
+        try {
+          const files = await this.find(`'${f.id}' in parents and trashed=false and (name='kundin.json' or name='kundenakte.json')`);
+          const neu = files.find(x => x.name === 'kundin.json');
+          const alt = files.find(x => x.name === 'kundenakte.json');
+          if (neu) {
+            const c = await read(neu.id);
+            c.ordnerId = f.id;
+            this.index.push(entry(c, neu.id));
+          } else if (alt) {
+            const o = await read(alt.id);
+            const info = [o.treatmentCategory, o.treatmentDate ? 'am ' + o.treatmentDate : ''].filter(Boolean).join(' ');
+            const c = {
+              id: o.id || uid(), vorname: o.firstName || '', nachname: o.lastName || f.name,
+              telefon: o.phone || '', email: o.email || '', allergien: o.allergies || '',
+              blutverduenner: '', fragebogen: '',
+              notiz: [o.notes, info ? 'Aus der alten Kartei: ' + info : ''].filter(Boolean).join('\n'),
+              dokumente: [], behandlungen: [], altdaten: o,
+              ordnerId: f.id,
+              fotosId: await this.folder('Bilder_Vorher_Nachher', f.id),
+              dokuId: await this.folder('Dokumente_Rechnungen', f.id)
+            };
+            const r = await this.upload({ name: 'kundin.json', parent: f.id, mime: 'application/json', data: JSON.stringify(c, null, 1) });
+            this.index.push(entry(c, r.id));
+          }
+        } catch (e) {}
       }
-      this.index = list;
       await this.writeIndex();
     },
 

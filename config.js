@@ -6,6 +6,8 @@ window.FCC_CONFIG = {
   // Hier landen alle Akten, Fotos und Dokumente (dein Ordner in Google Drive).
   ROOT_FOLDER_ID: '1fHZ4waloS9KDgKNYjTJK4CkQGg9g4azV',
   ROOT_FOLDER_NAME: 'Facecolorconcept Kartei',
+  // Dieses Google-Konto wird bei der Anmeldung vorausgewählt.
+  LOGIN_HINT: 'facecolorconcept@gmail.com',
   STUDIO: 'Facecolorconcept',
   ADRESSE: 'Elisabeth-Silbereisen-Weg 7, 74931 Lobbach-Lobenfeld'
 };

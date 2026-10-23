@@ -216,7 +216,7 @@
     try {
       const e = Store.list().find(x => x.id === id);
       const c = await Store.load(e);
-      c.behandlungen = c.behandlungen || []; c.dokumente = c.dokumente || [];
+      c.behandlungen = c.behandlungen || []; c.dokumente = c.dokumente || []; c.notizen = c.notizen || []; c.fotos = c.fotos || [];
       if (activeId === id) active = c;
     } catch (err) { toast(err.message, true); }
     loadingDetail = false; render();
@@ -235,12 +235,20 @@
     </div>`;
   }
 
+  // Alle Fotos der Kundin: aus den Behandlungsbögen und direkt in der Akte, neueste zuerst
+  function allPhotos(c) {
+    const list = (c.fotos || []).map(p => ({ ...p }));
+    (c.behandlungen || []).forEach(b => (b.fotos || []).forEach(p => list.push({ ...p, datum: p.datum || b.datum, art: b.art })));
+    return list.sort((a, b) => String(b.datum).localeCompare(String(a.datum)));
+  }
+
   function renderDetail() {
     const el = $('#detail');
     $('#main').classList.toggle('has-detail', !!activeId);
     if (!activeId) { el.innerHTML = '<div class="panel empty">Wähle links eine Kundin aus oder lege eine neue an.</div>'; return; }
     if (loadingDetail || !active) { el.innerHTML = `<button class="back" id="backBtn">← Alle Kundinnen</button><div class="panel empty">${loadingDetail ? 'Akte wird geladen …' : 'Die Akte konnte nicht geladen werden.'}</div>`; $('#backBtn').onclick = back; return; }
     const c = active;
+    c.notizen = c.notizen || []; c.fotos = c.fotos || [];
     const sorted = byDate(c.behandlungen);
     const fbOk = !!c.fragebogen;
     const tel = c.telefon ? `${esc(c.telefon)} <a class="mini" href="https://wa.me/${esc(waNumber(c.telefon))}" target="_blank" rel="noopener">WhatsApp</a>` : '–';
@@ -265,6 +273,19 @@
         <div class="chips">${ARTS.map(a => `<button class="chip add" data-new="${esc(a)}">+ ${esc(a)}</button>`).join('')}</div>
       </div>
       ${lastTimeCard(c)}
+      <div class="panel card">
+        <div class="row between"><h2>Notizen</h2><span class="label">${c.notizen.length} ${c.notizen.length === 1 ? 'Notiz' : 'Notizen'}</span></div>
+        <div class="field" style="margin-top:10px"><label for="noteText">Neue Notiz</label><textarea id="noteText" rows="2" placeholder="z. B. Termin verschoben, Wunsch für nächstes Mal, Rückmeldung zur Heilung"></textarea></div>
+        <button class="btn small" id="noteBtn" style="margin-top:10px">Notiz speichern</button>
+        ${c.notizen.length ? `<ul class="docs">${c.notizen.map((n, i) => `<li><span style="white-space:pre-wrap">${esc(n.text)}<br><span class="cmeta">${fmt(n.datum)}</span></span><button class="btn ghost small" style="white-space:nowrap;flex-shrink:0" data-delnote="${i}" aria-label="Notiz löschen">Löschen</button></li>`).join('')}</ul>` : ''}
+      </div>
+      <div class="panel card">
+        <div class="row between"><h2>Vorher / Nachher</h2>
+          <div class="row"><button class="btn small" data-cphoto="Vorher">+ Vorher-Foto</button><button class="btn small" data-cphoto="Nachher">+ Nachher-Foto</button></div></div>
+        <input type="file" id="cPhotoInput" accept="image/*" multiple hidden>
+        ${allPhotos(c).length ? `<div class="thumbs" style="margin-top:12px">${allPhotos(c).map(p => `<div style="display:flex;flex-direction:column;gap:4px;min-width:0"><button type="button" class="thumb" data-fid="${esc(p.fileId)}" aria-label="Foto vergrößern"><img alt="" data-src="${esc(p.fileId)}"></button><span class="cmeta">${esc(p.typ)} · ${fmt(p.datum)}${p.art ? ' · ' + esc(p.art) : ''}</span></div>`).join('')}</div>`
+          : '<p class="cmeta" style="margin-top:10px">Noch keine Fotos. Tippe auf „+ Vorher-Foto“ oder „+ Nachher-Foto“. Du kannst ein Foto machen oder aus deinen Bildern wählen.</p>'}
+      </div>
       <div class="panel card">
         <div class="row between"><h2>Behandlungsverlauf</h2><span class="label">${sorted.length} ${sorted.length === 1 ? 'Eintrag' : 'Einträge'}</span></div>
         ${sorted.length ? `<ul class="timeline">${sorted.map(b => {
@@ -292,6 +313,44 @@
     $('#editCust').onclick = () => openCustomerSheet(c);
     $$('[data-new]').forEach(b => b.onclick = () => openTreatmentSheet(c, b.dataset.new, null));
     $$('[data-open]').forEach(b => b.onclick = () => { const t = c.behandlungen.find(x => x.id === b.dataset.open); if (t) openTreatmentSheet(c, t.art, t); });
+    // Notizen
+    $('#noteBtn').onclick = e => {
+      const text = $('#noteText').value.trim();
+      if (!text) { toast('Bitte zuerst etwas in das Notizfeld schreiben.'); return; }
+      busy(e.currentTarget, 'Speichert …', async () => {
+        c.notizen.unshift({ datum: today(), text });
+        try { await Store.save(c); } catch (err) { c.notizen.shift(); throw err; }
+        render(); toast('Notiz gespeichert');
+      }).catch(() => {});
+    };
+    $$('[data-delnote]').forEach(b => b.onclick = () => {
+      if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Wirklich löschen?'; return; }
+      busy(b, 'Löscht …', async () => { c.notizen.splice(Number(b.dataset.delnote), 1); await Store.save(c); render(); toast('Notiz gelöscht'); }).catch(() => {});
+    });
+    // Vorher-/Nachher-Fotos direkt in der Akte
+    let cTyp = 'Vorher';
+    $$('[data-cphoto]').forEach(b => b.onclick = () => { cTyp = b.dataset.cphoto; $('#cPhotoInput').click(); });
+    $('#cPhotoInput').onchange = async e => {
+      const files = [...e.target.files]; e.target.value = '';
+      if (!files.length) return;
+      const typ = cTyp;
+      toast(files.length === 1 ? 'Foto wird hochgeladen …' : files.length + ' Fotos werden hochgeladen …');
+      let ok = 0;
+      for (const file of files) {
+        try {
+          const n = allPhotos(c).filter(p => p.typ === typ && p.datum === today()).length + 1;
+          const p = await Store.addPhoto(c, file, `${today()}_${typ}_${n}.jpg`);
+          c.fotos.push({ ...p, typ, datum: today() });
+          ok++;
+        } catch (err) { toast(err.message, true); }
+      }
+      if (ok) { try { await Store.save(c); } catch (err) { toast(err.message, true); } render(); toast(ok === 1 ? 'Foto gespeichert' : ok + ' Fotos gespeichert'); }
+    };
+    $$('#detail img[data-src]').forEach(async img => {
+      const p = allPhotos(c).find(x => x.fileId === img.dataset.src);
+      try { img.src = await Store.photoUrl(p); } catch (err) { img.alt = 'Foto lädt nicht'; }
+    });
+    $$('#detail .thumb').forEach(t => t.onclick = () => { const src = t.querySelector('img').src; if (src) showPhoto(src); });
     $('#docBtn').onclick = () => $('#docInput').click();
     $('#docInput').onchange = e => {
       const file = e.target.files[0]; e.target.value = '';

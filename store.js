@@ -66,7 +66,7 @@
     async signIn() {
       await this.loadGoogle();
       if (!this.client) {
-        this.client = google.accounts.oauth2.initTokenClient({ client_id: C.CLIENT_ID, scope: SCOPES, callback: () => {} });
+        this.client = google.accounts.oauth2.initTokenClient({ client_id: C.CLIENT_ID, scope: SCOPES, login_hint: C.LOGIN_HINT || undefined, callback: () => {} });
       }
       await new Promise((res, rej) => {
         this.client.callback = r => {
@@ -76,6 +76,8 @@
           }
           this.token = r.access_token;
           this.expiry = Date.now() + (Number(r.expires_in || 3600) - 120) * 1000;
+          // Anmeldung merken, damit die Kartei beim nächsten Öffnen nicht erneut fragt (gilt etwa 1 Stunde)
+          try { localStorage.setItem('fcc_tok', JSON.stringify({ t: this.token, e: this.expiry })); } catch (e) {}
           res();
         };
         this.client.error_callback = e => rej(new Error(
@@ -87,13 +89,24 @@
 
     signOut() {
       try { if (this.token) google.accounts.oauth2.revoke(this.token, () => {}); } catch (e) {}
+      try { localStorage.removeItem('fcc_tok'); } catch (e) {}
       this.token = null;
     },
 
+    // Gemerkte Anmeldung laden; true, wenn sie noch gültig ist
+    hasToken() {
+      if (this.token && Date.now() < this.expiry) return true;
+      try {
+        const s = JSON.parse(localStorage.getItem('fcc_tok') || 'null');
+        if (s && s.t && Date.now() < s.e) { this.token = s.t; this.expiry = s.e; return true; }
+      } catch (e) {}
+      return false;
+    },
+
     async api(url, opts = {}, retry = true) {
-      if (!this.token || Date.now() > this.expiry) await this.signIn();
+      if (!this.hasToken()) await (this.onNeedLogin ? this.onNeedLogin() : this.signIn());
       const r = await fetch(url, { ...opts, headers: { ...(opts.headers || {}), Authorization: 'Bearer ' + this.token } });
-      if (r.status === 401 && retry) { this.token = null; return this.api(url, opts, false); }
+      if (r.status === 401 && retry) { this.token = null; try { localStorage.removeItem('fcc_tok'); } catch (e) {} return this.api(url, opts, false); }
       if (!r.ok) {
         let m = '';
         try { m = (await r.json()).error.message || ''; } catch (e) {}
@@ -270,9 +283,10 @@
             telefon: ((p.phoneNumbers || [])[0] || {}).value || '', email: ((p.emailAddresses || [])[0] || {}).value || ''
           };
         });
+        this.kontaktFehler = '';
       } catch (e) {
         this.kontakte = [];
-        console.warn('Google Kontakte:', e.message);
+        this.kontaktFehler = e.message;
       }
     },
 
@@ -316,6 +330,7 @@
     mode: 'demo', key: 'fcc_demo_v2', data: [],
     async signIn() {},
     signOut() {},
+    hasToken() { return true; },
     async start() {
       try { this.data = JSON.parse(localStorage.getItem(this.key)) || null; } catch (e) { this.data = null; }
       if (!this.data) this.data = JSON.parse(JSON.stringify(window.FCC_DEMO || []));

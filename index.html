@@ -34,6 +34,7 @@
   --bg:#1c1816; --paper:#25201d; --ink:#f1e9e4; --muted:#a8998f; --line:#3a322e;
   --rose:#c99580; --rose-soft:#3a2b25; --rose-ink:#e8bba8; --ok:#8cbf96; --warn:#d9a95e; --shade:rgba(0,0,0,.6); color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
@@ -103,6 +104,7 @@ h1{font-size:32px} h2{font-size:22px}
 .login .panel{max-width:440px;width:100%;padding:32px;display:flex;flex-direction:column;gap:16px;text-align:center}
 .login .brand{font-size:38px}
 .login p{margin:0;color:var(--muted)}
+.login p b{color:var(--ink);font-weight:500}
 /* Hinweis Home-Bildschirm */
 .hint-bar{background:var(--rose-soft);color:var(--ink);font-size:14px}
 .hint-bar .wrap{max-width:1200px;margin:0 auto;padding-block:10px;display:flex;gap:12px;align-items:center;justify-content:space-between}
@@ -150,13 +152,39 @@ table.lr td.c{text-align:center}
 .toast{background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:14px;font-size:14.5px;max-width:100%;text-align:center}
 @media(prefers-reduced-motion:no-preference){.sheet{animation:slide .22s ease-out}@keyframes slide{from{transform:translateX(30px);opacity:.6}}}
 </style>
+<script>
+/* Hell am Tag (7–19 Uhr), dunkel am Abend – oder fest eingestellt über den Knopf „Ansicht“ */
+(function () {
+  var mode = 'auto';
+  try { mode = localStorage.getItem('fcc_theme') || 'auto'; } catch (e) {}
+  var LABEL = { auto: 'Ansicht: automatisch', light: 'Ansicht: hell', dark: 'Ansicht: dunkel' };
+  function apply() {
+    var t = mode;
+    if (mode === 'auto') { var h = new Date().getHours(); t = (h >= 7 && h < 19) ? 'light' : 'dark'; }
+    document.documentElement.setAttribute('data-theme', t);
+    var b = document.getElementById('themeBtn'); if (b) b.textContent = LABEL[mode];
+  }
+  apply();
+  setInterval(apply, 60000);
+  document.addEventListener('DOMContentLoaded', function () {
+    var b = document.getElementById('themeBtn'); if (!b) return;
+    b.onclick = function () {
+      mode = mode === 'auto' ? 'light' : mode === 'light' ? 'dark' : 'auto';
+      try { localStorage.setItem('fcc_theme', mode); } catch (e) {}
+      apply();
+    };
+    apply();
+  });
+})();
+</script>
 </head>
 <body>
 
 <section id="login" class="login wrap" hidden>
   <div class="panel">
     <div class="brand">Facecolorconcept.<small>Kundenkartei</small></div>
-    <p>Melde dich mit deinem Google-Konto an. Die Akten, Fotos und Dokumente liegen in deinem Google Drive im Ordner „Facecolorconcept Kartei“.</p>
+    <p>Melde dich mit deinem Google-Konto <b>facecolorconcept@gmail.com</b> an.</p>
+    <p>Beim ersten Mal fragt Google, ob die Kartei auf Drive, Kalender und Kontakte zugreifen darf. Bitte <b>alle Häkchen setzen</b>. Der Hinweis „App nicht überprüft“ ist normal, weil es deine eigene App ist: einfach auf <b>Weiter</b>.</p>
     <button class="btn" id="loginBtn">Mit Google anmelden</button>
   </div>
 </section>
@@ -166,7 +194,8 @@ table.lr td.c{text-align:center}
     <div class="brand">Facecolorconcept.<small>Kundenkartei</small></div>
     <div class="hactions">
       <span id="status" class="status"></span>
-      <button class="btn ghost small" id="reloadBtn" hidden>Liste neu laden</button>
+      <button class="btn ghost small" id="themeBtn" type="button">Ansicht: automatisch</button>
+      <button class="btn ghost small" id="reloadBtn" hidden>Aktualisieren</button>
       <button class="btn ghost small" id="logoutBtn" hidden>Abmelden</button>
     </div>
   </div></header>

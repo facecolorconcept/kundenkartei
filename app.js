@@ -182,7 +182,7 @@
     $('#loginBtn').onclick = e => busy(e.currentTarget, 'Verbinde …', async () => { await Store.signIn(); await startApp(); }).catch(() => {});
   }
 
-  $('#reloadBtn').onclick = e => busy(e.currentTarget, 'Lädt …', async () => { await Store.rebuildIndex(); render(); toast('Liste neu eingelesen'); }).catch(() => {});
+  $('#reloadBtn').onclick = e => busy(e.currentTarget, 'Lädt …', async () => { await Store.rebuildIndex(); render(); toast('Aktualisiert, auch die Google-Kontakte'); }).catch(() => {});
   $('#logoutBtn').onclick = () => { Store.signOut(); active = null; activeId = null; boot(); };
 
   // ---------- Liste ----------
@@ -194,7 +194,7 @@
     $('#count').textContent = all.length + (all.length === 1 ? ' Kundin' : ' Kundinnen');
     $('#clist').innerHTML = list.length ? list.map(c => `<li><button data-id="${esc(c.id)}" class="${c.id === activeId ? 'active' : ''}">
       <span><span class="cname">${esc(c.nachname)}, ${esc(c.vorname)}</span><br><span class="cmeta">${c.letzte ? 'zuletzt ' + fmt(c.letzte.datum) : 'noch keine Behandlung'}</span></span>
-      ${c.letzte ? `<span class="tag">${esc(c.letzte.art)}</span>` : ''}</button></li>`).join('')
+      ${c.letzte ? `<span class="tag">${esc(c.letzte.art)}</span>` : (c.nurKontakt ? '<span class="tag">Kontakt</span>' : '')}</button></li>`).join('')
       : `<li class="empty">${all.length ? 'Keine Kundin gefunden.' : 'Noch keine Kundin angelegt.'}</li>`;
   }
   $('#clist').addEventListener('click', e => { const b = e.target.closest('button[data-id]'); if (b) openCustomer(b.dataset.id); });
@@ -339,7 +339,7 @@
         await Store.save(target);
         close();
         if (!c) { activeId = target.id; active = target; }
-        render(); toast(c ? 'Gespeichert' : 'Kundin angelegt, Ordner in Drive erstellt');
+        render(); toast(c ? 'Gespeichert' : 'Kundin angelegt und in Google Kontakte eingetragen');
       }).catch(() => {});
     };
   }

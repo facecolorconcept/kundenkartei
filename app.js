@@ -143,11 +143,12 @@
     setTimeout(() => t.remove(), long ? 5000 : 2600);
   }
   async function busy(btn, text, fn) {
-    const old = btn ? btn.textContent : '';
-    if (btn) { btn.disabled = true; btn.textContent = text; }
+    const old = btn ? btn.innerHTML : '';
+    const icon = btn && btn.classList.contains('iconbtn');
+    if (btn) { btn.disabled = true; if (icon) btn.classList.add('spin'); else btn.textContent = text; }
     try { return await fn(); }
     catch (e) { toast(e.message || String(e), true); throw e; }
-    finally { if (btn) { btn.disabled = false; btn.textContent = old; } }
+    finally { if (btn) { btn.disabled = false; btn.classList.remove('spin'); btn.innerHTML = old; } }
   }
 
   // ---------- Zustand ----------
@@ -160,8 +161,8 @@
   // ---------- Start ----------
   function setStatus() {
     const s = $('#status');
-    if (Store.mode === 'demo') { s.textContent = 'Beispielmodus · nicht mit Drive verbunden'; s.className = 'status warn'; }
-    else { s.textContent = 'Mit Google Drive verbunden'; s.className = 'status ok'; }
+    if (Store.mode === 'demo') { s.textContent = 'Beispielmodus'; s.title = 'Nicht mit Google Drive verbunden, nichts wird gespeichert'; s.className = 'status warn'; }
+    else { s.textContent = 'Drive'; s.title = 'Mit Google Drive verbunden'; s.className = 'status ok'; }
     $('#reloadBtn').hidden = Store.mode === 'demo';
     $('#logoutBtn').hidden = Store.mode === 'demo';
   }

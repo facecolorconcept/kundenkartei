@@ -3,8 +3,14 @@
   const C = window.FCC_CONFIG || {};
   // Mit fester Ordner-ID braucht die Kartei Zugriff auf Drive, weil sie den Ordner nicht selbst angelegt hat.
   const SCOPES = (C.ROOT_FOLDER_ID ? 'https://www.googleapis.com/auth/drive' : 'https://www.googleapis.com/auth/drive.file') +
-    ' https://www.googleapis.com/auth/calendar.events';
+    ' https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/contacts';
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const PEOPLE = 'https://people.googleapis.com/v1';
+  const norm = s => String(s || '').toLowerCase().trim();
+  const dig = s => String(s || '').replace(/\D/g, '').replace(/^(49|0)/, '');
+  const sameKontakt = (a, b) => (a.kontaktId && a.kontaktId === b.kontaktId) ||
+    (dig(a.telefon) && dig(a.telefon) === dig(b.telefon)) ||
+    (norm(a.vorname) && norm(a.vorname) === norm(b.vorname) && norm(a.nachname) === norm(b.nachname));
   const API = 'https://www.googleapis.com/drive/v3';
   const UP = 'https://www.googleapis.com/upload/drive/v3';
   const CAL = 'https://www.googleapis.com/calendar/v3';
@@ -19,7 +25,7 @@
     const last = [...(c.behandlungen || [])].sort((a, b) => b.datum.localeCompare(a.datum))[0];
     return {
       id: c.id, vorname: c.vorname, nachname: c.nachname, telefon: c.telefon || '',
-      dateiId, ordnerId: c.ordnerId || '',
+      dateiId, ordnerId: c.ordnerId || '', kontaktId: c.kontaktId || '',
       letzte: last ? { datum: last.datum, art: last.art } : null
     };
   }
@@ -66,7 +72,7 @@
         this.client.callback = r => {
           if (r.error) return rej(new Error('Anmeldung nicht abgeschlossen.'));
           if (!google.accounts.oauth2.hasGrantedAllScopes(r, ...SCOPES.split(' '))) {
-            return rej(new Error('Bitte bei der Anmeldung Drive und Kalender erlauben, sonst kann die Kartei nicht speichern.'));
+            return rej(new Error('Bitte bei der Anmeldung alle Häkchen setzen (Drive, Kalender und Kontakte). Tippe dann noch einmal auf „Mit Google anmelden“.'));
           }
           this.token = r.access_token;
           this.expiry = Date.now() + (Number(r.expires_in || 3600) - 120) * 1000;
@@ -75,7 +81,7 @@
         this.client.error_callback = e => rej(new Error(
           e && e.type === 'popup_closed' ? 'Das Anmeldefenster wurde geschlossen.' :
           'Anmeldung fehlgeschlagen. Ist ein Popup-Blocker aktiv?'));
-        this.client.requestAccessToken({ prompt: this.token ? '' : 'consent' });
+        this.client.requestAccessToken({ prompt: '' });
       });
     },
 
@@ -141,9 +147,15 @@
       } else {
         await this.rebuildIndex();
       }
+      await this.ladeKontakte();
     },
 
-    list() { return this.index; },
+    // Kundenliste = Akten in Drive + Google-Kontakte mit dem Label „Facecolorconcept“, die noch keine Akte haben
+    list() {
+      const extra = (this.kontakte || []).filter(k => !this.index.some(e => sameKontakt(e, k)))
+        .map(k => ({ ...k, id: 'k_' + k.kontaktId.split('/').pop(), nurKontakt: true, letzte: null }));
+      return this.index.concat(extra);
+    },
 
     async writeIndex() {
       const r = await this.upload({ name: INDEX, parent: this.rootId, mime: 'application/json', data: JSON.stringify(this.index), fileId: this.indexId });
@@ -185,11 +197,19 @@
         } catch (e) {}
       }
       await this.writeIndex();
+      await this.ladeKontakte();
     },
 
-    async load(e) { return (await this.api(`${API}/files/${e.dateiId}?alt=media`)).json(); },
+    async load(e) {
+      if (e.nurKontakt) {
+        return { id: e.id, kontaktId: e.kontaktId, vorname: e.vorname, nachname: e.nachname, telefon: e.telefon, email: e.email,
+          allergien: '', blutverduenner: '', fragebogen: '', notiz: '', dokumente: [], behandlungen: [] };
+      }
+      return (await this.api(`${API}/files/${e.dateiId}?alt=media`)).json();
+    },
 
     async save(c) {
+      try { await this.pushKontakt(c); } catch (e) { console.warn('Google Kontakte:', e.message); }
       if (!c.ordnerId) c.ordnerId = await this.folder(`${c.nachname}_${c.vorname}_${c.id.slice(-4)}`, this.rootId);
       if (!c.fotosId) c.fotosId = await this.folder('fotos', c.ordnerId);
       if (!c.dokuId) c.dokuId = await this.folder('dokumente', c.ordnerId);
@@ -201,6 +221,7 @@
     },
 
     async addPhoto(c, file, name) {
+      if (!c.fotosId) await this.save(c);
       const blob = await compressImage(file, 2000, 0.85);
       const r = await this.upload({ name, parent: c.fotosId, mime: blob.type || 'image/jpeg', data: blob });
       return { fileId: r.id, link: r.webViewLink || '' };
@@ -214,8 +235,70 @@
 
     async addDoc(c, file) {
       if (file.size > 5 * 1024 * 1024) throw new Error('Die Datei ist größer als 5 MB. Bitte verkleinern oder direkt in Drive ablegen.');
+      if (!c.dokuId) await this.save(c);
       const r = await this.upload({ name: file.name, parent: c.dokuId, mime: file.type || 'application/octet-stream', data: file });
       return { fileId: r.id, name: r.name, link: r.webViewLink || '', datum: today() };
+    },
+
+    // ---------- Google Kontakte ----------
+    async kontaktGruppe() {
+      if (this.gruppe) return this.gruppe;
+      const name = C.KONTAKT_LABEL || 'Facecolorconcept';
+      const r = await this.json(`${PEOPLE}/contactGroups?pageSize=1000&groupFields=name,groupType`);
+      let g = (r.contactGroups || []).find(x => x.groupType === 'USER_CONTACT_GROUP' && (x.name === name || x.formattedName === name));
+      if (!g) {
+        g = await this.json(`${PEOPLE}/contactGroups`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contactGroup: { name } }) });
+      }
+      return (this.gruppe = g.resourceName);
+    },
+
+    async ladeKontakte() {
+      try {
+        const g = await this.kontaktGruppe();
+        const r = await this.json(`${PEOPLE}/${g}?maxMembers=1000`);
+        const ids = r.memberResourceNames || [];
+        const people = [];
+        for (let i = 0; i < ids.length; i += 200) {
+          const qs = ids.slice(i, i + 200).map(x => 'resourceNames=' + encodeURIComponent(x)).join('&');
+          const b = await this.json(`${PEOPLE}/people:batchGet?${qs}&personFields=names,phoneNumbers,emailAddresses`);
+          (b.responses || []).forEach(x => { if (x.person) people.push(x.person); });
+        }
+        this.kontakte = people.map(p => {
+          const n = (p.names || [])[0] || {};
+          return {
+            kontaktId: p.resourceName, vorname: n.givenName || '', nachname: n.familyName || n.displayName || '(ohne Namen)',
+            telefon: ((p.phoneNumbers || [])[0] || {}).value || '', email: ((p.emailAddresses || [])[0] || {}).value || ''
+          };
+        });
+      } catch (e) {
+        this.kontakte = [];
+        console.warn('Google Kontakte:', e.message);
+      }
+    },
+
+    // Legt die Kundin in Google Kontakte an (Label „Facecolorconcept“) oder ergänzt Telefon/E-Mail beim bestehenden Kontakt.
+    async pushKontakt(c) {
+      const send = (url, method, data) => this.json(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      if (!c.kontaktId) {
+        const m = (this.kontakte || []).find(k => sameKontakt(k, c));
+        if (m) c.kontaktId = m.kontaktId;
+      }
+      const names = [{ givenName: c.vorname, familyName: c.nachname }];
+      if (!c.kontaktId) {
+        const p = { names };
+        if (c.telefon) p.phoneNumbers = [{ value: c.telefon, type: 'mobile' }];
+        if (c.email) p.emailAddresses = [{ value: c.email }];
+        const r = await send(`${PEOPLE}/people:createContact?personFields=names`, 'POST', p);
+        c.kontaktId = r.resourceName;
+        await send(`${PEOPLE}/${await this.kontaktGruppe()}/members:modify`, 'POST', { resourceNamesToAdd: [c.kontaktId] });
+        return;
+      }
+      const p = await this.json(`${PEOPLE}/${c.kontaktId}?personFields=names,phoneNumbers,emailAddresses`);
+      const phones = p.phoneNumbers || [], mails = p.emailAddresses || [];
+      if (c.telefon && !phones.some(x => dig(x.value) === dig(c.telefon))) phones.unshift({ value: c.telefon, type: 'mobile' });
+      if (c.email && !mails.some(x => norm(x.value) === norm(c.email))) mails.unshift({ value: c.email });
+      await send(`${PEOPLE}/${c.kontaktId}:updateContact?updatePersonFields=names,phoneNumbers,emailAddresses`, 'PATCH',
+        { etag: p.etag, names, phoneNumbers: phones, emailAddresses: mails });
     },
 
     async remind(title, date, desc) {

@@ -169,6 +169,7 @@
     $('#login').hidden = true;
     $('#app').hidden = false;
     setStatus();
+    if (Store.kontaktFehler) toast('Google Kontakte konnten nicht geladen werden. ' + Store.kontaktFehler, true);
     if (window.innerWidth > 820 && Store.list()[0]) {
       const first = [...Store.list()].sort((a, b) => a.nachname.localeCompare(b.nachname, 'de'))[0];
       await openCustomer(first.id);
@@ -177,12 +178,21 @@
 
   async function boot() {
     if (Store.mode === 'demo') { await startApp(); return; }
-    $('#login').hidden = false;
+    // Läuft die Anmeldung während der Arbeit ab, erscheint die Anmeldekarte über der Kartei; danach geht es an derselben Stelle weiter.
+    Store.onNeedLogin = () => new Promise(res => showLogin(async () => { await Store.signIn(); res(); }));
+    if (Store.hasToken()) {
+      try { await startApp(); return; } catch (e) { toast(e.message, true); }
+    }
     $('#app').hidden = true;
-    $('#loginBtn').onclick = e => busy(e.currentTarget, 'Verbinde …', async () => { await Store.signIn(); await startApp(); }).catch(() => {});
+    showLogin(async () => { await Store.signIn(); await startApp(); });
   }
 
-  $('#reloadBtn').onclick = e => busy(e.currentTarget, 'Lädt …', async () => { await Store.rebuildIndex(); render(); toast('Aktualisiert, auch die Google-Kontakte'); }).catch(() => {});
+  function showLogin(action) {
+    $('#login').hidden = false;
+    $('#loginBtn').onclick = e => busy(e.currentTarget, 'Verbinde …', async () => { await action(); $('#login').hidden = true; }).catch(() => {});
+  }
+
+  $('#reloadBtn').onclick = e => busy(e.currentTarget, 'Lädt …', async () => { await Store.rebuildIndex(); render(); toast(Store.kontaktFehler ? 'Akten aktualisiert. Google Kontakte konnten nicht geladen werden: ' + Store.kontaktFehler : 'Aktualisiert, auch die Google-Kontakte', !!Store.kontaktFehler); }).catch(() => {});
   $('#logoutBtn').onclick = () => { Store.signOut(); active = null; activeId = null; boot(); };
 
   // ---------- Liste ----------

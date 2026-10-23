@@ -75,7 +75,7 @@
         this.client.error_callback = e => rej(new Error(
           e && e.type === 'popup_closed' ? 'Das Anmeldefenster wurde geschlossen.' :
           'Anmeldung fehlgeschlagen. Ist ein Popup-Blocker aktiv?'));
-        this.client.requestAccessToken({ prompt: '' });
+        this.client.requestAccessToken({ prompt: this.token ? '' : 'consent' });
       });
     },
 
@@ -129,7 +129,7 @@
     async start() {
       if (C.ROOT_FOLDER_ID) {
         try { await this.json(`${API}/files/${C.ROOT_FOLDER_ID}?fields=id`); }
-        catch (e) { throw new Error('Der Kartei-Ordner in Google Drive ist nicht erreichbar. Bist du mit dem Google-Konto angemeldet, dem der Ordner gehört?'); }
+        catch (e) { throw new Error('Der Kartei-Ordner in Google Drive ist nicht erreichbar. Grund laut Google: ' + e.message); }
         this.rootId = C.ROOT_FOLDER_ID;
       } else {
         this.rootId = await this.folder(C.ROOT_FOLDER_NAME || 'Facecolorconcept Kartei');

@@ -45,13 +45,25 @@ button:disabled{opacity:.6;cursor:progress}
 :focus-visible{outline:2px solid var(--rose);outline-offset:2px}
 a{color:var(--rose-ink)}
 .wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
-header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px;max-width:1200px;margin:0 auto;flex-wrap:wrap}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--paper) 88%,transparent);-webkit-backdrop-filter:saturate(1.4) blur(14px);backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;padding-block:10px;max-width:1200px;margin:0 auto;flex-wrap:wrap}
 .brand{font-family:var(--display);font-size:26px;font-weight:600;letter-spacing:.01em;line-height:1}
 .brand small{display:block;font-family:var(--body);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-top:4px}
-.status{font-size:11px;letter-spacing:.06em;text-transform:uppercase;border:1px solid currentColor;border-radius:99px;padding:3px 10px;white-space:nowrap}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;color:var(--muted);white-space:nowrap}
+.status::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.status.ok::before{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 22%,transparent)}
+.status.warn::before{background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 22%,transparent)}
+.iconbtn{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}
+.iconbtn:hover{color:var(--rose-ink);border-color:var(--rose)}
+.iconbtn svg{width:18px;height:18px}
+.iconbtn.spin svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.iconbtn.spin svg{animation:none}}
 .status.ok{color:var(--ok)} .status.warn{color:var(--warn)}
-.hactions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hactions{display:flex;gap:6px;align-items:center;margin-left:auto}
+.hactions .status{margin-right:6px}
+/* iPhone: ohne Unschärfe, sonst hängt die untere Leiste in der Kopfzeile fest */
+@media(max-width:820px){header.top{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--paper)}}
 main{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:340px minmax(0,1fr);gap:24px;padding-block:20px}
 @media(max-width:820px){main{grid-template-columns:minmax(0,1fr)} main.has-detail .list-col{display:none} main:not(.has-detail) .detail-col{display:none}}
 .panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--r)}
@@ -167,7 +179,11 @@ table.lr td.c{text-align:center}
 .hello h1{font-size:34px}
 .hello p{margin:4px 0 0;color:var(--muted)}
 .kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.kpi{padding:16px;min-width:0}
+.kpi{padding:16px;min-width:0;position:relative;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
+button.kpi{cursor:pointer;font:inherit;color:inherit;text-align:left;width:100%}
+button.kpi::after{content:"›";position:absolute;top:12px;right:14px;font-size:20px;line-height:1;color:var(--muted)}
+button.kpi:hover{transform:translateY(-2px);border-color:var(--rose);box-shadow:0 8px 22px color-mix(in srgb,var(--rose) 18%,transparent)}
+button.kpi:hover::after{color:var(--rose-ink)}
 .kpi b{display:block;font-family:var(--display);font-size:40px;font-weight:600;line-height:1.05;font-variant-numeric:tabular-nums}
 .kpi span{display:block;font-size:13px;color:var(--muted);margin-top:4px;overflow-wrap:anywhere}
 @media(max-width:520px){.kpis{gap:8px}.kpi{padding:12px}.kpi b{font-size:30px}.kpi span{font-size:12px}.hello h1{font-size:28px}}
@@ -193,12 +209,18 @@ table.lr td.c{text-align:center}
 (function () {
   var mode = 'auto';
   try { mode = localStorage.getItem('fcc_theme') || 'auto'; } catch (e) {}
-  var LABEL = { auto: 'Ansicht: automatisch', light: 'Ansicht: hell', dark: 'Ansicht: dunkel' };
+  var LABEL = { auto: 'Ansicht: automatisch (tagsüber hell, abends dunkel)', light: 'Ansicht: immer hell', dark: 'Ansicht: immer dunkel' };
+  var S = function (p) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>'; };
+  var ICON = {
+    auto: S('<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>'),
+    light: S('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
+    dark: S('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>')
+  };
   function apply() {
     var t = mode;
     if (mode === 'auto') { var h = new Date().getHours(); t = (h >= 7 && h < 19) ? 'light' : 'dark'; }
     document.documentElement.setAttribute('data-theme', t);
-    var b = document.getElementById('themeBtn'); if (b) b.textContent = LABEL[mode];
+    var b = document.getElementById('themeBtn'); if (b) { b.innerHTML = ICON[mode]; b.title = LABEL[mode]; b.setAttribute('aria-label', LABEL[mode]); }
   }
   apply();
   setInterval(apply, 60000);
@@ -232,9 +254,9 @@ table.lr td.c{text-align:center}
     <nav id="modnav" class="modnav" aria-label="Bereiche"></nav>
     <div class="hactions">
       <span id="status" class="status"></span>
-      <button class="btn ghost small" id="themeBtn" type="button">Ansicht: automatisch</button>
-      <button class="btn ghost small" id="reloadBtn" hidden>Aktualisieren</button>
-      <button class="btn ghost small" id="logoutBtn" hidden>Abmelden</button>
+      <button class="iconbtn" id="themeBtn" type="button" title="Ansicht: automatisch" aria-label="Ansicht: automatisch"></button>
+      <button class="iconbtn" id="reloadBtn" type="button" title="Aktualisieren" aria-label="Aktualisieren" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg></button>
+      <button class="iconbtn" id="logoutBtn" type="button" title="Abmelden" aria-label="Abmelden" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l5-5-5-5"/><path d="M15 12H4"/></svg></button>
     </div>
   </div></header>
 
@@ -261,12 +283,12 @@ table.lr td.c{text-align:center}
 <div id="sheetRoot"></div>
 <div id="toastRoot"></div>
 
-<script src="config.js"></script>
-<script src="store.js"></script>
-<script src="shell.js"></script>
-<script src="app.js"></script>
+<script src="config.js?v=9"></script>
+<script src="store.js?v=9"></script>
+<script src="shell.js?v=9"></script>
+<script src="app.js?v=9"></script>
 <!-- Weitere Bereiche: einfach als eigene Datei hier ergänzen -->
-<script src="dashboard.js"></script>
-<script src="search.js"></script>
+<script src="dashboard.js?v=9"></script>
+<script src="search.js?v=9"></script>
 </body>
 </html>

@@ -154,6 +154,8 @@
   let activeId = null;
   let active = null; // vollständige Akte der gewählten Kundin
   let loadingDetail = false;
+  let listFilter = null; // { label, test(eintrag) } – gesetzt z. B. per Klick in der Übersicht
+  let sortMode = 'name';
 
   // ---------- Start ----------
   function setStatus() {
@@ -200,8 +202,11 @@
   function renderList() {
     const qy = $('#search').value.toLowerCase().trim();
     const all = Store.list();
-    const list = all.filter(c => (c.vorname + ' ' + c.nachname + ' ' + c.telefon).toLowerCase().includes(qy))
-      .sort((a, b) => a.nachname.localeCompare(b.nachname, 'de'));
+    const list = all.filter(c => (!listFilter || listFilter.test(c)) && ((c.vorname || '') + ' ' + (c.nachname || '') + ' ' + (c.telefon || '')).toLowerCase().includes(qy))
+      .sort(sortMode === 'zuletzt'
+        ? (a, b) => ((b.letzte && b.letzte.datum) || '').localeCompare((a.letzte && a.letzte.datum) || '')
+        : (a, b) => (a.nachname || '').localeCompare(b.nachname || '', 'de'));
+    renderFilterChip(list.length);
     $('#count').textContent = all.length + (all.length === 1 ? ' Kundin' : ' Kundinnen');
     $('#clist').innerHTML = list.length ? list.map(c => `<li><button data-id="${esc(c.id)}" class="${c.id === activeId ? 'active' : ''}">
       <span><span class="cname">${esc(c.nachname)}, ${esc(c.vorname)}</span><br><span class="cmeta">${c.letzte ? 'zuletzt ' + fmt(c.letzte.datum) : 'noch keine Behandlung'}</span></span>
@@ -593,6 +598,21 @@
   window.FCC = window.FCC || {};
   FCC.openCustomer = id => { FCC.show('kartei'); openCustomer(id); };
   FCC.newCustomer = () => { FCC.show('kartei'); openCustomerSheet(null); };
+  // Liste mit Filter öffnen, z. B. FCC.openList('Jetzt dran', e => …, 'zuletzt')
+  FCC.openList = (label, test, sort) => {
+    listFilter = test ? { label, test } : null; sortMode = sort || 'name';
+    activeId = null; active = null; $('#search').value = '';
+    FCC.show('kartei'); render();
+  };
+
+  function renderFilterChip(n) {
+    let el = document.getElementById('filterChip');
+    if (!el) { el = document.createElement('div'); el.id = 'filterChip'; $('#search').before(el); }
+    el.hidden = !listFilter;
+    if (!listFilter) return;
+    el.innerHTML = `<div class="banner" style="margin-top:0"><span><b>${esc(listFilter.label)}</b> · ${n} ${n === 1 ? 'Kundin' : 'Kundinnen'}</span><button class="btn ghost small" id="clearFilter">Filter aufheben</button></div>`;
+    $('#clearFilter').onclick = () => { listFilter = null; sortMode = 'name'; renderList(); };
+  }
   if (FCC.register) FCC.register({ id: 'kartei', titel: 'Kundenkartei', el: 'main', order: 2, render: () => render(),
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="11" r="2.5"/><path d="M5.5 17c.8-2 2-3 3.5-3s2.7 1 3.5 3M14.5 9.5h4M14.5 13h4"/></svg>' });
 

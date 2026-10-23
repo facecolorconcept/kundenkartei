@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Facecolorconcept Kundenkartei</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex, nofollow">
+<!-- iPhone: als App auf dem Home-Bildschirm -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Kartei">
+<meta name="theme-color" content="#fffdfb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#25201d" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: Kartei-Liste links, Akte rechts; Behandlungsbogen als Blatt, das über die Akte gleitet. Auf dem iPhone: eine Spalte. */
+:root{
+  --bg:#f6f3f1; --paper:#fffdfb; --ink:#2b2522; --muted:#776b65; --line:#e7dfda;
+  --rose:#a9725e; --rose-soft:#f1e4de; --rose-ink:#85543f; --ok:#4f7a5a; --warn:#9a6a24; --shade:rgba(30,20,15,.45);
+  --display:"Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --body:"Jost", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1c1816; --paper:#25201d; --ink:#f1e9e4; --muted:#a8998f; --line:#3a322e;
+  --rose:#c99580; --rose-soft:#3a2b25; --rose-ink:#e8bba8; --ok:#8cbf96; --warn:#d9a95e; --shade:rgba(0,0,0,.6); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1c1816; --paper:#25201d; --ink:#f1e9e4; --muted:#a8998f; --line:#3a322e;
+  --rose:#c99580; --rose-soft:#3a2b25; --rose-ink:#e8bba8; --ok:#8cbf96; --warn:#d9a95e; --shade:rgba(0,0,0,.6); color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+button,input,select,textarea{font:inherit;color:inherit}
+input,select,textarea{font-size:16px} /* verhindert das Hineinzoomen auf dem iPhone */
+button{cursor:pointer}
+button:disabled{opacity:.6;cursor:progress}
+:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
+a{color:var(--rose-ink)}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px;max-width:1200px;margin:0 auto;flex-wrap:wrap}
+.brand{font-family:var(--display);font-size:26px;font-weight:600;letter-spacing:.01em;line-height:1}
+.brand small{display:block;font-family:var(--body);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-top:4px}
+.status{font-size:11px;letter-spacing:.06em;text-transform:uppercase;border:1px solid currentColor;border-radius:99px;padding:3px 10px;white-space:nowrap}
+.status.ok{color:var(--ok)} .status.warn{color:var(--warn)}
+.hactions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+main{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:340px minmax(0,1fr);gap:24px;padding-block:20px}
+@media(max-width:820px){main{grid-template-columns:minmax(0,1fr)} main.has-detail .list-col{display:none} main:not(.has-detail) .detail-col{display:none}}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--r)}
+.list-col{display:flex;flex-direction:column;gap:12px;min-width:0}
+.search{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
+.btn{border:1px solid var(--rose);background:var(--rose);color:#fff;border-radius:99px;padding:10px 18px;font-weight:500;font-size:15px;min-height:44px}
+.btn.ghost{background:transparent;color:var(--rose-ink)}
+.btn.small{padding:6px 14px;font-size:14px;min-height:38px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row.between{justify-content:space-between}
+.row.top-align{align-items:flex-start}
+.clist{list-style:none;margin:0;padding:6px}
+.clist li button{width:100%;text-align:left;border:0;background:transparent;padding:13px 12px;border-radius:10px;display:flex;justify-content:space-between;gap:10px;align-items:center;min-height:56px}
+.clist li button:hover,.clist li button.active{background:var(--rose-soft)}
+.cname{font-weight:500}
+.cmeta{font-size:13px;color:var(--muted)}
+.tag{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--rose-ink);background:var(--rose-soft);border-radius:99px;padding:2px 9px;white-space:nowrap}
+.detail-col{min-width:0;display:flex;flex-direction:column;gap:16px}
+.back{display:none;border:0;background:none;color:var(--rose-ink);padding:6px 0;font-weight:500;text-align:left;font-size:16px}
+@media(max-width:820px){.back{display:block}}
+h1,h2,h3{font-family:var(--display);font-weight:600;text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:32px} h2{font-size:22px}
+.label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.card{padding:18px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px 24px;margin-top:14px}
+.facts div{min-width:0;overflow-wrap:anywhere}
+.cnote{margin:14px 0 0;color:var(--muted)}
+.mini{font-size:13px;margin-left:6px}
+.lasttime{border:1px solid var(--rose);background:var(--rose-soft);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:12px}
+.lasttime .hint{font-family:var(--display);font-style:italic;font-size:21px;color:var(--rose-ink);line-height:1.3}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.kv div{background:var(--paper);border-radius:10px;padding:10px 12px;min-width:0;overflow-wrap:anywhere}
+.kv b{display:block;font-weight:500;font-variant-numeric:tabular-nums}
+.timeline{list-style:none;margin:8px 0 0;padding:0}
+.timeline li{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:14px;padding:14px 0;border-top:1px solid var(--line);align-items:start}
+.timeline li:first-child{border-top:0}
+.tmain b{font-weight:500}
+.tdate{font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px}
+@media(max-width:520px){.timeline li{grid-template-columns:minmax(0,1fr) auto}.tdate{grid-column:1/-1}}
+.grid-2col{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.docs{list-style:none;margin:10px 0 0;padding:0}
+.docs li{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}
+.docs li:first-child{border-top:0}
+.pill{font-size:12.5px;border-radius:99px;padding:2px 10px;border:1px solid var(--line);white-space:nowrap}
+.pill.ok{color:var(--ok);border-color:currentColor}
+.pill.warn{color:var(--warn);border-color:currentColor}
+.empty{color:var(--muted);padding:28px;text-align:center}
+/* Anmeldung */
+.login{min-height:100%;display:flex;align-items:center;justify-content:center;padding-block:40px}
+.login .panel{max-width:440px;width:100%;padding:32px;display:flex;flex-direction:column;gap:16px;text-align:center}
+.login .brand{font-size:38px}
+.login p{margin:0;color:var(--muted)}
+/* Hinweis Home-Bildschirm */
+.hint-bar{background:var(--rose-soft);color:var(--ink);font-size:14px}
+.hint-bar .wrap{max-width:1200px;margin:0 auto;padding-block:10px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.hint-bar button{border:0;background:none;color:var(--rose-ink);font-weight:500;padding:6px}
+/* Bogen */
+.sheet-bg{position:fixed;inset:0;background:var(--shade);z-index:20;display:flex;justify-content:flex-end}
+.sheet{background:var(--paper);width:min(760px,100%);height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+.sheet-head{position:sticky;top:0;background:var(--paper);border-bottom:1px solid var(--line);z-index:2}
+.sheet-head .wrap{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-block:12px;padding-top:calc(12px + env(safe-area-inset-top,0px))}
+.sec{padding-block:18px;border-bottom:1px solid var(--line)}
+.sec h3{font-size:21px;display:flex;gap:10px;align-items:baseline}
+.sec h3 .n{font-family:var(--body);font-size:12px;color:var(--rose-ink);font-weight:600;font-variant-numeric:tabular-nums}
+.note{font-size:13.5px;color:var(--warn);margin-top:6px}
+table.lr{width:100%;border-collapse:collapse;margin-top:10px}
+table.lr th{font-size:11px;letter-spacing:.12em;color:var(--muted);font-weight:500;text-align:center;padding:4px;width:60px}
+table.lr th:first-child{text-align:left;width:auto}
+table.lr td{padding:3px 0;border-top:1px solid var(--line)}
+table.lr td.c{text-align:center}
+.dot{width:42px;height:42px;border-radius:50%;border:1.5px solid var(--line);background:transparent;display:inline-flex;align-items:center;justify-content:center;font-size:13px;color:var(--muted)}
+.dot.on{background:var(--rose);border-color:var(--rose);color:#fff}
+.dot.prev,.chip.prev{border-color:var(--rose);border-style:dashed}
+.legend{font-size:13px;color:var(--muted);margin-top:8px;display:flex;align-items:center;gap:6px}
+.legend .dot{width:16px;height:16px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:12px}
+.field{min-width:0}
+.field.full{grid-column:1/-1}
+.field label,.flabel{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);min-height:44px}
+.field input::placeholder{color:var(--muted);opacity:.8}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{border:1px solid var(--line);background:transparent;border-radius:99px;padding:8px 14px;font-size:14.5px;min-height:40px}
+.chip.on{background:var(--rose-soft);border-color:var(--rose);color:var(--rose-ink)}
+.chip.add{border-color:var(--rose);color:var(--rose-ink)}
+.banner{background:var(--rose-soft);border-radius:12px;padding:12px 14px;margin-top:14px;font-size:14.5px;display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.banner b{font-weight:500}
+.phbox{border:1px dashed var(--line);border-radius:12px;padding:12px;min-width:0}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;margin-top:10px}
+.thumb{border:0;padding:0;background:var(--rose-soft);border-radius:10px;overflow:hidden;aspect-ratio:3/4;max-width:100%}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.sheet-foot{position:fixed;bottom:0;right:0;width:min(760px,100%);background:var(--paper);border-top:1px solid var(--line);z-index:3}
+.sheet-foot .wrap{display:flex;justify-content:flex-end;gap:10px;padding-block:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.lightbox img{max-height:80vh;max-width:100%;object-fit:contain;border-radius:8px}
+#toastRoot{position:fixed;left:16px;right:16px;bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+.toast{background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:14px;font-size:14.5px;max-width:100%;text-align:center}
+@media(prefers-reduced-motion:no-preference){.sheet{animation:slide .22s ease-out}@keyframes slide{from{transform:translateX(30px);opacity:.6}}}
+</style>
+</head>
+<body>
+
+<section id="login" class="login wrap" hidden>
+  <div class="panel">
+    <div class="brand">Facecolorconcept.<small>Kundenkartei</small></div>
+    <p>Melde dich mit deinem Google-Konto an. Die Akten, Fotos und Dokumente liegen in deinem Google Drive im Ordner „Facecolorconcept Kartei“.</p>
+    <button class="btn" id="loginBtn">Mit Google anmelden</button>
+  </div>
+</section>
+
+<div id="app" hidden>
+  <header class="top"><div class="wrap">
+    <div class="brand">Facecolorconcept.<small>Kundenkartei</small></div>
+    <div class="hactions">
+      <span id="status" class="status"></span>
+      <button class="btn ghost small" id="reloadBtn" hidden>Liste neu laden</button>
+      <button class="btn ghost small" id="logoutBtn" hidden>Abmelden</button>
+    </div>
+  </div></header>
+
+  <div class="hint-bar" id="installHint" hidden><div class="wrap">
+    <span>Als App nutzen: In Safari auf <b>Teilen</b> tippen, dann <b>Zum Home-Bildschirm</b>.</span>
+    <button id="hintClose" aria-label="Hinweis schließen">OK</button>
+  </div></div>
+
+  <main id="main" class="wrap">
+    <section class="list-col">
+      <div class="row between">
+        <span class="label" id="count"></span>
+        <button class="btn small" id="newCustBtn">+ Kundin</button>
+      </div>
+      <input class="search" id="search" type="search" placeholder="Name oder Telefon suchen" aria-label="Kundin suchen">
+      <div class="panel"><ul class="clist" id="clist"></ul></div>
+    </section>
+    <section class="detail-col" id="detail"></section>
+  </main>
+</div>
+
+<div id="sheetRoot"></div>
+<div id="toastRoot"></div>
+
+<script src="config.js"></script>
+<script src="store.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

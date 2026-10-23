@@ -100,7 +100,7 @@ h1{font-size:32px} h2{font-size:22px}
 .pill.warn{color:var(--warn);border-color:currentColor}
 .empty{color:var(--muted);padding:28px;text-align:center}
 /* Anmeldung */
-.login{min-height:100%;display:flex;align-items:center;justify-content:center;padding-block:40px}
+.login{position:fixed;inset:0;z-index:70;background:var(--bg);overflow-y:auto;display:flex;align-items:center;justify-content:center;padding-block:40px}
 .login .panel{max-width:440px;width:100%;padding:32px;display:flex;flex-direction:column;gap:16px;text-align:center}
 .login .brand{font-size:38px}
 .login p{margin:0;color:var(--muted)}
@@ -148,7 +148,7 @@ table.lr td.c{text-align:center}
 .sheet-foot .wrap{display:flex;justify-content:flex-end;gap:10px;padding-block:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .lightbox img{max-height:80vh;max-width:100%;object-fit:contain;border-radius:8px}
-#toastRoot{position:fixed;left:16px;right:16px;bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+#toastRoot{position:fixed;left:16px;right:16px;bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:80;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
 .toast{background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:14px;font-size:14.5px;max-width:100%;text-align:center}
 @media(prefers-reduced-motion:no-preference){.sheet{animation:slide .22s ease-out}@keyframes slide{from{transform:translateX(30px);opacity:.6}}}
 </style>
@@ -186,6 +186,7 @@ table.lr td.c{text-align:center}
     <p>Melde dich mit deinem Google-Konto <b>facecolorconcept@gmail.com</b> an.</p>
     <p>Beim ersten Mal fragt Google, ob die Kartei auf Drive, Kalender und Kontakte zugreifen darf. Bitte <b>alle Häkchen setzen</b>. Der Hinweis „App nicht überprüft“ ist normal, weil es deine eigene App ist: einfach auf <b>Weiter</b>.</p>
     <button class="btn" id="loginBtn">Mit Google anmelden</button>
+    <p class="cmeta">Die Kartei merkt sich die Anmeldung. Google verlangt aber etwa einmal pro Stunde eine kurze Bestätigung: ein Tipp auf den Knopf genügt.</p>
   </div>
 </section>
 

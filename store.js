@@ -20,6 +20,22 @@
   const today = () => new Date().toISOString().slice(0, 10);
   const q = s => String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
+  function suchfelder(c) {
+    const out = [
+      c.telefon && 'Telefon: ' + c.telefon, c.email && 'E-Mail: ' + c.email,
+      c.allergien && 'Allergien: ' + c.allergien, c.notiz && 'Notiz: ' + c.notiz,
+      ...(c.notizen || []).map(n => 'Notiz: ' + n.text)
+    ];
+    (c.behandlungen || []).forEach(x => {
+      const d = x.daten || {};
+      out.push(d.pigment1 && 'Pigment: ' + d.pigment1, d.charge1 && 'Charge: ' + d.charge1,
+        d.pigment2 && 'Pigment: ' + d.pigment2, d.charge2 && 'Charge: ' + d.charge2,
+        d.farbe && 'Farbe: ' + d.farbe, d.technik && 'Technik: ' + d.technik,
+        x.notizen && 'Notiz ' + x.art + ': ' + x.notizen, x.naechstes && 'Nächstes Mal: ' + x.naechstes);
+    });
+    return out.filter(Boolean).map(s => String(s).slice(0, 200));
+  }
+
   // Kurzeintrag für die Kundenliste
   function entry(c, dateiId) {
     const last = [...(c.behandlungen || [])].sort((a, b) => b.datum.localeCompare(a.datum))[0];
@@ -29,7 +45,9 @@
       letzte: last ? { datum: last.datum, art: last.art } : null,
       // Kurzfassung für die Übersicht
       fragebogen: c.fragebogen || '', erstellt: c.erstellt || '',
-      b: (c.behandlungen || []).map(x => ({ d: x.datum, a: x.art, t: (x.daten || {}).termin || '' }))
+      b: (c.behandlungen || []).map(x => ({ d: x.datum, a: x.art, t: (x.daten || {}).termin || '' })),
+      // Suchtexte für die globale Suche (Telefon, Allergien, Notizen, Pigmente, Chargen …)
+      f: suchfelder(c), v: 2
     };
   }
 
@@ -161,7 +179,7 @@
         this.indexId = f.id;
         this.index = await (await this.api(`${API}/files/${f.id}?alt=media`)).json();
         // Ältere Verzeichnisse ohne Kurzfassung einmalig neu aufbauen
-        if (this.index.some(e => !e.b)) await this.rebuildIndex();
+        if (this.index.some(e => e.v !== 2)) await this.rebuildIndex();
       } else {
         await this.rebuildIndex();
       }

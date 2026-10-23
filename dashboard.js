@@ -56,10 +56,11 @@
 
     // Behandlungen der letzten 6 Monate
     const months = [];
-    for (let i = 5; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 15); months.push({ k: ym(d), l: d.toLocaleDateString('de-DE', { month: 'short' }).replace('.', '') }); }
+    for (let i = 5; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 15); months.push({ k: ym(d), l: d.toLocaleDateString('de-DE', { month: 'short' }).replace('.', ''), lang: d.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) }); }
     months.forEach(m => { m.n = all.filter(b => b.d.startsWith(m.k)).length; });
     const max = Math.max(1, ...months.map(m => m.n));
 
+    const monatsname = now.toLocaleDateString('de-DE', { month: 'long' });
     const h = now.getHours();
     const gruss = (h < 11 ? 'Guten Morgen' : h < 18 ? 'Guten Tag' : 'Guten Abend') + (C.INHABERIN ? ', ' + C.INHABERIN : '');
     const datum = now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -74,28 +75,28 @@
       </div>
 
       <div class="kpis">
-        <div class="panel kpi"><b>${akten.length}</b><span>Kundinnen</span></div>
-        <div class="panel kpi"><b>${monat}</b><span>Behandlungen im ${esc(now.toLocaleDateString('de-DE', { month: 'long' }))}</span></div>
-        <div class="panel kpi"><b>${neu}</b><span>neue Kundinnen im ${esc(now.toLocaleDateString('de-DE', { month: 'long' }))}</span></div>
+        <button class="panel kpi tap" data-f="alle"><b>${akten.length}</b><span>Kundinnen</span></button>
+        <button class="panel kpi tap" data-f="monat"><b>${monat}</b><span>Behandlungen im ${esc(monatsname)}</span></button>
+        <button class="panel kpi tap" data-f="neu"><b>${neu}</b><span>neue Kundinnen im ${esc(monatsname)}</span></button>
       </div>
 
       <div class="dgrid">
         <div class="panel card">
-          <div class="row between"><h2>Jetzt dran</h2><span class="label">${t.length} ${t.length === 1 ? 'Punkt' : 'Punkte'}</span></div>
+          <div class="row between"><button class="htap" data-f="todo"><h2>Jetzt dran ›</h2></button><span class="label">${t.length} ${t.length === 1 ? 'Punkt' : 'Punkte'}</span></div>
           ${t.length ? `<ul class="todo">${tShown.map(x => `<li><span class="sev ${x.sev}" aria-hidden="true"></span>${person(x.e, esc(x.txt))}${wa(x.e)}</li>`).join('')}</ul>
             ${t.length > 6 ? `<button class="btn ghost small" data-act="mehr" style="margin-top:8px">${showAll ? 'Weniger anzeigen' : `Alle ${t.length} anzeigen`}</button>` : ''}`
             : '<p class="cmeta" style="margin-top:10px">Alles erledigt. Hier erscheinen fällige Nachbehandlungen, Lash- und Brow-Lift-Erinnerungen, fehlende Fragebögen und neue Kontakte.</p>'}
         </div>
         <div class="dcol">
           <div class="panel card">
-            <h2>Zuletzt behandelt</h2>
+            <button class="htap" data-f="zuletzt"><h2>Zuletzt behandelt ›</h2></button>
             ${recent.length ? `<ul class="todo">${recent.map(b => `<li>${person(b.e, esc(b.a) + ' · ' + fmt(b.d))}</li>`).join('')}</ul>`
               : '<p class="cmeta" style="margin-top:10px">Noch keine Behandlung eingetragen.</p>'}
           </div>
           <div class="panel card">
-            <div class="row between"><h2>Behandlungen</h2><span class="label">letzte 6 Monate</span></div>
+            <div class="row between"><button class="htap" data-f="zuletzt"><h2>Behandlungen ›</h2></button><span class="label">letzte 6 Monate</span></div>
             <div class="bars" role="img" aria-label="${esc(months.map(m => m.l + ': ' + m.n).join(', '))}">
-              ${months.map(m => `<div class="bar"><em>${m.n}</em><i style="height:${Math.round(m.n / max * 100)}%"></i><span>${esc(m.l)}</span></div>`).join('')}
+              ${months.map(m => `<button class="bar tap" data-f="m:${m.k}" aria-label="${esc(m.lang)}: ${m.n} Behandlungen"><em>${m.n}</em><i style="height:${Math.round(m.n / max * 100)}%"></i><span>${esc(m.l)}</span></button>`).join('')}
             </div>
           </div>
         </div>
@@ -104,7 +105,36 @@
     el.querySelectorAll('[data-cust]').forEach(b => { b.onclick = () => FCC.openCustomer && FCC.openCustomer(b.dataset.cust); });
     const nb = el.querySelector('[data-act="neu"]'); if (nb) nb.onclick = () => FCC.newCustomer && FCC.newCustomer();
     const mb = el.querySelector('[data-act="mehr"]'); if (mb) mb.onclick = () => { showAll = !showAll; render(); };
+
+    // Kennzahlen, Überschriften und Balken öffnen die Kundenkartei mit passendem Filter
+    const inMonth = k => e => (e.b || []).some(b => b.d.startsWith(k));
+    const todoIds = new Set(t.map(x => x.e.id));
+    const FILTER = {
+      alle: () => FCC.openList(null, null, 'name'),
+      monat: () => FCC.openList('Behandlungen im ' + monatsname, inMonth(thisMonth), 'zuletzt'),
+      neu: () => FCC.openList('Neue Kundinnen im ' + monatsname, e => !e.nurKontakt && (e.erstellt || ((e.b || []).map(b => b.d).sort()[0]) || '').startsWith(thisMonth), 'zuletzt'),
+      todo: () => FCC.openList('Jetzt dran', e => todoIds.has(e.id), 'name'),
+      zuletzt: () => FCC.openList('Mit Behandlung, neueste zuerst', e => !!e.letzte, 'zuletzt')
+    };
+    el.querySelectorAll('[data-f]').forEach(b => {
+      b.onclick = () => {
+        if (!FCC.openList) return;
+        const f = b.dataset.f;
+        if (f.startsWith('m:')) { const m = months.find(x => x.k === f.slice(2)); FCC.openList('Behandlungen im ' + (m ? m.lang : f.slice(2)), inMonth(f.slice(2)), 'zuletzt'); }
+        else if (FILTER[f]) FILTER[f]();
+      };
+    });
   }
+
+  // Eigene Gestaltung des Moduls
+  const st = document.createElement('style');
+  st.textContent = '.tap{font:inherit;color:inherit;text-align:left;cursor:pointer;width:100%}' +
+    '.kpi.tap:hover{border-color:var(--rose)}' +
+    '.bar.tap{border:0;background:none;padding:0;text-align:center}' +
+    '.bar.tap:hover i{opacity:.8}' +
+    '.htap{border:0;background:none;padding:0;color:inherit;cursor:pointer;text-align:left}' +
+    '.htap:hover h2{color:var(--rose-ink)}';
+  document.head.append(st);
 
   FCC.register && FCC.register({
     id: 'uebersicht', titel: 'Übersicht', el: 'mod-uebersicht', order: 1, render,

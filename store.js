@@ -26,7 +26,10 @@
     return {
       id: c.id, vorname: c.vorname, nachname: c.nachname, telefon: c.telefon || '',
       dateiId, ordnerId: c.ordnerId || '', kontaktId: c.kontaktId || '',
-      letzte: last ? { datum: last.datum, art: last.art } : null
+      letzte: last ? { datum: last.datum, art: last.art } : null,
+      // Kurzfassung für die Übersicht
+      fragebogen: c.fragebogen || '', erstellt: c.erstellt || '',
+      b: (c.behandlungen || []).map(x => ({ d: x.datum, a: x.art, t: (x.daten || {}).termin || '' }))
     };
   }
 
@@ -157,6 +160,8 @@
       if (f) {
         this.indexId = f.id;
         this.index = await (await this.api(`${API}/files/${f.id}?alt=media`)).json();
+        // Ältere Verzeichnisse ohne Kurzfassung einmalig neu aufbauen
+        if (this.index.some(e => !e.b)) await this.rebuildIndex();
       } else {
         await this.rebuildIndex();
       }

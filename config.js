@@ -9,5 +9,7 @@ window.FCC_CONFIG = {
   // Dieses Google-Konto wird bei der Anmeldung vorausgewählt.
   LOGIN_HINT: 'facecolorconcept@gmail.com',
   STUDIO: 'Facecolorconcept',
+  // Name für die Begrüßung auf der Übersicht
+  INHABERIN: 'Kati',
   ADRESSE: 'Elisabeth-Silbereisen-Weg 7, 74931 Lobbach-Lobenfeld'
 };

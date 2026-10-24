@@ -27,7 +27,7 @@
     const words = norm(q).split(/\s+/).filter(Boolean);
     // Ziffernsuche (z. B. Telefonnummer ohne Leerzeichen) nur, wenn nur Ziffern eingegeben wurden
     const qd = /^[\d\s+\-/()]+$/.test(q) ? digits(q) : '';
-    return Store.list().map(e => {
+    return Store.list(true).map(e => {
       const name = `${e.vorname || ''} ${e.nachname || ''}`.trim() || '(ohne Namen)';
       const felder = [name, e.telefon ? 'Telefon: ' + e.telefon : ''].concat(e.f || []).filter(Boolean);
       const hay = norm(felder.join(' | '));
@@ -36,7 +36,7 @@
       const nameHit = words.every(w => norm(name).includes(w));
       const grund = nameHit ? (e.letzte ? `${e.letzte.art} · zuletzt ${e.letzte.datum.split('-').reverse().join('.')}` : (e.nurKontakt ? 'Kontakt, noch keine Akte' : 'noch keine Behandlung'))
         : (felder.find(x => words.some(w => norm(x).includes(w))) || felder.find(x => qd && digits(x).includes(qd)) || '');
-      return { score: nameHit ? 0 : 1, titel: name, text: grund, words, open: () => FCC.openCustomer && FCC.openCustomer(e.id) };
+      return { score: (nameHit ? 0 : 1) + (e.archiv ? 2 : 0), titel: name, text: (e.archiv ? 'Archiviert · ' : '') + grund, words, open: () => FCC.openCustomer && FCC.openCustomer(e.id) };
     }).filter(Boolean).sort((a, b) => a.score - b.score || a.titel.localeCompare(b.titel, 'de'));
   });
 

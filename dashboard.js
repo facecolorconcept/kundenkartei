@@ -32,7 +32,16 @@
         const l = lastOf(e, art);
         if (l) { const n = days(l.d); if (n >= 42 && n <= 120) out.push({ e, sev: 'due', prio: 2, txt: `${art} wieder fällig, zuletzt vor ${ago(n)}` }); }
       });
+      // Rückmeldungen und auffällige Ergebnisse bleiben sichtbar, bis ich sie als erledigt markiere
+      (e.b || []).forEach(b => {
+        if (b.n) return;
+        const n = days(b.d);
+        if (b.z === 'nein' && n <= 120) out.push({ e, b, sev: 'bad', prio: -1, txt: `War unzufrieden mit ${b.a} am ${fmt(b.d)}, bitte nachfassen` });
+        else if (b.z === 'teils' && n <= 90) out.push({ e, b, sev: 'warn', prio: 1, txt: `Nur teilweise zufrieden mit ${b.a} am ${fmt(b.d)}` });
+        if (b.p && n <= 60) out.push({ e, b, sev: 'warn', prio: 1, txt: `${b.a} am ${fmt(b.d)}: ${b.p}` });
+      });
       if (!e.fragebogen) out.push({ e, sev: 'warn', prio: 1, txt: 'Kontraindikations-Fragebogen fehlt' });
+      else if (days(e.fragebogen) > 365) out.push({ e, sev: 'warn', prio: 2, txt: `Fragebogen älter als ein Jahr (${fmt(e.fragebogen)}), bitte erneuern` });
     });
     return out.sort((a, b) => a.prio - b.prio);
   }
@@ -52,6 +61,12 @@
     }).length;
     const t = todos(list);
     const tShown = showAll ? t : t.slice(0, 6);
+    // Zufriedenheit der letzten 90 Tage
+    const bew = all.filter(b => b.z && days(b.d) <= 90);
+    const zc = { ja: 0, teils: 0, nein: 0 };
+    bew.forEach(b => { if (zc[b.z] != null) zc[b.z]++; });
+    const ztot = zc.ja + zc.teils + zc.nein;
+    const ZL = [['ja', 'zufrieden'], ['teils', 'teilweise'], ['nein', 'unzufrieden']];
     const recent = all.sort((a, b) => b.d.localeCompare(a.d)).slice(0, 5);
 
     // Behandlungen der letzten 6 Monate
@@ -83,11 +98,17 @@
       <div class="dgrid">
         <div class="panel card">
           <div class="row between"><button class="htap" data-f="todo"><h2>Jetzt dran ›</h2></button><span class="label">${t.length} ${t.length === 1 ? 'Punkt' : 'Punkte'}</span></div>
-          ${t.length ? `<ul class="todo">${tShown.map(x => `<li><span class="sev ${x.sev}" aria-hidden="true"></span>${person(x.e, esc(x.txt))}${wa(x.e)}</li>`).join('')}</ul>
+          ${t.length ? `<ul class="todo">${tShown.map(x => `<li><span class="sev ${x.sev}" aria-hidden="true"></span>${person(x.e, esc(x.txt))}${wa(x.e)}${x.b && x.b.id ? `<button class="btn ghost small" data-done="${esc(x.e.id)}|${esc(x.b.id)}" title="Als erledigt markieren">Erledigt</button>` : ''}</li>`).join('')}</ul>
             ${t.length > 6 ? `<button class="btn ghost small" data-act="mehr" style="margin-top:8px">${showAll ? 'Weniger anzeigen' : `Alle ${t.length} anzeigen`}</button>` : ''}`
             : '<p class="cmeta" style="margin-top:10px">Alles erledigt. Hier erscheinen fällige Nachbehandlungen, Lash- und Brow-Lift-Erinnerungen, fehlende Fragebögen und neue Kontakte.</p>'}
         </div>
         <div class="dcol">
+          <div class="panel card">
+            <div class="row between"><button class="htap" data-f="zufr"><h2>Zufriedenheit ›</h2></button><span class="label">letzte 90 Tage</span></div>
+            ${ztot ? `<div class="zbar" role="img" aria-label="${esc(ZL.map(([k, l]) => zc[k] + ' ' + l).join(', '))}">${ZL.filter(([k]) => zc[k]).map(([k, l]) => `<button class="zseg z-${k}" data-f="z:${k}" style="flex:${zc[k]}" title="${zc[k]} ${l}" aria-label="${zc[k]} ${l}"></button>`).join('')}</div>
+              <div class="zleg">${ZL.map(([k, l]) => `<button class="zl" data-f="z:${k}"><i class="z-${k}"></i><b>${zc[k]}</b> ${l} · ${Math.round(zc[k] / ztot * 100)} %</button>`).join('')}</div>`
+              : '<p class="cmeta" style="margin-top:10px">Noch keine Bewertung. Trag im Behandlungsbogen unter „Kundin zufrieden“ ja, teils oder nein ein.</p>'}
+          </div>
           <div class="panel card">
             <button class="htap" data-f="zuletzt"><h2>Zuletzt behandelt ›</h2></button>
             ${recent.length ? `<ul class="todo">${recent.map(b => `<li>${person(b.e, esc(b.a) + ' · ' + fmt(b.d))}</li>`).join('')}</ul>`
@@ -106,6 +127,21 @@
     const nb = el.querySelector('[data-act="neu"]'); if (nb) nb.onclick = () => FCC.newCustomer && FCC.newCustomer();
     const mb = el.querySelector('[data-act="mehr"]'); if (mb) mb.onclick = () => { showAll = !showAll; render(); };
 
+    // „Erledigt“: Rückmeldung als nachgefasst markieren, dann verschwindet der Punkt
+    el.querySelectorAll('[data-done]').forEach(btn => {
+      btn.onclick = async () => {
+        const [cid, bid] = btn.dataset.done.split('|');
+        btn.disabled = true; btn.textContent = 'Speichert …';
+        try {
+          const e = Store.list(true).find(x => x.id === cid);
+          const c = await Store.load(e);
+          const b = (c.behandlungen || []).find(x => x.id === bid);
+          if (b) { b.nachgefasst = new Date().toISOString().slice(0, 10); await Store.save(c); }
+          render();
+        } catch (err) { btn.disabled = false; btn.textContent = 'Erledigt'; btn.title = 'Nicht gespeichert: ' + err.message; }
+      };
+    });
+
     // Kennzahlen, Überschriften und Balken öffnen die Kundenkartei mit passendem Filter
     const inMonth = k => e => (e.b || []).some(b => b.d.startsWith(k));
     const todoIds = new Set(t.map(x => x.e.id));
@@ -120,7 +156,9 @@
       b.onclick = () => {
         if (!FCC.openList) return;
         const f = b.dataset.f;
-        if (f.startsWith('m:')) { const m = months.find(x => x.k === f.slice(2)); FCC.openList('Behandlungen im ' + (m ? m.lang : f.slice(2)), inMonth(f.slice(2)), 'zuletzt'); }
+        if (f === 'zufr') FCC.openList('Bewertet in den letzten 90 Tagen', e => (e.b || []).some(x => x.z && days(x.d) <= 90), 'zuletzt');
+        else if (f.startsWith('z:')) { const k = f.slice(2); FCC.openList('Kundin ' + (ZL.find(z => z[0] === k) || [k, k])[1] + ' (letzte 90 Tage)', e => (e.b || []).some(x => x.z === k && days(x.d) <= 90), 'zuletzt'); }
+        else if (f.startsWith('m:')) { const m = months.find(x => x.k === f.slice(2)); FCC.openList('Behandlungen im ' + (m ? m.lang : f.slice(2)), inMonth(f.slice(2)), 'zuletzt'); }
         else if (FILTER[f]) FILTER[f]();
       };
     });
@@ -133,7 +171,16 @@
     '.bar.tap{border:0;background:none;padding:0;text-align:center}' +
     '.bar.tap:hover i{opacity:.8}' +
     '.htap{border:0;background:none;padding:0;color:inherit;cursor:pointer;text-align:left}' +
-    '.htap:hover h2{color:var(--rose-ink)}';
+    '.htap:hover h2{color:var(--rose-ink)}' +
+    '.sev.bad{background:var(--bad)}' +
+    '.zbar{display:flex;gap:3px;height:14px;border-radius:99px;overflow:hidden;margin-top:14px}' +
+    '.zseg{border:0;padding:0;cursor:pointer;min-width:8px}.zseg:hover{opacity:.8}' +
+    '.z-ja{background:var(--ok)}.z-teils{background:var(--warn)}.z-nein{background:var(--bad)}' +
+    '.zleg{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:10px}' +
+    '.zl{border:0;background:none;padding:3px 0;font:inherit;font-size:13.5px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:6px}' +
+    '.zl:hover{color:var(--rose-ink)}.zl b{color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums}' +
+    '.zl i{width:9px;height:9px;border-radius:50%;display:inline-block}' +
+    '.todo li .btn.small{flex-shrink:0}';
   document.head.append(st);
 
   FCC.register && FCC.register({

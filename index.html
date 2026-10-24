@@ -22,17 +22,17 @@
 /* Layout: Kartei-Liste links, Akte rechts; Behandlungsbogen als Blatt, das über die Akte gleitet. Auf dem iPhone: eine Spalte. */
 :root{
   --bg:#f6f3f1; --paper:#fffdfb; --ink:#2b2522; --muted:#776b65; --line:#e7dfda;
-  --rose:#a9725e; --rose-soft:#f1e4de; --rose-ink:#85543f; --ok:#4f7a5a; --warn:#9a6a24; --shade:rgba(30,20,15,.45);
+  --rose:#a9725e; --rose-soft:#f1e4de; --rose-ink:#85543f; --ok:#4f7a5a; --warn:#9a6a24; --bad:#a8463b; --shade:rgba(30,20,15,.45);
   --display:"Cormorant Garamond", Georgia, "Times New Roman", serif;
   --body:"Jost", "Segoe UI", system-ui, -apple-system, sans-serif;
   --r:14px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#1c1816; --paper:#25201d; --ink:#f1e9e4; --muted:#a8998f; --line:#3a322e;
-  --rose:#c99580; --rose-soft:#3a2b25; --rose-ink:#e8bba8; --ok:#8cbf96; --warn:#d9a95e; --shade:rgba(0,0,0,.6); color-scheme:dark}}
+  --rose:#c99580; --rose-soft:#3a2b25; --rose-ink:#e8bba8; --ok:#8cbf96; --warn:#d9a95e; --bad:#e3877b; --shade:rgba(0,0,0,.6); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#1c1816; --paper:#25201d; --ink:#f1e9e4; --muted:#a8998f; --line:#3a322e;
-  --rose:#c99580; --rose-soft:#3a2b25; --rose-ink:#e8bba8; --ok:#8cbf96; --warn:#d9a95e; --shade:rgba(0,0,0,.6); color-scheme:dark}
+  --rose:#c99580; --rose-soft:#3a2b25; --rose-ink:#e8bba8; --ok:#8cbf96; --warn:#d9a95e; --bad:#e3877b; --shade:rgba(0,0,0,.6); color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{height:100%}
@@ -284,11 +284,11 @@ button.kpi:hover::after{color:var(--rose-ink)}
 <div id="toastRoot"></div>
 
 <script src="config.js?v=9"></script>
-<script src="store.js?v=10"></script>
+<script src="store.js?v=11"></script>
 <script src="shell.js?v=9"></script>
 <script src="app.js?v=10"></script>
 <!-- Weitere Bereiche: einfach als eigene Datei hier ergänzen -->
-<script src="dashboard.js?v=9"></script>
+<script src="dashboard.js?v=11"></script>
 <script src="search.js?v=10"></script>
 <script src="table.js?v=9"></script>
 </body>

@@ -184,7 +184,7 @@ button.kpi{cursor:pointer;font:inherit;color:inherit;text-align:left;width:100%}
 button.kpi::after{content:"›";position:absolute;top:12px;right:14px;font-size:20px;line-height:1;color:var(--muted)}
 button.kpi:hover{transform:translateY(-2px);border-color:var(--rose);box-shadow:0 8px 22px color-mix(in srgb,var(--rose) 18%,transparent)}
 button.kpi:hover::after{color:var(--rose-ink)}
-.kpi b{display:block;font-family:var(--display);font-size:40px;font-weight:600;line-height:1.05;font-variant-numeric:tabular-nums}
+.kpi b{display:block;font-family:var(--display);font-size:40px;font-weight:600;line-height:1.05;font-variant-numeric:lining-nums tabular-nums}
 .kpi span{display:block;font-size:13px;color:var(--muted);margin-top:4px;overflow-wrap:anywhere}
 @media(max-width:520px){.kpis{gap:8px}.kpi{padding:12px}.kpi b{font-size:30px}.kpi span{font-size:12px}.hello h1{font-size:28px}}
 .dgrid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:16px;align-items:start}
@@ -284,12 +284,12 @@ button.kpi:hover::after{color:var(--rose-ink)}
 <div id="toastRoot"></div>
 
 <script src="config.js?v=9"></script>
-<script src="store.js?v=9"></script>
+<script src="store.js?v=10"></script>
 <script src="shell.js?v=9"></script>
-<script src="app.js?v=9"></script>
+<script src="app.js?v=10"></script>
 <!-- Weitere Bereiche: einfach als eigene Datei hier ergänzen -->
 <script src="dashboard.js?v=9"></script>
-<script src="search.js?v=9"></script>
+<script src="search.js?v=10"></script>
 <script src="table.js?v=9"></script>
 </body>
 </html>

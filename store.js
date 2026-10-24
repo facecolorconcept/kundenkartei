@@ -20,6 +20,16 @@
   const today = () => new Date().toISOString().slice(0, 10);
   const q = s => String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
+  // Auffällige Ergebnisse, die in der Übersicht nicht untergehen sollen
+  function auffaellig(d) {
+    const out = [];
+    if (['Schwellung', 'starkes Nachbluten', 'Hautabriss', 'Pickelchen'].includes(d.reaktion)) out.push('Hautreaktion: ' + d.reaktion);
+    if (['fleckig', 'schwach'].includes(d.aufnahme)) out.push('Pigmentaufnahme ' + d.aufnahme);
+    const erg = d.biegung || d.ergebnis;
+    if (['zu schwach', 'zu stark'].includes(erg)) out.push('Ergebnis ' + erg);
+    return out.join(', ');
+  }
+
   function suchfelder(c) {
     const out = [
       c.telefon && 'Telefon: ' + c.telefon, c.email && 'E-Mail: ' + c.email,
@@ -46,9 +56,10 @@
       archiv: c.archiviert || '',
       // Kurzfassung für die Übersicht
       fragebogen: c.fragebogen || '', erstellt: c.erstellt || '',
-      b: (c.behandlungen || []).map(x => ({ d: x.datum, a: x.art, t: (x.daten || {}).termin || '' })),
+      b: (c.behandlungen || []).map(x => ({ d: x.datum, a: x.art, t: (x.daten || {}).termin || '', id: x.id,
+        z: (x.daten || {}).zufrieden || '', p: auffaellig(x.daten || {}), n: x.nachgefasst || '' })),
       // Suchtexte für die globale Suche (Telefon, Allergien, Notizen, Pigmente, Chargen …)
-      f: suchfelder(c), v: 2
+      f: suchfelder(c), v: 3
     };
   }
 
@@ -180,7 +191,7 @@
         this.indexId = f.id;
         this.index = await (await this.api(`${API}/files/${f.id}?alt=media`)).json();
         // Ältere Verzeichnisse ohne Kurzfassung einmalig neu aufbauen
-        if (this.index.some(e => e.v !== 2)) await this.rebuildIndex();
+        if (this.index.some(e => e.v !== 3)) await this.rebuildIndex();
       } else {
         await this.rebuildIndex();
       }

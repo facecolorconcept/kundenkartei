@@ -157,6 +157,7 @@
   let loadingDetail = false;
   let listFilter = null; // { label, test(eintrag) } – gesetzt z. B. per Klick in der Übersicht
   let sortMode = 'name';
+  let showArchiv = false; // Archiv-Ansicht der Kundenliste
 
   // ---------- Start ----------
   function setStatus() {
@@ -202,13 +203,23 @@
   // ---------- Liste ----------
   function renderList() {
     const qy = $('#search').value.toLowerCase().trim();
-    const all = Store.list();
+    const all = showArchiv ? Store.list(true).filter(e => e.archiv) : Store.list();
     const list = all.filter(c => (!listFilter || listFilter.test(c)) && ((c.vorname || '') + ' ' + (c.nachname || '') + ' ' + (c.telefon || '')).toLowerCase().includes(qy))
       .sort(sortMode === 'zuletzt'
         ? (a, b) => ((b.letzte && b.letzte.datum) || '').localeCompare((a.letzte && a.letzte.datum) || '')
         : (a, b) => (a.nachname || '').localeCompare(b.nachname || '', 'de'));
     renderFilterChip(list.length);
-    $('#count').textContent = all.length + (all.length === 1 ? ' Kundin' : ' Kundinnen');
+    $('#count').textContent = showArchiv ? all.length + ' im Archiv' : all.length + (all.length === 1 ? ' Kundin' : ' Kundinnen');
+    // Knopf zum Archiv unter der Liste
+    let ab = document.getElementById('archivBtn');
+    if (!ab) {
+      ab = document.createElement('button'); ab.id = 'archivBtn'; ab.type = 'button'; ab.className = 'btn ghost small'; ab.style.alignSelf = 'flex-start';
+      $('#clist').parentElement.after(ab);
+      ab.onclick = () => { showArchiv = !showArchiv; listFilter = null; activeId = null; active = null; render(); };
+    }
+    const nArch = Store.list(true).filter(e => e.archiv).length;
+    ab.hidden = !nArch && !showArchiv;
+    ab.textContent = showArchiv ? '← Zurück zu den aktiven Kundinnen' : `Archiv anzeigen (${nArch})`;
     $('#clist').innerHTML = list.length ? list.map(c => `<li><button data-id="${esc(c.id)}" class="${c.id === activeId ? 'active' : ''}">
       <span><span class="cname">${esc(c.nachname)}, ${esc(c.vorname)}</span><br><span class="cmeta">${c.letzte ? 'zuletzt ' + fmt(c.letzte.datum) : 'noch keine Behandlung'}</span></span>
       ${c.letzte ? `<span class="tag">${esc(c.letzte.art)}</span>` : (c.nurKontakt ? '<span class="tag">Kontakt</span>' : '')}</button></li>`).join('')
@@ -221,7 +232,7 @@
   async function openCustomer(id) {
     activeId = id; active = null; loadingDetail = true; render();
     try {
-      const e = Store.list().find(x => x.id === id);
+      const e = Store.list(true).find(x => x.id === id);
       const c = await Store.load(e);
       c.behandlungen = c.behandlungen || []; c.dokumente = c.dokumente || []; c.notizen = c.notizen || []; c.fotos = c.fotos || [];
       if (activeId === id) active = c;
@@ -264,8 +275,9 @@
       <div class="panel card">
         <div class="row between top-align">
           <div><span class="label">Kundenakte</span><h1>${esc(c.vorname)} ${esc(c.nachname)}</h1></div>
-          <button class="btn ghost small" id="editCust">Daten ändern</button>
+          <div class="row"><button class="btn ghost small" id="editCust">Daten ändern</button><button class="btn ghost small" id="archBtn">${c.archiviert ? 'Wiederherstellen' : 'Archivieren'}</button></div>
         </div>
+        ${c.archiviert ? `<div class="banner"><span><b>Archiviert seit ${fmt(c.archiviert)}.</b> Die Akte bleibt vollständig erhalten, erscheint aber nicht mehr in Übersicht, Liste und Tabelle.</span></div>` : ''}
         <div class="facts">
           <div><span class="label">Telefon</span><br>${tel}</div>
           <div><span class="label">E-Mail</span><br>${esc(c.email) || '–'}</div>
@@ -318,6 +330,18 @@
       </div>`;
     $('#backBtn').onclick = back;
     $('#editCust').onclick = () => openCustomerSheet(c);
+    // Archivieren statt löschen: nichts wird entfernt, die Kundin wird nur ausgeblendet
+    $('#archBtn').onclick = e => {
+      const b = e.currentTarget;
+      if (!c.archiviert && b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Wirklich archivieren?'; return; }
+      busy(b, 'Speichert …', async () => {
+        const vorher = c.archiviert;
+        c.archiviert = vorher ? '' : today();
+        try { await Store.save(c); } catch (err) { c.archiviert = vorher; throw err; }
+        if (c.archiviert && !showArchiv) { activeId = null; active = null; }
+        render(); toast(c.archiviert ? 'Archiviert. Die Akte bleibt vollständig erhalten.' : 'Wiederhergestellt');
+      }).catch(() => {});
+    };
     $$('[data-new]').forEach(b => b.onclick = () => openTreatmentSheet(c, b.dataset.new, null));
     $$('[data-open]').forEach(b => b.onclick = () => { const t = c.behandlungen.find(x => x.id === b.dataset.open); if (t) openTreatmentSheet(c, t.art, t); });
     // Notizen

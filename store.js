@@ -43,6 +43,7 @@
       id: c.id, vorname: c.vorname, nachname: c.nachname, telefon: c.telefon || '',
       dateiId, ordnerId: c.ordnerId || '', kontaktId: c.kontaktId || '',
       letzte: last ? { datum: last.datum, art: last.art } : null,
+      archiv: c.archiviert || '',
       // Kurzfassung für die Übersicht
       fragebogen: c.fragebogen || '', erstellt: c.erstellt || '',
       b: (c.behandlungen || []).map(x => ({ d: x.datum, a: x.art, t: (x.daten || {}).termin || '' })),
@@ -187,10 +188,11 @@
     },
 
     // Kundenliste = Akten in Drive + Google-Kontakte mit dem Label „Facecolorconcept“, die noch keine Akte haben
-    list() {
+    // list(true) enthält auch archivierte Kundinnen; archivierte Akten werden nie gelöscht
+    list(mitArchiv) {
       const extra = (this.kontakte || []).filter(k => !this.index.some(e => sameKontakt(e, k)))
         .map(k => ({ ...k, id: 'k_' + k.kontaktId.split('/').pop(), nurKontakt: true, letzte: null }));
-      return this.index.concat(extra);
+      return (mitArchiv ? this.index : this.index.filter(e => !e.archiv)).concat(extra);
     },
 
     async writeIndex() {
@@ -359,7 +361,7 @@
       if (!this.data) this.data = JSON.parse(JSON.stringify(window.FCC_DEMO || []));
     },
     persist() { try { localStorage.setItem(this.key, JSON.stringify(this.data)); } catch (e) {} },
-    list() { return this.data.map(c => entry(c, c.id)); },
+    list(mitArchiv) { const l = this.data.map(c => entry(c, c.id)); return mitArchiv ? l : l.filter(e => !e.archiv); },
     async rebuildIndex() {},
     async load(e) { return JSON.parse(JSON.stringify(this.data.find(c => c.id === e.id))); },
     async save(c) {

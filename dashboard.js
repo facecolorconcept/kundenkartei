@@ -23,30 +23,31 @@
       if (pmu) {
         const n = days(pmu.d);
         if (pmu.t === 'Ersttermin' && n >= 28) {
-          out.push({ e, sev: n > 70 ? 'warn' : 'due', prio: n > 70 ? 0 : 1, txt: `PMU-Nachbehandlung ${n > 70 ? 'überfällig' : 'fällig'}, Ersttermin vor ${ago(n)}` });
+          out.push({ e, t: 'pmu-nach', sev: n > 70 ? 'warn' : 'due', prio: n > 70 ? 0 : 1, txt: `PMU-Nachbehandlung ${n > 70 ? 'überfällig' : 'fällig'}, Ersttermin vor ${ago(n)}` });
         } else if (n >= 330) {
-          out.push({ e, sev: 'due', prio: 2, txt: `PMU-Auffrischung anbieten, letzte Behandlung vor ${ago(n)}` });
+          out.push({ e, t: 'pmu-auff', sev: 'due', prio: 2, txt: `PMU-Auffrischung anbieten, letzte Behandlung vor ${ago(n)}` });
         }
       }
       ['Lash Lift', 'Brow Lift'].forEach(art => {
         const l = lastOf(e, art);
-        if (l) { const n = days(l.d); if (n >= 42 && n <= 120) out.push({ e, sev: 'due', prio: 2, txt: `${art} wieder fällig, zuletzt vor ${ago(n)}` }); }
+        if (l) { const n = days(l.d); if (n >= 42 && n <= 120) out.push({ e, t: art === 'Lash Lift' ? 'lash' : 'brow', sev: 'due', prio: 2, txt: `${art} wieder fällig, zuletzt vor ${ago(n)}` }); }
       });
       // Rückmeldungen und auffällige Ergebnisse bleiben sichtbar, bis ich sie als erledigt markiere
       (e.b || []).forEach(b => {
         if (b.n) return;
         const n = days(b.d);
-        if (b.z === 'nein' && n <= 120) out.push({ e, b, sev: 'bad', prio: -1, txt: `War unzufrieden mit ${b.a} am ${fmt(b.d)}, bitte nachfassen` });
-        else if (b.z === 'teils' && n <= 90) out.push({ e, b, sev: 'warn', prio: 1, txt: `Nur teilweise zufrieden mit ${b.a} am ${fmt(b.d)}` });
-        if (b.p && n <= 60) out.push({ e, b, sev: 'warn', prio: 1, txt: `${b.a} am ${fmt(b.d)}: ${b.p}` });
+        if (b.z === 'nein' && n <= 120) out.push({ e, b, t: 'b:' + b.id, sev: 'bad', prio: -1, txt: `War unzufrieden mit ${b.a} am ${fmt(b.d)}, bitte nachfassen` });
+        else if (b.z === 'teils' && n <= 90) out.push({ e, b, t: 'b:' + b.id, sev: 'warn', prio: 1, txt: `Nur teilweise zufrieden mit ${b.a} am ${fmt(b.d)}` });
+        if (b.p && n <= 60) out.push({ e, b, t: 'p:' + b.id, sev: 'warn', prio: 1, txt: `${b.a} am ${fmt(b.d)}: ${b.p}` });
       });
       if (FCC.browsTodos) out.push(...FCC.browsTodos(e));
       const nurInteressentin = (e.w || []).length && !(e.b || []).length;
       if (nurInteressentin) return;
-      if (!e.fragebogen) out.push({ e, sev: 'warn', prio: 1, txt: 'Kontraindikations-Fragebogen fehlt' });
-      else if (days(e.fragebogen) > 365) out.push({ e, sev: 'warn', prio: 2, txt: `Fragebogen älter als ein Jahr (${fmt(e.fragebogen)}), bitte erneuern` });
+      if (!e.fragebogen) out.push({ e, t: 'fb', sev: 'warn', prio: 1, txt: 'Kontraindikations-Fragebogen fehlt' });
+      else if (days(e.fragebogen) > 365) out.push({ e, t: 'fb', sev: 'warn', prio: 2, txt: `Fragebogen älter als ein Jahr (${fmt(e.fragebogen)}), bitte erneuern` });
     });
-    return out.sort((a, b) => a.prio - b.prio);
+    // Punkte, für die schon eine offene Aufgabe existiert, nicht doppelt zeigen
+    return out.filter(x => !(x.t && FCC.aufgabeVorhanden && FCC.aufgabeVorhanden(x.e.id, x.t))).sort((a, b) => a.prio - b.prio);
   }
 
   function render() {
@@ -102,8 +103,8 @@
         <div class="dcol">
         <div id="dashAufg"></div>
         <div class="panel card">
-          <div class="row between"><button class="htap" data-f="todo"><h2>Jetzt dran ›</h2></button><span class="label">${t.length} ${t.length === 1 ? 'Punkt' : 'Punkte'}</span></div>
-          ${t.length ? `<ul class="todo">${tShown.map(x => `<li><span class="sev ${x.sev}" aria-hidden="true"></span>${x.brows ? `<button class="who" data-brows="${esc(x.e.id)}|${esc(x.brows)}"><b>${esc(name(x.e))}</b><span class="cmeta">${esc(x.txt)}</span></button>` : person(x.e, esc(x.txt))}${wa(x.e)}<button class="iconbtn" data-task="${esc(x.e.id)}" data-tt="${esc(x.txt)}" title="Als Aufgabe merken" aria-label="Als Aufgabe merken"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></button>${x.b && x.b.id ? `<button class="btn ghost small" data-done="${esc(x.e.id)}|${esc(x.b.id)}" title="Als erledigt markieren">Erledigt</button>` : ''}</li>`).join('')}</ul>
+          <div class="row between"><div class="row" style="gap:6px"><button class="htap" data-f="todo"><h2>Jetzt dran ›</h2></button><button class="qhelp" data-hilfe="jetzt" aria-label="Hilfe zu Jetzt dran" title="Hilfe">?</button></div><span class="label">${t.length} ${t.length === 1 ? 'Punkt' : 'Punkte'}</span></div>
+          ${t.length ? `<ul class="todo">${tShown.map(x => `<li><span class="sev ${x.sev}" aria-hidden="true"></span>${x.brows ? `<button class="who" data-brows="${esc(x.e.id)}|${esc(x.brows)}"><b>${esc(name(x.e))}</b><span class="cmeta">${esc(x.txt)}</span></button>` : person(x.e, esc(x.txt))}${wa(x.e)}${x.t && !x.brows ? `<button class="btn ghost small" data-task="${esc(x.e.id)}" data-tk="${esc(x.t)}" data-tt="${esc(x.txt)}" title="Als Aufgabe mit Erinnerung merken">Merken</button>` : ''}${x.b && x.b.id ? `<button class="btn ghost small" data-done="${esc(x.e.id)}|${esc(x.b.id)}" title="Als erledigt markieren">Erledigt</button>` : ''}</li>`).join('')}</ul>
             ${t.length > 6 ? `<button class="btn ghost small" data-act="mehr" style="margin-top:8px">${showAll ? 'Weniger anzeigen' : `Alle ${t.length} anzeigen`}</button>` : ''}`
             : '<p class="cmeta" style="margin-top:10px">Alles erledigt. Hier erscheinen fällige Nachbehandlungen, Lash- und Brow-Lift-Erinnerungen, fehlende Fragebögen und neue Kontakte.</p>'}
         </div>
@@ -130,9 +131,12 @@
       </div>`;
 
     if (FCC.aufgabenKarte) FCC.aufgabenKarte(el.querySelector('#dashAufg'));
-    el.querySelectorAll('[data-task]').forEach(b => { b.onclick = () => { const e = Store.list(true).find(x => x.id === b.dataset.task); if (FCC.neueAufgabe) FCC.neueAufgabe(e ? { id: e.id } : null, b.dataset.tt); }; });
+    el.querySelectorAll('[data-task]').forEach(b => { b.onclick = () => { const e = Store.list(true).find(x => x.id === b.dataset.task); const nm = e ? name(e) : ''; const k = b.dataset.tk;
+        const titel = k.startsWith('b:') ? `Nachfassen bei ${nm}` : k.startsWith('p:') ? `Ergebnis nachfragen bei ${nm}` : k === 'pmu-nach' ? `PMU-Nachbehandlung mit ${nm} vereinbaren` : k === 'pmu-auff' ? `PMU-Auffrischung anbieten: ${nm}` : k === 'lash' ? `${nm} an Lash Lift erinnern` : k === 'brow' ? `${nm} an Brow Lift erinnern` : k === 'fb' ? `Fragebogen von ${nm} einholen` : `${nm}: ${b.dataset.tt}`;
+        if (FCC.neueAufgabe) FCC.neueAufgabe(e ? { id: e.id } : null, titel, k, b.dataset.tt); }; });
     el.querySelectorAll('[data-cust]').forEach(b => { b.onclick = () => FCC.openCustomer && FCC.openCustomer(b.dataset.cust); });
     el.querySelectorAll('[data-brows]').forEach(b => { b.onclick = () => { const [c, w] = b.dataset.brows.split('|'); FCC.openBrows && FCC.openBrows(c, w); }; });
+    el.querySelectorAll('[data-hilfe]').forEach(b => { b.onclick = () => FCC.hilfe && FCC.hilfe(b.dataset.hilfe); });
     const nb = el.querySelector('[data-act="neu"]'); if (nb) nb.onclick = () => FCC.newCustomer && FCC.newCustomer();
     const mb = el.querySelector('[data-act="mehr"]'); if (mb) mb.onclick = () => { showAll = !showAll; render(); };
 
@@ -192,6 +196,15 @@
     '.todo li .btn.small{flex-shrink:0}';
   document.head.append(st);
 
+  FCC.renderUebersicht = render;
+  // Aufgabe zu einer Rückmeldung abgehakt: Rückmeldung gilt als nachgefasst
+  FCC.aufgabeErledigt = async a => {
+    const m = /^[bp]:(.+)$/.exec(a.t || ''); if (!m || !a.k) return;
+    const e = Store.list(true).find(x => x.id === a.k); if (!e || e.nurKontakt) return;
+    const c = await Store.load(e);
+    const b = (c.behandlungen || []).find(x => x.id === m[1]);
+    if (b && !b.nachgefasst) { b.nachgefasst = new Date().toISOString().slice(0, 10); await Store.save(c); }
+  };
   FCC.register && FCC.register({
     id: 'uebersicht', titel: 'Übersicht', el: 'mod-uebersicht', order: 1, render,
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>'

@@ -72,7 +72,7 @@ Melde dich mit **dem Google-Konto** an, in dessen Drive die Akten liegen sollen.
   ```
 - **Dein alter Apps-Script-Ordner** bleibt unangetastet. Die Kartei darf aus Datenschutzgründen nur Dateien sehen, die sie selbst angelegt hat, und legt deshalb den neuen Ordner „Facecolorconcept Kartei“ an.
 - **Anmeldung:** Google hält die Anmeldung etwa eine Stunde. Danach öffnet sich beim nächsten Speichern kurz das Google-Fenster und schließt sich wieder.
-- **Zwei Geräte:** Wenn du auf dem Laptop eine Kundin angelegt hast und sie auf dem iPhone fehlt, oben auf **Liste neu laden** tippen.
+- **Zwei Geräte:** Wenn du auf dem Laptop eine Kundin angelegt hast und sie auf dem iPhone fehlt, oben rechts auf den **Pfeil im Kreis** (Aktualisieren) tippen.
 - **Datenschutz:** Allergien, Blutverdünner und Kontraindikationen sind Gesundheitsdaten. Mit Google Workspace bekommst du einen Vertrag zur Auftragsverarbeitung mit Google, mit einem privaten Gmail-Konto nicht. Lass das bitte vor dem echten Einsatz prüfen.
 
 ## Brows-Reihe „If I could do your Brows“
@@ -94,5 +94,7 @@ Die Aufgaben kommen aus Google Tasks. Sie stehen also auch in Gmail (rechte Seit
 - **+ Aufgabe** in der Übersicht oder in einer Akte. Optional mit Kundin, dann erscheint sie auch in deren Akte.
 - **Erinnerung:** keine, 1 Tag vorher um 9 Uhr, am Tag um 8 Uhr oder selbst wählen. Die Kartei legt dafür einen kurzen Termin im Google Kalender mit Mitteilung an. Damit die Mitteilung aufs iPhone kommt, muss dort die Google-Kalender-App installiert oder das Google-Konto im iPhone-Kalender eingerichtet sein.
 - **Abhaken** mit dem Kreis. Die Erinnerung verschwindet dann aus dem Kalender.
-- **Aus „Jetzt dran“** wird mit dem Häkchen-Knopf eine Aufgabe.
+- **Aus „Jetzt dran“** wird mit **Merken** eine Aufgabe. Solange sie offen ist, steht der Punkt nicht doppelt da.
+- **Folgetermine:** In der Akte unter Aufgaben „Folgetermin merken“ aufklappen. Nach dem Speichern eines Bogens schlägt die Kartei den passenden Folgetermin vor.
+- **Hilfe:** Der Reiter „Hilfe“ erklärt jeden Bereich Schritt für Schritt. Das „?“ an den Karten springt direkt zum passenden Thema.
 - In Google landen nur Titel, Datum und Name, keine Gesundheitsdaten.

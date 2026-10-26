@@ -310,10 +310,11 @@ ${INH}`;
     c.brows = c.brows || [];
     const list = [...c.brows].sort((a, b) => (b.folge || 0) - (a.folge || 0));
     el.innerHTML = `<div class="panel card">
-      <div class="row between"><h2>If I could do your Brows</h2><button class="btn small" id="browsNew">+ Neue Folge</button></div>
+      <div class="row between"><div class="row" style="gap:6px"><h2>If I could do your Brows</h2><button class="qhelp" data-hilfe="brows" aria-label="Hilfe zur Brows-Reihe" title="Hilfe">?</button></div><button class="btn small" id="browsNew">+ Neue Folge</button></div>
       ${list.length ? `<ul class="docs">${list.map(b => { const s = status(kurz(b)); return `<li><span><b style="font-weight:500">Folge ${esc(b.folge)}</b> · <span class="bst ${s.sev}">${esc(s.l)}</span><br><span class="cmeta">angelegt ${fmt(b.erstellt)}</span></span><button class="btn ghost small" data-brows="${esc(b.id)}">Öffnen</button></li>`; }).join('')}</ul>`
         : '<p class="cmeta" style="margin-top:10px">Virtuelle Vorschau für Instagram: Einwilligung, Foto, Analyse, Vorschlag und Vorschau eintragen. Daraus entstehen mit einem Klick das PDF für die Kundin und die sechs Bilder für Instagram.</p>'}
     </div>`;
+    el.querySelectorAll('[data-hilfe]').forEach(b => b.onclick = () => FCC.hilfe && FCC.hilfe(b.dataset.hilfe));
     el.querySelector('#browsNew').onclick = () => {
       const b = { id: uid(), folge: naechsteFolge(), erstellt: today(), einwilligung: {}, punkte: ['', '', ''], vorschlag: [], weil: '', linien: [], marken: [] };
       openEditor(c, b, true, u);

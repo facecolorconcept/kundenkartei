@@ -191,12 +191,15 @@ button.kpi:hover::after{color:var(--rose-ink)}
 .dcol{display:flex;flex-direction:column;gap:16px;min-width:0}
 @media(max-width:820px){.dgrid{grid-template-columns:minmax(0,1fr)}}
 .todo{list-style:none;margin:8px 0 0;padding:0}
-.todo li{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line)}
+.todo li{display:flex;align-items:center;gap:8px 12px;padding:11px 0;border-top:1px solid var(--line);flex-wrap:wrap;position:relative}
+.todo li .who{flex:1 1 210px}
+.todo li>.sev{position:absolute;left:0;top:11px;bottom:11px}
+.todo li:has(>.sev){padding-left:18px}
 .todo li:first-child{border-top:0}
 .todo .who{flex:1;min-width:0;text-align:left;border:0;background:none;padding:0;color:var(--ink);font-size:15px}
 .todo .who b{font-weight:500;display:block}
 .todo .who:hover b{color:var(--rose-ink)}
-.sev{width:6px;align-self:stretch;border-radius:3px;background:var(--line);flex-shrink:0}
+.sev{width:6px;border-radius:3px;background:var(--line);flex-shrink:0}
 .sev.warn{background:var(--warn)} .sev.due{background:var(--rose)} .sev.info{background:var(--ok)}
 .bars{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;align-items:end;height:150px;margin-top:14px}
 .bar{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;height:100%;min-width:0}
@@ -268,6 +271,7 @@ button.kpi:hover::after{color:var(--rose-ink)}
   <section id="mod-uebersicht" class="wrap dash" hidden></section>
 
   <section id="mod-brows" class="wrap dash" hidden></section>
+  <section id="mod-hilfe" class="wrap dash" hidden></section>
 
   <main id="main" class="wrap" hidden>
     <section class="list-col">
@@ -288,11 +292,12 @@ button.kpi:hover::after{color:var(--rose-ink)}
 <script src="config.js?v=9"></script>
 <script src="store.js?v=13"></script>
 <script src="shell.js?v=9"></script>
-<script src="tasks.js?v=1"></script>
-<script src="brows.js?v=1"></script>
-<script src="app.js?v=12"></script>
+<script src="tasks.js?v=2"></script>
+<script src="brows.js?v=2"></script>
+<script src="hilfe.js?v=1"></script>
+<script src="app.js?v=13"></script>
 <!-- Weitere Bereiche: einfach als eigene Datei hier ergänzen -->
-<script src="dashboard.js?v=13"></script>
+<script src="dashboard.js?v=14"></script>
 <script src="search.js?v=10"></script>
 <script src="table.js?v=9"></script>
 </body>

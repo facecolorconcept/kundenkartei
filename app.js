@@ -93,13 +93,6 @@
   };
   const ARTS = Object.keys(FORMS);
 
-  const REMINDERS = [
-    { l: 'Verheilungscheck in 7 Tagen', t: 'Verheilungscheck', days: 7 },
-    { l: 'PMU-Nachbehandlung in 6 Wochen', t: 'PMU-Nachbehandlung', days: 42 },
-    { l: 'Lash Lift wieder in 6 Wochen', t: 'Lash Lift erinnern', days: 42 },
-    { l: 'PMU-Auffrischung in 12 Monaten', t: 'PMU-Auffrischung anbieten', days: 365 }
-  ];
-
   // ---------- Beispieldaten ----------
   window.FCC_DEMO = [
     { id: 'demo1', vorname: 'Laura', nachname: 'Beispiel', telefon: '0170 1234567', email: 'laura@beispiel.de', allergien: 'keine bekannt', blutverduenner: 'nein', fragebogen: '2026-09-14', notiz: '', dokumente: [],
@@ -137,6 +130,7 @@
   const waNumber = t => { let d = String(t || '').replace(/[^0-9+]/g, ''); if (d.startsWith('+')) return d.slice(1); if (d.startsWith('00')) return d.slice(2); if (d.startsWith('0')) return '49' + d.slice(1); return d; };
 
   function toast(m, long) {
+    $('#toastRoot').innerHTML = ''; // immer nur eine Meldung, damit nichts verdeckt wird
     const t = document.createElement('div');
     t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = m;
     $('#toastRoot').append(t);
@@ -158,6 +152,7 @@
   let listFilter = null; // { label, test(eintrag) } – gesetzt z. B. per Klick in der Übersicht
   let sortMode = 'name';
   let showArchiv = false; // Archiv-Ansicht der Kundenliste
+  let folgeHinweis = null; // { cid, f } – Vorschlag nach dem Speichern eines Bogens
 
   // ---------- Start ----------
   function setStatus() {
@@ -291,6 +286,7 @@
         <span class="label">Neue Behandlung</span>
         <div class="chips">${ARTS.map(a => `<button class="chip add" data-new="${esc(a)}">+ ${esc(a)}</button>`).join('')}</div>
       </div>
+      ${folgeHinweis && folgeHinweis.cid === c.id ? `<div class="banner" id="folgeHinweis" style="margin-top:0"><span><b>Folgetermin merken?</b> ${esc(folgeHinweis.f.text)}, also am ${fmt(folgeHinweis.f.due)}. Mit Erinnerung 1 Tag vorher.</span><span class="row"><button class="btn small" id="fhJa">Als Aufgabe anlegen</button><button class="btn ghost small" id="fhNein">Nein danke</button></span></div>` : ''}
       ${lastTimeCard(c)}
       <div id="aufgSlot"></div>
       <div class="panel card">
@@ -317,17 +313,10 @@
             <button class="btn ghost small" data-open="${esc(b.id)}">Ansehen</button></li>`;
         }).join('')}</ul>` : '<p class="empty">Noch keine Behandlung. Wähle oben die Behandlung aus.</p>'}
       </div>
-      <div class="grid-2col">
-        <div class="panel card">
+      <div class="panel card">
           <div class="row between"><h2>Dokumente</h2><button class="btn ghost small" id="docBtn">+ Dokument</button></div>
           <input type="file" id="docInput" hidden>
           ${c.dokumente.length ? `<ul class="docs">${c.dokumente.map(d => `<li><span>${esc(d.name)}<br><span class="cmeta">${fmt(d.datum)}</span></span>${d.link ? `<a class="mini" href="${esc(d.link)}" target="_blank" rel="noopener">In Drive öffnen</a>` : ''}</li>`).join('')}</ul>` : '<p class="cmeta">Hier landen unterschriebene Fragebögen, Einwilligungen und Rechnungen.</p>'}
-        </div>
-        <div class="panel card">
-          <h2>Erinnerung im Kalender</h2>
-          <div class="field" style="margin-top:12px"><label for="remSel">Was und wann</label>
-            <select id="remSel">${REMINDERS.map((r, i) => `<option value="${i}">${esc(r.l)} (${fmt(addDays(r.days))})</option>`).join('')}</select></div>
-          <button class="btn small" id="remBtn" style="margin-top:12px">In Google Kalender eintragen</button>
         </div>
       </div>`;
     $('#backBtn').onclick = back;
@@ -397,14 +386,12 @@
         render(); toast('Dokument abgelegt');
       }).catch(() => {});
     };
-    $('#remBtn').onclick = e => {
-      const r = REMINDERS[Number($('#remSel').value)];
-      const date = addDays(r.days);
-      busy(e.currentTarget, 'Trägt ein …', async () => {
-        await Store.remind(`${r.t}: ${c.vorname} ${c.nachname}`, date, `${C.STUDIO || 'Facecolorconcept'} Kundenkartei`);
-        toast(Store.mode === 'demo' ? 'Im Beispielmodus wird nichts eingetragen.' : 'Eingetragen für den ' + fmt(date));
-      }).catch(() => {});
-    };
+    // Vorschlag für den Folgetermin nach dem Speichern eines Behandlungsbogens
+    const fh = $('#folgeHinweis');
+    if (fh) {
+      $('#fhJa').onclick = () => { const f = folgeHinweis.f; folgeHinweis = null; fh.remove(); FCC.folgeAnlegen(c, f); };
+      $('#fhNein').onclick = () => { folgeHinweis = null; fh.remove(); };
+    }
   }
   function back() { activeId = null; active = null; render(); }
 
@@ -601,6 +588,10 @@
           if ((d.check.includes('Fragebogen unterschrieben') || d.check.includes('Einwilligung unterschrieben')) && !c.fragebogen) c.fragebogen = d.datum;
           try { await Store.save(c); }
           catch (err) { Object.assign(c, before); throw err; }
+          if (isNew && FCC.folgeFuer) {
+            const f = FCC.folgeFuer(d);
+            folgeHinweis = f && !(FCC.aufgabeVorhanden && FCC.aufgabeVorhanden(c.id, f.t)) ? { cid: c.id, f } : null;
+          }
           close(); render(); toast('Bogen gespeichert');
         }).catch(() => {});
       };

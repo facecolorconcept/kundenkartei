@@ -99,11 +99,14 @@
       </div>
 
       <div class="dgrid">
+        <div class="dcol">
+        <div id="dashAufg"></div>
         <div class="panel card">
           <div class="row between"><button class="htap" data-f="todo"><h2>Jetzt dran ›</h2></button><span class="label">${t.length} ${t.length === 1 ? 'Punkt' : 'Punkte'}</span></div>
-          ${t.length ? `<ul class="todo">${tShown.map(x => `<li><span class="sev ${x.sev}" aria-hidden="true"></span>${x.brows ? `<button class="who" data-brows="${esc(x.e.id)}|${esc(x.brows)}"><b>${esc(name(x.e))}</b><span class="cmeta">${esc(x.txt)}</span></button>` : person(x.e, esc(x.txt))}${wa(x.e)}${x.b && x.b.id ? `<button class="btn ghost small" data-done="${esc(x.e.id)}|${esc(x.b.id)}" title="Als erledigt markieren">Erledigt</button>` : ''}</li>`).join('')}</ul>
+          ${t.length ? `<ul class="todo">${tShown.map(x => `<li><span class="sev ${x.sev}" aria-hidden="true"></span>${x.brows ? `<button class="who" data-brows="${esc(x.e.id)}|${esc(x.brows)}"><b>${esc(name(x.e))}</b><span class="cmeta">${esc(x.txt)}</span></button>` : person(x.e, esc(x.txt))}${wa(x.e)}<button class="iconbtn" data-task="${esc(x.e.id)}" data-tt="${esc(x.txt)}" title="Als Aufgabe merken" aria-label="Als Aufgabe merken"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></button>${x.b && x.b.id ? `<button class="btn ghost small" data-done="${esc(x.e.id)}|${esc(x.b.id)}" title="Als erledigt markieren">Erledigt</button>` : ''}</li>`).join('')}</ul>
             ${t.length > 6 ? `<button class="btn ghost small" data-act="mehr" style="margin-top:8px">${showAll ? 'Weniger anzeigen' : `Alle ${t.length} anzeigen`}</button>` : ''}`
             : '<p class="cmeta" style="margin-top:10px">Alles erledigt. Hier erscheinen fällige Nachbehandlungen, Lash- und Brow-Lift-Erinnerungen, fehlende Fragebögen und neue Kontakte.</p>'}
+        </div>
         </div>
         <div class="dcol">
           <div class="panel card">
@@ -126,6 +129,8 @@
         </div>
       </div>`;
 
+    if (FCC.aufgabenKarte) FCC.aufgabenKarte(el.querySelector('#dashAufg'));
+    el.querySelectorAll('[data-task]').forEach(b => { b.onclick = () => { const e = Store.list(true).find(x => x.id === b.dataset.task); if (FCC.neueAufgabe) FCC.neueAufgabe(e ? { id: e.id } : null, b.dataset.tt); }; });
     el.querySelectorAll('[data-cust]').forEach(b => { b.onclick = () => FCC.openCustomer && FCC.openCustomer(b.dataset.cust); });
     el.querySelectorAll('[data-brows]').forEach(b => { b.onclick = () => { const [c, w] = b.dataset.brows.split('|'); FCC.openBrows && FCC.openBrows(c, w); }; });
     const nb = el.querySelector('[data-act="neu"]'); if (nb) nb.onclick = () => FCC.newCustomer && FCC.newCustomer();

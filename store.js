@@ -3,7 +3,7 @@
   const C = window.FCC_CONFIG || {};
   // Mit fester Ordner-ID braucht die Kartei Zugriff auf Drive, weil sie den Ordner nicht selbst angelegt hat.
   const SCOPES = (C.ROOT_FOLDER_ID ? 'https://www.googleapis.com/auth/drive' : 'https://www.googleapis.com/auth/drive.file') +
-    ' https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/contacts';
+    ' https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/contacts https://www.googleapis.com/auth/tasks';
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   const PEOPLE = 'https://people.googleapis.com/v1';
   const norm = s => String(s || '').toLowerCase().trim();
@@ -14,6 +14,7 @@
   const API = 'https://www.googleapis.com/drive/v3';
   const UP = 'https://www.googleapis.com/upload/drive/v3';
   const CAL = 'https://www.googleapis.com/calendar/v3';
+  const TASKS = 'https://tasks.googleapis.com/tasks/v1';
   const FOLDER = 'application/vnd.google-apps.folder';
   const INDEX = '_verzeichnis.json';
 
@@ -107,12 +108,12 @@
         this.client.callback = r => {
           if (r.error) return rej(new Error('Anmeldung nicht abgeschlossen.'));
           if (!google.accounts.oauth2.hasGrantedAllScopes(r, ...SCOPES.split(' '))) {
-            return rej(new Error('Bitte bei der Anmeldung alle Häkchen setzen (Drive, Kalender und Kontakte). Tippe dann noch einmal auf „Mit Google anmelden“.'));
+            return rej(new Error('Bitte bei der Anmeldung alle Häkchen setzen (Drive, Kalender, Kontakte und Aufgaben). Tippe dann noch einmal auf „Mit Google anmelden“.'));
           }
           this.token = r.access_token;
           this.expiry = Date.now() + (Number(r.expires_in || 3600) - 120) * 1000;
           // Anmeldung merken, damit die Kartei beim nächsten Öffnen nicht erneut fragt (gilt etwa 1 Stunde)
-          try { localStorage.setItem('fcc_tok', JSON.stringify({ t: this.token, e: this.expiry })); } catch (e) {}
+          try { localStorage.setItem('fcc_tok', JSON.stringify({ t: this.token, e: this.expiry, sc: SCOPES })); } catch (e) {}
           res();
         };
         this.client.error_callback = e => rej(new Error(
@@ -133,7 +134,8 @@
       if (this.token && Date.now() < this.expiry) return true;
       try {
         const s = JSON.parse(localStorage.getItem('fcc_tok') || 'null');
-        if (s && s.t && Date.now() < s.e) { this.token = s.t; this.expiry = s.e; return true; }
+        // Neue Berechtigung dazugekommen (z. B. Aufgaben): einmal neu anmelden
+        if (s && s.t && Date.now() < s.e && s.sc === SCOPES) { this.token = s.t; this.expiry = s.e; return true; }
       } catch (e) {}
       return false;
     },
@@ -358,6 +360,48 @@
         { etag: p.etag, names, phoneNumbers: phones, emailAddresses: mails });
     },
 
+    // ---------- Google Tasks (Aufgaben) ----------
+    // Liest alle offenen Aufgaben aus allen Listen; neue Aufgaben landen in „Meine Aufgaben“
+    async aufgaben() {
+      const lists = (await this.json(`${TASKS}/users/@me/lists?maxResults=100`)).items || [];
+      const out = [];
+      for (const l of lists) {
+        let page = '';
+        do {
+          const r = await this.json(`${TASKS}/lists/${encodeURIComponent(l.id)}/tasks?showCompleted=false&showHidden=false&maxResults=100${page ? '&pageToken=' + encodeURIComponent(page) : ''}`);
+          (r.items || []).forEach(t => { if (t.title || t.notes) out.push({ ...t, liste: l.id, listeName: l.title }); });
+          page = r.nextPageToken || '';
+        } while (page);
+      }
+      return out;
+    },
+    async aufgabeNeu(t) {
+      return { ...(await this.json(`${TASKS}/lists/@default/tasks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(t) })), liste: '@default' };
+    },
+    async aufgabeAendern(liste, id, felder) {
+      return this.json(`${TASKS}/lists/${encodeURIComponent(liste)}/tasks/${encodeURIComponent(id)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(felder) });
+    },
+    async aufgabeLoeschen(liste, id) {
+      await this.api(`${TASKS}/lists/${encodeURIComponent(liste)}/tasks/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    },
+    // Erinnerung = kurzer Kalendertermin mit Mitteilung genau zur gewünschten Zeit
+    async erinnerung(titel, wann, text) {
+      const [d, h] = wann.split('T');
+      const end = new Date(wann + ':00'); end.setMinutes(end.getMinutes() + 15);
+      const pad = n => String(n).padStart(2, '0');
+      const endS = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}T${pad(end.getHours())}:${pad(end.getMinutes())}:00`;
+      const r = await this.json(`${CAL}/calendars/primary/events`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ summary: titel, description: text, start: { dateTime: `${d}T${h}:00`, timeZone: 'Europe/Berlin' }, end: { dateTime: endS, timeZone: 'Europe/Berlin' },
+          reminders: { useDefault: false, overrides: [{ method: 'popup', minutes: 0 }] } })
+      });
+      return r.id;
+    },
+    async erinnerungWeg(id) {
+      try { await this.api(`${CAL}/calendars/primary/events/${encodeURIComponent(id)}`, { method: 'DELETE' }); }
+      catch (e) { if (!/\((404|410)\)/.test(e.message)) throw e; }
+    },
+
     async remind(title, date, desc) {
       const end = new Date(date + 'T12:00');
       end.setDate(end.getDate() + 1);
@@ -396,6 +440,27 @@
     async photoUrl(p) { return p.data || ''; },
     async addDoc(c, file) { return { fileId: 'demo_' + Date.now(), name: file.name, link: '', datum: today() }; },
     async trash() {},
+    // Aufgaben im Beispielmodus: nur im Browser
+    tk: 'fcc_demo_tasks',
+    _t() { try { return JSON.parse(localStorage.getItem(this.tk)) || null; } catch (e) { return null; } },
+    _ts(l) { try { localStorage.setItem(this.tk, JSON.stringify(l)); } catch (e) {} },
+    async aufgaben() {
+      let l = this._t();
+      if (!l) {
+        const d = n => { const x = new Date(); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10) + 'T00:00:00.000Z'; };
+        l = [{ id: 't1', title: 'Pigmente nachbestellen', due: d(1), notes: '', status: 'needsAction' },
+          { id: 't2', title: 'Rückruf wegen Nachbehandlung', due: d(0), notes: '— Kartei: k=demo2', status: 'needsAction' },
+          { id: 't3', title: 'Steuerunterlagen sortieren', due: d(-2), notes: '', status: 'needsAction' },
+          { id: 't4', title: 'Neue Lash-Lift-Pads testen', notes: '', status: 'needsAction' }];
+        this._ts(l);
+      }
+      return l.filter(t => t.status !== 'completed').map(t => ({ ...t, liste: '@default', listeName: 'Meine Aufgaben' }));
+    },
+    async aufgabeNeu(t) { const l = this._t() || []; const n = { ...t, id: 't' + Date.now(), status: 'needsAction' }; l.push(n); this._ts(l); return { ...n, liste: '@default' }; },
+    async aufgabeAendern(liste, id, f) { const l = this._t() || []; const t = l.find(x => x.id === id); if (t) Object.assign(t, f); this._ts(l); return t; },
+    async aufgabeLoeschen(liste, id) { this._ts((this._t() || []).filter(x => x.id !== id)); },
+    async erinnerung() { return 'demo_' + Date.now(); },
+    async erinnerungWeg() {},
     async remind() {}
   };
 

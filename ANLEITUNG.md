@@ -86,3 +86,13 @@ Melde dich mit **dem Google-Konto** an, in dessen Drive die Akten liegen sollen.
 7. Nach ihrem Ja das Freigabe-Datum eintragen. Erst dann gibt es die **6 Bilder für Instagram** und die Bildunterschrift.
 
 Zieht eine Kundin ihr Okay zurück: „Einwilligung zurückgezogen“ tippen, Beitrag auf Instagram löschen, dann „Beitrag gelöscht, Fotos entfernen“. Die Fotos kommen in den Drive-Papierkorb, der Vermerk über Einwilligung und Rückzug bleibt.
+
+## Aufgaben
+
+Die Aufgaben kommen aus Google Tasks. Sie stehen also auch in Gmail (rechte Seitenleiste), im Google Kalender und in der Tasks-App auf dem iPhone.
+
+- **+ Aufgabe** in der Übersicht oder in einer Akte. Optional mit Kundin, dann erscheint sie auch in deren Akte.
+- **Erinnerung:** keine, 1 Tag vorher um 9 Uhr, am Tag um 8 Uhr oder selbst wählen. Die Kartei legt dafür einen kurzen Termin im Google Kalender mit Mitteilung an. Damit die Mitteilung aufs iPhone kommt, muss dort die Google-Kalender-App installiert oder das Google-Konto im iPhone-Kalender eingerichtet sein.
+- **Abhaken** mit dem Kreis. Die Erinnerung verschwindet dann aus dem Kalender.
+- **Aus „Jetzt dran“** wird mit dem Häkchen-Knopf eine Aufgabe.
+- In Google landen nur Titel, Datum und Name, keine Gesundheitsdaten.

@@ -197,7 +197,7 @@
     $('#loginBtn').onclick = e => busy(e.currentTarget, 'Verbinde …', async () => { await action(); $('#login').hidden = true; }).catch(() => {});
   }
 
-  $('#reloadBtn').onclick = e => busy(e.currentTarget, 'Lädt …', async () => { await Store.rebuildIndex(); render(); toast(Store.kontaktFehler ? 'Akten aktualisiert. Google Kontakte konnten nicht geladen werden: ' + Store.kontaktFehler : 'Aktualisiert, auch die Google-Kontakte', !!Store.kontaktFehler); }).catch(() => {});
+  $('#reloadBtn').onclick = e => busy(e.currentTarget, 'Lädt …', async () => { await Store.rebuildIndex(); if (FCC.aufgabenNeuLaden) FCC.aufgabenNeuLaden(); render(); toast(Store.kontaktFehler ? 'Akten aktualisiert. Google Kontakte konnten nicht geladen werden: ' + Store.kontaktFehler : 'Aktualisiert, auch die Google-Kontakte', !!Store.kontaktFehler); }).catch(() => {});
   $('#logoutBtn').onclick = () => { Store.signOut(); active = null; activeId = null; boot(); };
 
   // ---------- Liste ----------
@@ -292,6 +292,7 @@
         <div class="chips">${ARTS.map(a => `<button class="chip add" data-new="${esc(a)}">+ ${esc(a)}</button>`).join('')}</div>
       </div>
       ${lastTimeCard(c)}
+      <div id="aufgSlot"></div>
       <div class="panel card">
         <div class="row between"><h2>Notizen</h2><span class="label">${c.notizen.length} ${c.notizen.length === 1 ? 'Notiz' : 'Notizen'}</span></div>
         <div class="field" style="margin-top:10px"><label for="noteText">Neue Notiz</label><textarea id="noteText" rows="2" placeholder="z. B. Termin verschoben, Wunsch für nächstes Mal, Rückmeldung zur Heilung"></textarea></div>
@@ -330,6 +331,7 @@
         </div>
       </div>`;
     $('#backBtn').onclick = back;
+    if (FCC.aufgabenKarte) FCC.aufgabenKarte($('#aufgSlot'), { kunde: c });
     if (FCC.browsCard) FCC.browsCard(c, $('#browsSlot'), { toast, busy, rerender: render });
     $('#editCust').onclick = () => openCustomerSheet(c);
     // Archivieren statt löschen: nichts wird entfernt, die Kundin wird nur ausgeblendet
@@ -625,6 +627,7 @@
   window.FCC = window.FCC || {};
   FCC.openCustomer = id => { FCC.show('kartei'); return openCustomer(id); };
   FCC.showPhoto = showPhoto;
+  FCC.toast = toast;
   FCC.newCustomer = () => { FCC.show('kartei'); openCustomerSheet(null); };
   // Liste mit Filter öffnen, z. B. FCC.openList('Jetzt dran', e => …, 'zuletzt')
   FCC.openList = (label, test, sort) => {

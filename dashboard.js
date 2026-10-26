@@ -40,6 +40,9 @@
         else if (b.z === 'teils' && n <= 90) out.push({ e, b, sev: 'warn', prio: 1, txt: `Nur teilweise zufrieden mit ${b.a} am ${fmt(b.d)}` });
         if (b.p && n <= 60) out.push({ e, b, sev: 'warn', prio: 1, txt: `${b.a} am ${fmt(b.d)}: ${b.p}` });
       });
+      if (FCC.browsTodos) out.push(...FCC.browsTodos(e));
+      const nurInteressentin = (e.w || []).length && !(e.b || []).length;
+      if (nurInteressentin) return;
       if (!e.fragebogen) out.push({ e, sev: 'warn', prio: 1, txt: 'Kontraindikations-Fragebogen fehlt' });
       else if (days(e.fragebogen) > 365) out.push({ e, sev: 'warn', prio: 2, txt: `Fragebogen älter als ein Jahr (${fmt(e.fragebogen)}), bitte erneuern` });
     });
@@ -98,7 +101,7 @@
       <div class="dgrid">
         <div class="panel card">
           <div class="row between"><button class="htap" data-f="todo"><h2>Jetzt dran ›</h2></button><span class="label">${t.length} ${t.length === 1 ? 'Punkt' : 'Punkte'}</span></div>
-          ${t.length ? `<ul class="todo">${tShown.map(x => `<li><span class="sev ${x.sev}" aria-hidden="true"></span>${person(x.e, esc(x.txt))}${wa(x.e)}${x.b && x.b.id ? `<button class="btn ghost small" data-done="${esc(x.e.id)}|${esc(x.b.id)}" title="Als erledigt markieren">Erledigt</button>` : ''}</li>`).join('')}</ul>
+          ${t.length ? `<ul class="todo">${tShown.map(x => `<li><span class="sev ${x.sev}" aria-hidden="true"></span>${x.brows ? `<button class="who" data-brows="${esc(x.e.id)}|${esc(x.brows)}"><b>${esc(name(x.e))}</b><span class="cmeta">${esc(x.txt)}</span></button>` : person(x.e, esc(x.txt))}${wa(x.e)}${x.b && x.b.id ? `<button class="btn ghost small" data-done="${esc(x.e.id)}|${esc(x.b.id)}" title="Als erledigt markieren">Erledigt</button>` : ''}</li>`).join('')}</ul>
             ${t.length > 6 ? `<button class="btn ghost small" data-act="mehr" style="margin-top:8px">${showAll ? 'Weniger anzeigen' : `Alle ${t.length} anzeigen`}</button>` : ''}`
             : '<p class="cmeta" style="margin-top:10px">Alles erledigt. Hier erscheinen fällige Nachbehandlungen, Lash- und Brow-Lift-Erinnerungen, fehlende Fragebögen und neue Kontakte.</p>'}
         </div>
@@ -124,6 +127,7 @@
       </div>`;
 
     el.querySelectorAll('[data-cust]').forEach(b => { b.onclick = () => FCC.openCustomer && FCC.openCustomer(b.dataset.cust); });
+    el.querySelectorAll('[data-brows]').forEach(b => { b.onclick = () => { const [c, w] = b.dataset.brows.split('|'); FCC.openBrows && FCC.openBrows(c, w); }; });
     const nb = el.querySelector('[data-act="neu"]'); if (nb) nb.onclick = () => FCC.newCustomer && FCC.newCustomer();
     const mb = el.querySelector('[data-act="mehr"]'); if (mb) mb.onclick = () => { showAll = !showAll; render(); };
 

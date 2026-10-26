@@ -74,3 +74,15 @@ Melde dich mit **dem Google-Konto** an, in dessen Drive die Akten liegen sollen.
 - **Anmeldung:** Google hält die Anmeldung etwa eine Stunde. Danach öffnet sich beim nächsten Speichern kurz das Google-Fenster und schließt sich wieder.
 - **Zwei Geräte:** Wenn du auf dem Laptop eine Kundin angelegt hast und sie auf dem iPhone fehlt, oben auf **Liste neu laden** tippen.
 - **Datenschutz:** Allergien, Blutverdünner und Kontraindikationen sind Gesundheitsdaten. Mit Google Workspace bekommst du einen Vertrag zur Auftragsverarbeitung mit Google, mit einem privaten Gmail-Konto nicht. Lass das bitte vor dem echten Einsatz prüfen.
+
+## Brows-Reihe „If I could do your Brows“
+
+1. Interessentin anlegen (Name reicht), in ihrer Akte **+ Neue Folge** tippen.
+2. **Einwilligung:** „Anfrage kopieren“ und per DM schicken. Nach dem Ja: Datum eintragen, „volljährig“ antippen, Screenshot hochladen.
+3. **Foto und Analyse:** Foto hochladen, mit dem Finger in den Kreis schieben, mit zwei Fingern zoomen. „Linien zeichnen“ und „Nummern setzen“, darunter die drei Punkte.
+4. **Vorschlag:** Behandlung antippen, Begründung schreiben.
+5. **Vorschau:** Simulation in Procreate machen und das fertige Bild hochladen.
+6. **PDF für die Kundin erzeugen:** landet in der Akte unter Dokumente und kann direkt per WhatsApp geschickt werden.
+7. Nach ihrem Ja das Freigabe-Datum eintragen. Erst dann gibt es die **6 Bilder für Instagram** und die Bildunterschrift.
+
+Zieht eine Kundin ihr Okay zurück: „Einwilligung zurückgezogen“ tippen, Beitrag auf Instagram löschen, dann „Beitrag gelöscht, Fotos entfernen“. Die Fotos kommen in den Drive-Papierkorb, der Vermerk über Einwilligung und Rückzug bleibt.

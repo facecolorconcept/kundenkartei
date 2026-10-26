@@ -17,7 +17,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Jost:wght@300;400;500;600;800&display=swap" rel="stylesheet">
 <style>
 /* Layout: Kartei-Liste links, Akte rechts; Behandlungsbogen als Blatt, das über die Akte gleitet. Auf dem iPhone: eine Spalte. */
 :root{
@@ -267,6 +267,8 @@ button.kpi:hover::after{color:var(--rose-ink)}
 
   <section id="mod-uebersicht" class="wrap dash" hidden></section>
 
+  <section id="mod-brows" class="wrap dash" hidden></section>
+
   <main id="main" class="wrap" hidden>
     <section class="list-col">
       <div class="row between">
@@ -284,12 +286,13 @@ button.kpi:hover::after{color:var(--rose-ink)}
 <div id="toastRoot"></div>
 
 <script src="config.js?v=9"></script>
-<script src="store.js?v=11"></script>
+<script src="store.js?v=12"></script>
 <script src="shell.js?v=9"></script>
-<script src="app.js?v=10"></script>
+<script src="app.js?v=11"></script>
 <!-- Weitere Bereiche: einfach als eigene Datei hier ergänzen -->
-<script src="dashboard.js?v=11"></script>
+<script src="dashboard.js?v=12"></script>
 <script src="search.js?v=10"></script>
 <script src="table.js?v=9"></script>
+<script src="brows.js?v=1"></script>
 </body>
 </html>

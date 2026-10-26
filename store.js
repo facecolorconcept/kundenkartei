@@ -59,6 +59,8 @@
       b: (c.behandlungen || []).map(x => ({ d: x.datum, a: x.art, t: (x.daten || {}).termin || '', id: x.id,
         z: (x.daten || {}).zufrieden || '', p: auffaellig(x.daten || {}), n: x.nachgefasst || '' })),
       // Suchtexte für die globale Suche (Telefon, Allergien, Notizen, Pigmente, Chargen …)
+      // Brows-Reihe: Kurzform für Übersicht und Reiter
+      w: (c.brows || []).map(x => window.FCC && FCC.browsKurz ? FCC.browsKurz(x) : { id: x.id, f: x.folge }),
       f: suchfelder(c), v: 3
     };
   }
@@ -289,6 +291,11 @@
       return { fileId: r.id, name: r.name, link: r.webViewLink || '', datum: today() };
     },
 
+    // In den Drive-Papierkorb legen (30 Tage wiederherstellbar), z. B. wenn eine Einwilligung zurückgezogen wurde
+    async trash(fileId) {
+      await this.api(`${API}/files/${fileId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trashed: true }) });
+    },
+
     // ---------- Google Kontakte ----------
     async kontaktGruppe() {
       if (this.gruppe) return this.gruppe;
@@ -388,6 +395,7 @@
     },
     async photoUrl(p) { return p.data || ''; },
     async addDoc(c, file) { return { fileId: 'demo_' + Date.now(), name: file.name, link: '', datum: today() }; },
+    async trash() {},
     async remind() {}
   };
 

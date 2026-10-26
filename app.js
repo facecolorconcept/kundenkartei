@@ -305,6 +305,7 @@
         ${allPhotos(c).length ? `<div class="thumbs" style="margin-top:12px">${allPhotos(c).map(p => `<div style="display:flex;flex-direction:column;gap:4px;min-width:0"><button type="button" class="thumb" data-fid="${esc(p.fileId)}" aria-label="Foto vergrößern"><img alt="" data-src="${esc(p.fileId)}"></button><span class="cmeta">${esc(p.typ)} · ${fmt(p.datum)}${p.art ? ' · ' + esc(p.art) : ''}</span></div>`).join('')}</div>`
           : '<p class="cmeta" style="margin-top:10px">Noch keine Fotos. Tippe auf „+ Vorher-Foto“ oder „+ Nachher-Foto“. Du kannst ein Foto machen oder aus deinen Bildern wählen.</p>'}
       </div>
+      <div id="browsSlot"></div>
       <div class="panel card">
         <div class="row between"><h2>Behandlungsverlauf</h2><span class="label">${sorted.length} ${sorted.length === 1 ? 'Eintrag' : 'Einträge'}</span></div>
         ${sorted.length ? `<ul class="timeline">${sorted.map(b => {
@@ -329,6 +330,7 @@
         </div>
       </div>`;
     $('#backBtn').onclick = back;
+    if (FCC.browsCard) FCC.browsCard(c, $('#browsSlot'), { toast, busy, rerender: render });
     $('#editCust').onclick = () => openCustomerSheet(c);
     // Archivieren statt löschen: nichts wird entfernt, die Kundin wird nur ausgeblendet
     $('#archBtn').onclick = e => {
@@ -621,7 +623,8 @@
 
   // Modul „Kundenkartei“ anmelden. Andere Bereiche (z. B. die Übersicht) können darüber Kundinnen öffnen.
   window.FCC = window.FCC || {};
-  FCC.openCustomer = id => { FCC.show('kartei'); openCustomer(id); };
+  FCC.openCustomer = id => { FCC.show('kartei'); return openCustomer(id); };
+  FCC.showPhoto = showPhoto;
   FCC.newCustomer = () => { FCC.show('kartei'); openCustomerSheet(null); };
   // Liste mit Filter öffnen, z. B. FCC.openList('Jetzt dran', e => …, 'zuletzt')
   FCC.openList = (label, test, sort) => {

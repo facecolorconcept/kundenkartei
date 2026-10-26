@@ -103,7 +103,8 @@
 
   // CSV für Excel/Numbers (Semikolon, mit BOM für Umlaute). Enthält nur die Spalten der Tabelle, keine Gesundheitsdaten.
   function exportCsv(list) {
-    const cell = v => { const s = String(v == null ? '' : v); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    // Zellen, die mit = + - @ beginnen, würde Excel als Formel ausführen: mit ' entschärfen
+    const cell = v => { let s = String(v == null ? '' : v); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
     const lines = [COLS.map(c => c.t).join(';')].concat(list.map(e => COLS.map(c => {
       const v = c.v(e);
       return cell((c.k === 'datum' || c.k === 'fb') && v ? fmt(v) : v);

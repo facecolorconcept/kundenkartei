@@ -127,6 +127,8 @@
   const clone = o => JSON.parse(JSON.stringify(o));
   const byDate = list => [...list].sort((a, b) => b.datum.localeCompare(a.datum));
   const lastOfArt = (c, art) => byDate(c.behandlungen.filter(b => b.art === art))[0];
+  // Links nur zu https-Adressen (z. B. Google Drive), nie javascript: oder andere Schemata
+  const safeUrl = u => /^https:\/\//i.test(String(u || '')) ? String(u) : '';
   const waNumber = t => { let d = String(t || '').replace(/[^0-9+]/g, ''); if (d.startsWith('+')) return d.slice(1); if (d.startsWith('00')) return d.slice(2); if (d.startsWith('0')) return '49' + d.slice(1); return d; };
 
   function toast(m, long) {
@@ -316,7 +318,8 @@
       <div class="panel card">
           <div class="row between"><h2>Dokumente</h2><button class="btn ghost small" id="docBtn">+ Dokument</button></div>
           <input type="file" id="docInput" hidden>
-          ${c.dokumente.length ? `<ul class="docs">${c.dokumente.map(d => `<li><span>${esc(d.name)}<br><span class="cmeta">${fmt(d.datum)}</span></span>${d.link ? `<a class="mini" href="${esc(d.link)}" target="_blank" rel="noopener">In Drive öffnen</a>` : ''}</li>`).join('')}</ul>` : '<p class="cmeta">Hier landen unterschriebene Fragebögen, Einwilligungen und Rechnungen.</p>'}
+          ${c.dokumente.length ? `<ul class="docs">${c.dokumente.map(d => `<li><span>${esc(d.name)}<br><span class="cmeta">${fmt(d.datum)}</span></span>${safeUrl(d.link) ? `<a class="mini" href="${esc(safeUrl(d.link))}" target="_blank" rel="noopener">In Drive öffnen</a>` : ''}</li>`).join('')}</ul>` : '<p class="cmeta">Hier landen unterschriebene Fragebögen, Einwilligungen und Rechnungen.</p>'}
+          <button class="btn ghost small" id="auskunftBtn" style="margin-top:12px" title="Alle gespeicherten Angaben zur Kundin als Datei, z. B. wenn sie nach DSGVO Auskunft verlangt">Datenauskunft für die Kundin</button>
         </div>
       </div>`;
     $('#backBtn').onclick = back;
@@ -375,6 +378,17 @@
       try { img.src = await Store.photoUrl(p); } catch (err) { img.alt = 'Foto lädt nicht'; }
     });
     $$('#detail .thumb').forEach(t => t.onclick = () => { const src = t.querySelector('img').src; if (src) showPhoto(src); });
+    // DSGVO Art. 15: alle gespeicherten Angaben zur Kundin als lesbare Datei
+    $('#auskunftBtn').onclick = () => {
+      const strip = o => JSON.parse(JSON.stringify(o, (k, v) => ['ordnerId', 'fotosId', 'dokuId', 'kontaktId', 'data', 'fileId', 'link', 'altdaten'].includes(k) ? undefined : v));
+      const daten = { erstellt_am: today(), studio: C.STUDIO || 'Facecolorconcept', adresse: C.ADRESSE || '', hinweis: 'Diese Datei enthält alle Angaben, die in der Kundenkartei zu dir gespeichert sind. Fotos und Dokumente sind namentlich aufgeführt und können als Kopie ausgehändigt werden.',
+        kundin: strip(c), fotos: allPhotos(c).map(p => `${p.typ || ''} ${p.datum || ''} ${p.art || ''}`.trim()), dokumente: (c.dokumente || []).map(d => d.name) };
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([JSON.stringify(daten, null, 2)], { type: 'application/json' }));
+      a.download = `Datenauskunft_${(c.nachname || '').replace(/[^\wäöüÄÖÜß-]/g, '')}_${today()}.json`;
+      document.body.append(a); a.click(); a.remove();
+      toast('Datei erstellt. Bitte nur direkt an die Kundin weitergeben.', true);
+    };
     $('#docBtn').onclick = () => $('#docInput').click();
     $('#docInput').onchange = e => {
       const file = e.target.files[0]; e.target.value = '';
@@ -409,7 +423,7 @@
 
   function openCustomerSheet(c) {
     const d = c || { vorname: '', nachname: '', telefon: '', email: '', allergien: '', blutverduenner: '', fragebogen: '', notiz: '' };
-    const close = sheetShell(c ? 'Daten ändern' : 'Neue Kundin', '', `<form class="wrap sec" id="cf" onsubmit="return false"><div class="grid2">
+    const close = sheetShell(c ? 'Daten ändern' : 'Neue Kundin', '', `<form class="wrap sec" id="cf"><div class="grid2">
       <div class="field"><label for="f-vn">Vorname *</label><input id="f-vn" autocomplete="off" value="${esc(d.vorname)}"></div>
       <div class="field"><label for="f-nn">Nachname *</label><input id="f-nn" autocomplete="off" value="${esc(d.nachname)}"></div>
       <div class="field"><label for="f-tel">Telefon</label><input id="f-tel" type="tel" value="${esc(d.telefon)}"></div>
@@ -446,6 +460,7 @@
 
   function openTreatmentSheet(c, art, existing) {
     const f = FORMS[art];
+    if (!f) { toast('Diese Behandlungsart kennt die Kartei nicht. Der Eintrag bleibt in Drive erhalten.', true); return; }
     const isNew = !existing;
     const prev = isNew ? lastOfArt(c, art) : null;
     const d = existing ? clone(existing) : emptyTreatment(c, art);

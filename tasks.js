@@ -147,7 +147,7 @@
     if (k0 && !kunden.includes(k0)) kunden.unshift(k0);
     $('#sheetRoot').innerHTML = `<div class="sheet-bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="Aufgabe">
       <div class="sheet-head"><div class="wrap"><div><span class="label">${neu ? 'Neue Aufgabe' : esc(d.listeName || 'Google Aufgaben')}</span><h2>${neu ? 'Aufgabe anlegen' : 'Aufgabe'}</h2></div><button class="btn ghost small" id="ax">Schließen</button></div></div>
-      <form class="wrap sec" onsubmit="return false"><div class="grid2">
+      <form class="wrap sec"><div class="grid2">
         <div class="field full"><label for="aT">Was ist zu tun? *</label><input id="aT" maxlength="200" value="${esc(d.titel)}" placeholder="z. B. Pigmente nachbestellen"></div>
         <div class="field"><label for="aD">Fällig am</label><input id="aD" type="date" value="${esc(d.due)}"></div>
         <div class="field"><label for="aK">Kundin (optional)</label><select id="aK"><option value="">keine</option>${kunden.map(e => `<option value="${esc(e.id)}" ${e.id === d.k ? 'selected' : ''}>${esc(e.nachname)}, ${esc(e.vorname)}</option>`).join('')}</select></div>

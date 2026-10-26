@@ -6,6 +6,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="robots" content="noindex, nofollow">
+<!-- Sicherheit: nur eigene Dateien und Google-Dienste erlaubt, keine fremden Skripte, keine Weitergabe der Adresse -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style; font-src https://fonts.gstatic.com; img-src 'self' blob: data:; connect-src https://www.googleapis.com https://people.googleapis.com https://tasks.googleapis.com https://oauth2.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
 <!-- iPhone: als App auf dem Home-Bildschirm -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -207,37 +210,7 @@ button.kpi:hover::after{color:var(--rose-ink)}
 .bar span{font-size:12px;color:var(--muted)}
 .bar em{font-style:normal;font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--ink)}
 </style>
-<script>
-/* Hell am Tag (7–19 Uhr), dunkel am Abend – oder fest eingestellt über den Knopf „Ansicht“ */
-(function () {
-  var mode = 'auto';
-  try { mode = localStorage.getItem('fcc_theme') || 'auto'; } catch (e) {}
-  var LABEL = { auto: 'Ansicht: automatisch (tagsüber hell, abends dunkel)', light: 'Ansicht: immer hell', dark: 'Ansicht: immer dunkel' };
-  var S = function (p) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>'; };
-  var ICON = {
-    auto: S('<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>'),
-    light: S('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
-    dark: S('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>')
-  };
-  function apply() {
-    var t = mode;
-    if (mode === 'auto') { var h = new Date().getHours(); t = (h >= 7 && h < 19) ? 'light' : 'dark'; }
-    document.documentElement.setAttribute('data-theme', t);
-    var b = document.getElementById('themeBtn'); if (b) { b.innerHTML = ICON[mode]; b.title = LABEL[mode]; b.setAttribute('aria-label', LABEL[mode]); }
-  }
-  apply();
-  setInterval(apply, 60000);
-  document.addEventListener('DOMContentLoaded', function () {
-    var b = document.getElementById('themeBtn'); if (!b) return;
-    b.onclick = function () {
-      mode = mode === 'auto' ? 'light' : mode === 'light' ? 'dark' : 'auto';
-      try { localStorage.setItem('fcc_theme', mode); } catch (e) {}
-      apply();
-    };
-    apply();
-  });
-})();
-</script>
+<script src="theme.js?v=1"></script>
 </head>
 <body>
 
@@ -293,12 +266,12 @@ button.kpi:hover::after{color:var(--rose-ink)}
 <script src="store.js?v=13"></script>
 <script src="shell.js?v=9"></script>
 <script src="tasks.js?v=2"></script>
-<script src="brows.js?v=2"></script>
+<script src="brows.js?v=3"></script>
 <script src="hilfe.js?v=1"></script>
-<script src="app.js?v=13"></script>
+<script src="app.js?v=14"></script>
 <!-- Weitere Bereiche: einfach als eigene Datei hier ergänzen -->
 <script src="dashboard.js?v=14"></script>
 <script src="search.js?v=10"></script>
-<script src="table.js?v=9"></script>
+<script src="table.js?v=10"></script>
 </body>
 </html>

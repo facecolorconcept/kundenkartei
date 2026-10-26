@@ -342,7 +342,7 @@ ${INH}`;
           <div class="row" style="margin-top:10px"><button type="button" class="btn ghost small" id="cpE">Anfrage kopieren</button><button type="button" class="btn ghost small" id="cpD">Danke-Text kopieren</button></div>
           <div class="grid2">
             <div class="field"><label for="eD">Ja erhalten am</label><input type="date" id="eD" value="${esc(e.datum || '')}"></div>
-            <div class="field"><span class="flabel">Screenshot vom Ja</span>${e.beleg ? `<a class="mini" style="margin:0" href="${esc(e.beleg.link || '#')}" target="_blank" rel="noopener">${esc(e.beleg.name)}</a> ` : ''}<button type="button" class="btn ghost small" id="eB">${e.beleg ? 'Ersetzen' : '+ Screenshot'}</button><input type="file" id="eBi" accept="image/*,application/pdf" hidden></div>
+            <div class="field"><span class="flabel">Screenshot vom Ja</span>${e.beleg ? `<a class="mini" style="margin:0" href="${esc(/^https:\/\//i.test(e.beleg.link || '') ? e.beleg.link : '#')}" target="_blank" rel="noopener">${esc(e.beleg.name)}</a> ` : ''}<button type="button" class="btn ghost small" id="eB">${e.beleg ? 'Ersetzen' : '+ Screenshot'}</button><input type="file" id="eBi" accept="image/*,application/pdf" hidden></div>
           </div>
           <div class="chips"><button type="button" class="chip ${e.volljaehrig ? 'on' : ''}" id="eV" aria-pressed="${!!e.volljaehrig}">${e.volljaehrig ? '✓ ' : ''}Kundin ist volljährig</button>
             <button type="button" class="chip ${e.markieren ? 'on' : ''}" id="eM" aria-pressed="${!!e.markieren}">${e.markieren ? '✓ ' : ''}möchte markiert werden</button></div>
@@ -391,7 +391,7 @@ ${INH}`;
           <div class="slides" id="thumbs" aria-label="Vorschau der Folien"></div>
           <div class="grid2">
             <div class="field"><label for="fNr">Folge Nr.</label><input id="fNr" inputmode="numeric" value="${esc(b.folge)}"></div>
-            <div class="field"><span class="flabel">PDF für die Kundin</span>${b.pdf ? `<span class="cmeta">erstellt ${fmt(b.pdf.datum)}${b.pdf.link ? ` · <a href="${esc(b.pdf.link)}" target="_blank" rel="noopener">in Drive</a>` : ''}</span>` : '<span class="cmeta">noch nicht erstellt</span>'}</div>
+            <div class="field"><span class="flabel">PDF für die Kundin</span>${b.pdf ? `<span class="cmeta">erstellt ${fmt(b.pdf.datum)}${/^https:\/\//i.test(b.pdf.link || '') ? ` · <a href="${esc(b.pdf.link)}" target="_blank" rel="noopener">in Drive</a>` : ''}</span>` : '<span class="cmeta">noch nicht erstellt</span>'}</div>
           </div>
           ${ok() ? '' : `<div class="banner"><span>${b.widerrufen ? 'Die Einwilligung wurde zurückgezogen. Es kann nichts mehr erzeugt werden.' : 'Bericht und Bilder gibt es erst mit Einwilligung (Datum und „volljährig“ in Schritt 1).'}</span></div>`}
           <div class="row" style="margin-top:12px">

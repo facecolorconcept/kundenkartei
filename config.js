@@ -11,5 +11,7 @@ window.FCC_CONFIG = {
   STUDIO: 'Facecolorconcept',
   // Name für die Begrüßung auf der Übersicht
   INHABERIN: 'Kati',
+  // Voller Name für Berichte und Nachweise (PDF)
+  INHABERIN_NAME: 'Katharina Perschka',
   ADRESSE: 'Elisabeth-Silbereisen-Weg 7, 74931 Lobbach-Lobenfeld'
 };

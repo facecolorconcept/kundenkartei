@@ -7,7 +7,7 @@ window.FCC_CONFIG = {
   ROOT_FOLDER_ID: '1fHZ4waloS9KDgKNYjTJK4CkQGg9g4azV',
   ROOT_FOLDER_NAME: 'Facecolorconcept Kartei',
   // Dieses Google-Konto wird bei der Anmeldung vorausgewählt.
-  LOGIN_HINT: 'facecolorconcept@gmail.com',
+  LOGIN_HINT: 'info@facecolorconcept.de',
   STUDIO: 'Facecolorconcept',
   // Name für die Begrüßung auf der Übersicht
   INHABERIN: 'Kati',

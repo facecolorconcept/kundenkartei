@@ -77,9 +77,9 @@
               <td><b>${esc(COLS[0].v(e) || '(ohne Namen)')}</b></td>
               <td>${esc(e.telefon) || '–'}</td>
               <td>${esc((e.letzte && e.letzte.art) || '–')}</td>
-              <td class="num">${fmt(e.letzte && e.letzte.datum)}</td>
+              <td class="num">${esc(fmt(e.letzte && e.letzte.datum))}</td>
               <td class="num">${(e.b || []).length}</td>
-              <td>${e.nurKontakt ? '–' : (e.fragebogen ? `<span class="pill ok">${fmt(e.fragebogen)}</span>` : '<span class="pill warn">fehlt</span>')}</td>
+              <td>${e.nurKontakt ? '–' : (e.fragebogen ? `<span class="pill ok">${esc(fmt(e.fragebogen))}</span>` : '<span class="pill warn">fehlt</span>')}</td>
               <td>${e.nurKontakt ? '<span class="tag">Kontakt</span>' : 'Akte'}</td>
             </tr>`).join('') : `<tr><td colspan="${COLS.length}" class="empty">Keine Kundin passt zu diesen Filtern.</td></tr>`}</tbody>
           </table>

@@ -163,7 +163,7 @@
       <div class="row between hello">
         <div><div class="row" style="gap:8px"><h1>Bericht</h1><button class="qhelp" data-hilfe="bericht" aria-label="Hilfe zum Bericht" title="Hilfe">?</button></div>
         <p>Kundinnen und Behandlungen auswerten, zum Beispiel als Nachweis für die Förderung.</p></div>
-        <button class="btn" id="b-pdf" ${D.rows.length ? '' : 'disabled'}>PDF erstellen</button>
+        <button class="btn" id="b-pdf" ${D.rows.length ? '' : 'disabled'}>PDF herunterladen</button>
       </div>
 
       <div class="panel card">
@@ -228,7 +228,8 @@
         <h2>PDF</h2>
         <p class="cmeta" style="margin-top:6px">Das PDF enthält Zeitraum, Kennzahlen, die Aufteilung nach Leistung und Monat, die Liste aller Behandlungen und eine Zeile für deine Unterschrift. Gesundheitsdaten, Telefonnummern und Fotos stehen nie darin. Filter aus dem Antippen gelten nur für die Liste hier, nicht für das PDF.</p>
         ${Store.mode === 'drive' ? `<label class="row" style="gap:8px;margin-top:10px"><input type="checkbox" id="b-drive" ${st.drive ? 'checked' : ''}> Kopie in Google Drive ablegen (Ordner Administration › Berichte)</label>` : ''}
-        <button class="btn" id="b-pdf2" style="margin-top:12px" ${D.rows.length ? '' : 'disabled'}>PDF erstellen</button>
+        <div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap"><button class="btn" id="b-pdf2" ${D.rows.length ? '' : 'disabled'}>PDF herunterladen</button>${navigator.canShare ? `<button class="btn ghost" id="b-share" ${D.rows.length ? '' : 'disabled'}>PDF teilen (Mail, WhatsApp …)</button>` : ''}</div>
+        <p class="cmeta" style="margin-top:8px">Heruntergeladen findest du das PDF auf dem iPhone in der App <b>Dateien › Downloads</b>, am Computer im Ordner <b>Downloads</b>.${Store.mode === 'drive' ? ' Mit Häkchen oben liegt zusätzlich eine Kopie in Google Drive.' : ''}</p>
       </div>`;
 
     // ---- Bedienung ----
@@ -263,7 +264,8 @@
     $$('[data-hilfe]').forEach(b => b.onclick = () => FCC.hilfe && FCC.hilfe(b.dataset.hilfe));
     const dr = el.querySelector('#b-drive'); if (dr) dr.onchange = () => { st.drive = dr.checked; merken(); };
     el.querySelector('#b-csv').onclick = () => csv(liste, cols, sicht);
-    el.querySelector('#b-pdf').onclick = el.querySelector('#b-pdf2').onclick = () => pdfErstellen(D, aw);
+    el.querySelector('#b-pdf').onclick = el.querySelector('#b-pdf2').onclick = () => pdfErstellen(D, aw, false);
+    const sh = el.querySelector('#b-share'); if (sh) sh.onclick = () => pdfErstellen(D, aw, true);
   }
 
   // ---------- CSV (nur die Spalten der Liste, mit Formelschutz) ----------
@@ -410,15 +412,15 @@
     return new Blob(teile, { type: 'application/pdf' });
   }
 
-  async function pdfErstellen(D, aw) {
+  async function pdfErstellen(D, aw, teilen) {
     const toast = (m, err) => FCC.toast ? FCC.toast(m, err) : null;
     let blob;
     try { blob = pdfBauen(D, aw); } catch (e) { toast('PDF konnte nicht erstellt werden: ' + e.message, true); return; }
     const name = `Nachweis_Kundinnen_${D.von}_bis_${D.bis}.pdf`;
     const file = new File([blob], name, { type: 'application/pdf' });
-    // Erst teilen bzw. herunterladen (das iPhone erlaubt Teilen nur direkt nach dem Tippen), dann in Drive ablegen
+    // Erst herunterladen bzw. teilen (das iPhone erlaubt Teilen nur direkt nach dem Tippen), dann in Drive ablegen
     let geteilt = false;
-    try {
+    if (teilen) try {
       if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); geteilt = true; }
     } catch (e) { if (e && e.name === 'AbortError') geteilt = true; }
     if (!geteilt) {
@@ -430,9 +432,9 @@
         const admin = await Store.folder('Administration', Store.rootId);
         const ordner = await Store.folder('Berichte', admin);
         await Store.upload({ name, parent: ordner, mime: 'application/pdf', data: blob });
-        toast('PDF erstellt und in Drive unter Administration › Berichte abgelegt');
+        toast(geteilt ? 'PDF geteilt, Kopie in Drive unter Administration › Berichte' : 'PDF heruntergeladen (iPhone: Dateien › Downloads), Kopie in Drive unter Administration › Berichte');
       } catch (e) { toast('PDF erstellt, aber nicht in Drive abgelegt: ' + e.message, true); }
-    } else toast('PDF erstellt');
+    } else toast(geteilt ? 'PDF geteilt' : 'PDF heruntergeladen (iPhone: Dateien › Downloads)');
   }
 
   FCC.bericht = render;

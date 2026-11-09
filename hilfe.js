@@ -69,6 +69,16 @@
       '<b>PDF für die Kundin erzeugen</b>: Es liegt danach in der Akte und kann direkt per WhatsApp verschickt werden.',
       'Hat die Kundin Ja gesagt, trag das <b>Freigabe-Datum</b> ein. Erst dann gibt es die <b>6 Bilder für Instagram</b> und die Bildunterschrift.'
     ], tipp: 'Zieht eine Kundin ihr Okay zurück: „Einwilligung zurückgezogen“ tippen, Beitrag auf Instagram löschen, dann „Beitrag gelöscht, Fotos entfernen“.' },
+    { id: 'bericht', t: 'Bericht und Nachweis', k: 'Auswertung als PDF, z. B. für die Förderung', s: [
+      'Tippe oben auf den Reiter <b>Bericht</b>.',
+      'Wähle den <b>Zeitraum</b>, zum Beispiel „Dieses Quartal“ oder „Eigener Zeitraum“ mit Von und Bis.',
+      'Unter <b>Leistungen</b> kannst du auf PMU, Lash Lift, Brow Lift oder Waxing eingrenzen. „Alle“ nimmt alles.',
+      'Unter <b>Namen im Bericht</b> wählst du „Abgekürzt“ (Sophia B.) oder „Vollständig“. Für Ämter und Förderstellen reicht meist abgekürzt.',
+      '<b>Kundinnen ein- oder ausblenden</b>: Nimm das Häkchen weg bei Testeinträgen oder bei dir selbst. Die Kartei merkt sich das.',
+      '<b>Alles lässt sich antippen</b>: Kennzahlen, Leistungen und Monatsbalken zeigen darunter die passenden Behandlungen oder Kundinnen. Ein Tipp auf eine Zeile öffnet die Akte.',
+      'Tippe auf <b>PDF erstellen</b>. Auf dem iPhone öffnet sich „Teilen“, dort sicherst du das PDF in „Dateien“ oder schickst es per Mail. Eine Kopie landet in Drive unter <b>Administration › Berichte</b>.',
+      'Druck das PDF aus oder öffne es am iPad und <b>unterschreibe</b> unten auf der letzten Seite.'
+    ], tipp: 'Im Bericht stehen nur Datum, Kundin und Leistung. Gesundheitsdaten, Telefonnummern und Fotos sind nie darin. Preise kennt die Kartei nicht, für Umsätze nimm deine Abrechnung.' },
     { id: 'archiv', t: 'Archivieren statt Löschen', k: 'Nichts geht verloren', s: [
       'In der Akte oben auf <b>Archivieren</b>, dann noch einmal bestätigen.',
       'Die Akte bleibt vollständig erhalten, taucht aber nicht mehr in Übersicht, Liste und Tabelle auf.',

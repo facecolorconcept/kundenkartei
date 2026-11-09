@@ -76,7 +76,8 @@
       'Unter <b>Namen im Bericht</b> wählst du „Abgekürzt“ (Sophia B.) oder „Vollständig“. Für Ämter und Förderstellen reicht meist abgekürzt.',
       '<b>Kundinnen ein- oder ausblenden</b>: Nimm das Häkchen weg bei Testeinträgen oder bei dir selbst. Die Kartei merkt sich das.',
       '<b>Alles lässt sich antippen</b>: Kennzahlen, Leistungen und Monatsbalken zeigen darunter die passenden Behandlungen oder Kundinnen. Ein Tipp auf eine Zeile öffnet die Akte.',
-      'Tippe auf <b>PDF erstellen</b>. Auf dem iPhone öffnet sich „Teilen“, dort sicherst du das PDF in „Dateien“ oder schickst es per Mail. Eine Kopie landet in Drive unter <b>Administration › Berichte</b>.',
+      'Tippe auf <b>PDF herunterladen</b>. Auf dem iPhone findest du es danach in der App <b>Dateien › Downloads</b>, am Computer im Ordner <b>Downloads</b>. Eine Kopie landet in Google Drive unter <b>Administration › Berichte</b>.',
+      'Willst du das PDF direkt verschicken, tippe unten auf <b>PDF teilen</b> und wähle Mail oder WhatsApp.',
       'Druck das PDF aus oder öffne es am iPad und <b>unterschreibe</b> unten auf der letzten Seite.'
     ], tipp: 'Im Bericht stehen nur Datum, Kundin und Leistung. Gesundheitsdaten, Telefonnummern und Fotos sind nie darin. Preise kennt die Kartei nicht, für Umsätze nimm deine Abrechnung.' },
     { id: 'archiv', t: 'Archivieren statt Löschen', k: 'Nichts geht verloren', s: [

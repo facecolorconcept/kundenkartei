@@ -8,7 +8,7 @@
     { id: 'start', t: 'Erste Schritte', k: 'App aufs iPhone, anmelden, Knöpfe oben', s: [
       'Öffne die Kartei in <b>Safari</b> auf dem iPhone.',
       'Tippe unten auf <b>Teilen</b> und dann auf <b>Zum Home-Bildschirm</b>. Ab jetzt startest du die Kartei wie eine App.',
-      'Tippe auf <b>Mit Google anmelden</b> und wähle facecolorconcept@gmail.com. Setze beim ersten Mal <b>alle Häkchen</b> (Drive, Kalender, Kontakte, Aufgaben).',
+      'Tippe auf <b>Mit Google anmelden</b> und wähle info@facecolorconcept.de. Setze beim ersten Mal <b>alle Häkchen</b> (Drive, Kalender, Kontakte, Aufgaben).',
       'Oben rechts siehst du einen <b>grünen Punkt „Drive“</b>: Die Kartei ist verbunden und speichert in deinen Google-Drive-Ordner.',
       'Der <b>Halbkreis</b> daneben schaltet die Ansicht: automatisch (tagsüber hell, abends dunkel), immer hell, immer dunkel.',
       'Der <b>Pfeil im Kreis</b> lädt alles neu, zum Beispiel wenn du am Laptop etwas eingetragen hast.',
@@ -85,7 +85,7 @@
     ] },
     { id: 'probleme', t: 'Wenn etwas nicht klappt', k: 'Häufige Fragen', faq: [
       ['Ich sehe noch die alte Ansicht.', 'App ganz schließen (vom unteren Rand hochwischen und wegschieben) und neu öffnen.'],
-      ['„Kartei-Ordner nicht erreichbar“', 'Abmelden und mit facecolorconcept@gmail.com neu anmelden, dabei alle Häkchen setzen.'],
+      ['„Kartei-Ordner nicht erreichbar“', 'Abmelden und mit info@facecolorconcept.de neu anmelden, dabei alle Häkchen setzen.'],
       ['Aufgaben werden nicht geladen.', 'Einmal abmelden und neu anmelden, dabei das Häkchen „Aufgaben“ setzen.'],
       ['Eine Kundin fehlt auf dem iPhone.', 'Oben rechts auf den Pfeil im Kreis tippen. Das lädt alles neu, auch die Google Kontakte.'],
       ['Ein neuer Google-Kontakt erscheint nicht.', 'Prüfen, ob der Kontakt das Label „Facecolorconcept“ hat. Dann neu laden.'],

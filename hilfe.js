@@ -65,6 +65,8 @@
       'Zum Schluss steht da „Danke“. Halte den Knopf unten <b>gedrückt</b>, um zur Akte zurückzukehren. So kann die Kundin nicht versehentlich in deiner Kartei landen.',
       'Beim <b>PMU</b> gibt es drei Unterschriften zu verschiedenen Zeitpunkten: <b>Einverständnis</b> vorher, <b>Freigabe der Vorzeichnung</b> vor dem Pigmentieren und <b>Abnahme</b> danach. Die Karte zeigt dir jeweils den nächsten Schritt.',
       'Alle unterschriebenen Formulare stehen in der Akte unten bei <b>Dokumente</b>. <b>Ansehen</b> zeigt Antworten und Unterschriften, <b>PDF</b> lädt den Nachweis mit deinem Logo herunter. Eine Kopie liegt automatisch in Drive im Ordner der Kundin.',
+      'Wünscht die Kundin das Formular per E-Mail: bei Dokumente neben dem Formular auf <b>Mail</b> tippen. Adresse und Text sind vorbereitet, das PDF hängt an. Haken setzen, dass die Kundin es wünscht, dann <b>Senden</b>. Die Mail geht von info@facecolorconcept.de raus und liegt danach in Gmail unter „Gesendet“. In der Akte steht „per Mail gesendet am …“.',
+      'Beim <b>allerersten Versand</b> fragt Google einmal, ob die Kartei E-Mails in deinem Namen senden darf. Häkchen setzen und bestätigen. Das passiert nur einmal.',
       'Im <b>Behandlungsbogen</b> steht oben, ob alles unterschrieben ist. Was die Kundin heute unterschrieben hat, ist in der Checkliste schon abgehakt.'
     ], tipp: 'Nach der Unterschrift ist das Formular gesperrt und bekommt eine Prüfsumme. Ändern geht nicht, nur neu ausfüllen lassen. Angaben wie Geburtsdatum, Anschrift, Allergien und Blutverdünner übernimmt die Kartei in die Akte. Was die Kundin angekreuzt hat, siehst du in der Akte orange unter „Angekreuzt“.' },
     { id: 'fotos', t: 'Fotos, Notizen, Dokumente', k: 'Alles rund um die Akte', s: [

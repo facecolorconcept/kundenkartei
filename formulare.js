@@ -990,6 +990,152 @@
   }
   FCC.formPdf = pdfBauen; // für Tests
 
+  // ---------- Datenauskunft (Art. 15 DSGVO) als PDF ----------
+  // Allgemeiner Seitenbau im Studio-Design: Kopf mit Logo, Abschnitte, Zeilen, Fuß mit Seitenzahl
+  async function dokument(titel, unter, fussText) {
+    const kopf = await briefkopf();
+    const PW = 595.28, PH = 841.89, L = 50, R = PW - 50, OBEN = PH - 118, UNTEN = 74;
+    const seiten = []; let s = null, y = 0;
+    const neueSeite = () => { s = []; seiten.push(s); y = OBEN; };
+    const t = (x, yy, text, size, f, farbe, rechts) => { const xx = rechts ? x - breite(text, size, f) : x; s.push(`BT /F${f || 0} ${size} Tf ${farbe || INK} rg ${xx.toFixed(2)} ${yy.toFixed(2)} Td ${hex(text)} Tj ET`); };
+    const linie = (x1, y1, x2, y2, farbe, lw) => s.push(`${farbe || LINIE} RG ${lw || 0.6} w ${x1.toFixed(2)} ${y1.toFixed(2)} m ${x2.toFixed(2)} ${y2.toFixed(2)} l S`);
+    const platz = h => { if (y - h < UNTEN) neueSeite(); };
+    const umbrechen = (text, size, f, max) => {
+      const out = [];
+      String(text).split('\n').forEach(abs => {
+        let z = '';
+        abs.split(' ').forEach(w => { const n = z ? z + ' ' + w : w; if (breite(n, size, f) > max && z) { out.push(z); z = w; } else z = n;
+          while (breite(z, size, f) > max && z.length > 1) { let k = z.length - 1; while (k > 1 && breite(z.slice(0, k), size, f) > max) k--; out.push(z.slice(0, k)); z = z.slice(k); } });
+        out.push(z);
+      });
+      return out;
+    };
+    const api = {
+      absatz(text, o) {
+        o = o || {}; const size = o.size || 9.3, f = o.f || 0, lh = size * 1.42, x = L + (o.ein || 0);
+        const zl = umbrechen(text, size, f, R - x); if (zl.length <= 4) platz(zl.length * lh + 2);
+        zl.forEach((z, i) => { platz(lh); y -= lh; if (i === 0 && o.punkt) t(x - 9, y, '•', size, 0, GOLD); t(x, y, z, size, f, o.farbe); });
+        y -= o.nach == null ? 4 : o.nach;
+      },
+      ueberschrift(text, gross) {
+        platz(50); y -= gross ? 28 : 22;
+        t(L, y, text.toUpperCase(), gross ? 11 : 9.5, 1, BRONZE); y -= 6; linie(L, y, L + 36, y, GOLD, 1.2); y -= 6;
+      },
+      // Zeilen „Bezeichnung | Wert“, Bezeichnung links grau, Wert rechts daneben umbrochen
+      zeilen(liste) {
+        const LW = 165;
+        liste.forEach(([k, v]) => {
+          const kz = umbrechen(k, 8.6, 0, LW - 10), vz = umbrechen(v == null || v === '' ? '–' : v, 9.4, 0, R - L - LW);
+          const h = Math.max(kz.length, vz.length) * 12.5 + 5; platz(h);
+          let yy = y - 11; kz.forEach(z => { t(L, yy, z, 8.6, 0, GRAU); yy -= 12.5; });
+          yy = y - 11; vz.forEach(z => { t(L + LW, yy, z, 9.4, 0, INK); yy -= 12.5; });
+          y -= h; linie(L, y + 1, R, y + 1, LINIE, 0.4);
+        });
+        y -= 4;
+      },
+      abstand(n) { y -= n; },
+      async fertig() {
+        const kh = (R - L) * kopf.h / kopf.w;
+        seiten.forEach((p, i) => {
+          s = p;
+          s.push(`q ${(R - L).toFixed(2)} 0 0 ${kh.toFixed(2)} ${L} ${(PH - 34 - kh).toFixed(2)} cm /Im0 Do Q`);
+          linie(L, PH - 44 - kh, R, PH - 44 - kh, GOLD, 0.9); linie(L, 54, R, 54, GOLD, 0.6);
+          t(L, 42, `${S.voll} · ${S.adr}`, 7.4, 0, GRAU); t(L, 31, `${S.tel} · ${S.mail} · ${S.web}`, 7.4, 0, GRAU);
+          t(R, 42, String(fussText).slice(0, 70), 7.4, 0, GRAU, true); t(R, 31, `Seite ${i + 1} von ${seiten.length}`, 7.4, 0, GRAU, true);
+        });
+        const enc = new TextEncoder(); const teile = []; const offs = []; let len = 0;
+        const push = x => { const b = typeof x === 'string' ? enc.encode(x) : x; teile.push(b); len += b.length; };
+        const obj = (id, f) => { offs[id] = len; push(id + ' 0 obj\n'); f(); push('\nendobj\n'); };
+        push('%PDF-1.4\n'); const n = seiten.length, S0 = 7;
+        obj(1, () => push('<< /Type /Catalog /Pages 2 0 R >>'));
+        obj(2, () => push(`<< /Type /Pages /Count ${n} /Kids [${seiten.map((_, i) => (S0 + i * 2) + ' 0 R').join(' ')}] >>`));
+        ['Helvetica', 'Helvetica-Bold', 'Helvetica-Oblique'].forEach((f, i) => obj(3 + i, () => push(`<< /Type /Font /Subtype /Type1 /BaseFont /${f} /Encoding /WinAnsiEncoding >>`)));
+        obj(6, () => { push(`<< /Type /XObject /Subtype /Image /Width ${kopf.w} /Height ${kopf.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${kopf.data.length} >>\nstream\n`); push(kopf.data); push('\nendstream'); });
+        seiten.forEach((p, i) => {
+          const id = S0 + i * 2; const inhalt = p.join('\n');
+          obj(id, () => push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PW} ${PH}] /Resources << /Font << /F0 3 0 R /F1 4 0 R /F2 5 0 R >> /XObject << /Im0 6 0 R >> >> /Contents ${id + 1} 0 R >>`));
+          obj(id + 1, () => push(`<< /Length ${enc.encode(inhalt).length} >>\nstream\n${inhalt}\nendstream`));
+        });
+        const iid = S0 + n * 2;
+        obj(iid, () => push(`<< /Title ${hex(titel)} /Author ${hex(S.voll)} /Producer (Facecolorconcept Kartei) >>`));
+        const x = len; let xr = `xref\n0 ${iid + 1}\n0000000000 65535 f \n`;
+        for (let i = 1; i <= iid; i++) xr += String(offs[i]).padStart(10, '0') + ' 00000 n \n';
+        push(xr + `trailer\n<< /Size ${iid + 1} /Root 1 0 R /Info ${iid} 0 R >>\nstartxref\n${x}\n%%EOF\n`);
+        return new Blob(teile, { type: 'application/pdf' });
+      }
+    };
+    neueSeite();
+    y -= 4; t(L, y - 16, titel, 18, 1, INK); y -= 32;
+    if (unter) { t(L, y, unter, 10, 0, GRAU); y -= 10; }
+    return api;
+  }
+
+  async function auskunftBauen(c, fotos) {
+    const name = `${c.vorname || ''} ${c.nachname || ''}`.trim();
+    const d = await dokument('Auskunft über deine gespeicherten Daten', `nach Art. 15 DSGVO · für ${name} · erstellt am ${fmt(heute())}`, `Datenauskunft · ${name}`);
+    d.ueberschrift('Worum es geht', true);
+    d.absatz(`Hier findest du alle Angaben, die ${S.voll} in der digitalen Kundenkartei über dich gespeichert hat. Verantwortlich für die Daten: ${S.voll}, ${S.adr}, ${S.mail}, Telefon ${S.tel}.`);
+    d.ueberschrift('Zweck, Herkunft und Speicherort');
+    d.zeilen([
+      ['Zwecke', 'Kundenverwaltung, Dokumentation der Behandlungen (auch als Nachweis bei Gewährleistung), Terminabstimmung. Fotos werden nur so genutzt, wie du es in deiner Einwilligung erlaubt hast.'],
+      ['Herkunft', 'Alle Angaben stammen von dir selbst oder aus deinen Behandlungsterminen.'],
+      ['Speicherort', 'Google Drive des Studios (Kundenakte, Fotos, Dokumente). Name, Telefon und E-Mail stehen außerdem in Google Kontakte des Studios, Erinnerungen ohne Gesundheitsdaten im Google Kalender und in Google Aufgaben.'],
+      ['Weitergabe', 'Keine Weitergabe an Dritte. Google speichert die Daten technisch für das Studio.'],
+      ['Speicherdauer', 'So lange du Kundin bist und solange gesetzliche Aufbewahrungs- und Nachweispflichten bestehen.']
+    ]);
+    d.ueberschrift('Deine Kontaktdaten');
+    d.zeilen([['Name', name], ['Geburtsdatum', fmt(c.geburtsdatum)], ['Anschrift', [c.strasse, [c.plz, c.ort].filter(Boolean).join(' ')].filter(Boolean).join(', ')], ['Telefon', c.telefon], ['E-Mail', c.email], ['Kundin seit', fmt(c.erstellt)], ...(c.archiviert ? [['Archiviert seit', fmt(c.archiviert)]] : [])]);
+    d.ueberschrift('Gesundheitsangaben');
+    d.zeilen([['Allergien', c.allergien], ['Blutverdünner', c.blutverduenner], ['Kontraindikations-Fragebogen vom', fmt(c.fragebogen)]]);
+    if (c.notiz || (c.notizen || []).length) {
+      d.ueberschrift('Notizen');
+      d.zeilen([...(c.notiz ? [['Notiz zur Kundin', c.notiz]] : []), ...(c.notizen || []).map(n => [fmt(n.datum), n.text])]);
+    }
+    const beh = [...(c.behandlungen || [])].sort((a, b) => String(a.datum).localeCompare(String(b.datum)));
+    d.ueberschrift(`Behandlungen (${beh.length})`);
+    if (!beh.length) d.absatz('Keine Behandlung gespeichert.', { f: 2, farbe: GRAU });
+    beh.forEach(b => {
+      d.abstand(4); d.absatz(`${fmt(b.datum)} · ${b.art}${b.nr ? ' · Nr. ' + b.nr : ''}`, { f: 1, size: 10, nach: 2 });
+      d.zeilen(FCC.bogenZeilen ? FCC.bogenZeilen(b) : []);
+    });
+    const recs = [...(c.formulare || [])].sort((a, b) => String(a.start).localeCompare(String(b.start)));
+    d.ueberschrift(`Formulare und Einwilligungen (${recs.length})`);
+    if (!recs.length) d.absatz('Kein digitales Formular gespeichert.', { f: 2, farbe: GRAU });
+    recs.forEach(r => {
+      const def = DEFS[r.typ]; if (!def) return; const w = r.werte || {};
+      d.abstand(4); d.absatz(`${def.titel} · ${istFertig(r) ? 'unterschrieben am ' + fmtZeit(letzteUnterschrift(r)) : 'noch nicht vollständig unterschrieben'}`, { f: 1, size: 10, nach: 2 });
+      d.zeilen(alleItems(def).filter(it => it.t !== 'info' && it.k && sichtbar(it, w) && anzeige(it, w)).map(it => [it.l || (it.t === 'kreuze' ? 'Angekreuzt' : 'Antwort'), anzeige(it, w)]));
+    });
+    if ((c.brows || []).length) {
+      d.ueberschrift('Instagram-Reihe „If I could do your Brows“');
+      d.zeilen(c.brows.map(b => [`Folge ${b.folge || ''}`, [b.erstellt ? 'angelegt ' + fmt(b.erstellt) : '', b.einwilligung && b.einwilligung.datum ? 'Einwilligung vom ' + fmt(b.einwilligung.datum) : '', b.widerrufen ? 'Einwilligung zurückgezogen am ' + fmt(b.widerrufen) : '', b.online ? 'online seit ' + fmt(b.online) : ''].filter(Boolean).join(' · ')]));
+    }
+    d.ueberschrift(`Fotos (${(fotos || []).length})`);
+    if ((fotos || []).length) d.zeilen(fotos.map(p => [fmt(p.datum), [p.typ, p.art].filter(Boolean).join(' · ') || 'Foto'])); else d.absatz('Keine Fotos gespeichert.', { f: 2, farbe: GRAU });
+    d.ueberschrift(`Dokumente (${(c.dokumente || []).length})`);
+    if ((c.dokumente || []).length) d.zeilen(c.dokumente.map(x => [fmt(x.datum), x.name])); else d.absatz('Keine Dokumente gespeichert.', { f: 2, farbe: GRAU });
+    d.absatz('Kopien der Fotos und Dokumente bekommst du auf Wunsch gern.', { f: 2, farbe: GRAU });
+    d.ueberschrift('Deine Rechte');
+    ['Auskunft über deine Daten (dieses Dokument)', 'Berichtigung falscher Angaben', 'Löschung, soweit keine gesetzliche Aufbewahrungspflicht besteht', 'Einschränkung der Verarbeitung und Widerspruch', 'Herausgabe deiner Daten in einem gängigen Format', 'Widerruf erteilter Einwilligungen (z. B. für Fotos) mit Wirkung für die Zukunft', 'Beschwerde bei einer Datenschutz-Aufsichtsbehörde, in Baden-Württemberg beim Landesbeauftragten für den Datenschutz und die Informationsfreiheit']
+      .forEach(x => d.absatz(x, { ein: 12, punkt: 1, nach: 1 }));
+    d.abstand(6); d.absatz(`Für alle Anliegen genügt eine kurze Nachricht an ${S.mail} oder ${S.tel}.`);
+    return d.fertig();
+  }
+
+  FCC.auskunftPdf = async (c, btn, fotos) => {
+    const toast = (m, l) => FCC.toast && FCC.toast(m, l);
+    const alt = btn ? btn.textContent : ''; if (btn) { btn.disabled = true; btn.textContent = 'Erstellt …'; }
+    try {
+      const blob = await auskunftBauen(c, fotos || []);
+      const name = `Datenauskunft_${dateiname(c.nachname)}_${dateiname(c.vorname)}_${heute()}.pdf`;
+      const file = new File([blob], name, { type: 'application/pdf' });
+      { const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000); }
+      toast('Datenauskunft heruntergeladen (iPad: Dateien › Downloads). Bitte nur direkt an die Kundin weitergeben.', true);
+    } catch (e) { toast('PDF konnte nicht erstellt werden: ' + (e.message || e), true); }
+    finally { if (btn) { btn.disabled = false; btn.textContent = alt; } }
+  };
+  FCC.auskunftBauen = auskunftBauen; // für Tests
+
   // ---------- Aussehen ----------
   const css = document.createElement('style');
   css.textContent = `

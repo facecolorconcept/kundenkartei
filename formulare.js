@@ -353,43 +353,64 @@
     (root || document).querySelectorAll('[data-fostart]').forEach(b => b.onclick = () => starte(c, b.dataset.fostart, { art, nachher, u }));
   };
 
-  // ---------- Karte in der Akte ----------
+  // ---------- Karte „Termin heute“ in der Akte ----------
+  // Ein Weg für jeden Termin: Behandlung antippen → 1. Formulare → 2. Behandlungsbogen
   let offeneArt = null; let offeneArtFuer = null;
+  const pflicht = art => defsFuer(art).filter(d => !d.optional);
   FCC.formCard = (c, el, u) => {
     if (!el) return;
     c.formulare = c.formulare || [];
-    if (offeneArtFuer !== c.id) { offeneArtFuer = c.id; const b = [...(c.behandlungen || [])].sort((a, b) => b.datum.localeCompare(a.datum))[0]; offeneArt = b ? b.art : null; }
+    if (offeneArtFuer !== c.id) { offeneArtFuer = c.id; offeneArt = null; }
     const kachel = art => {
-      const defs = defsFuer(art).filter(d => !d.optional); const st = defs.map(d => status(c, d));
-      const ok = st.filter(s => s.k === 'ok').length; const offen = st.some(s => s.k === 'offen');
-      const k = ok === defs.length ? 'ok' : offen ? 'offen' : 'fehlt';
-      const n = defs.length - ok; const txt = k === 'ok' ? 'alles unterschrieben' : offen ? 'Unterschrift offen' : n === 1 ? '1 Formular fehlt' : `${n} Formulare fehlen`;
+      const defs = pflicht(art); const st = defs.map(d => status(c, d));
+      const ok = st.filter(s => s.k === 'ok').length; const offen = st.some(s => s.k === 'offen'); const n = defs.length - ok;
+      const k = !n ? 'ok' : offen ? 'offen' : 'fehlt';
+      const txt = !n ? '✓ Formulare da' : offen ? 'Unterschrift offen' : n === 1 ? '1 Formular fehlt' : `${n} Formulare fehlen`;
       return `<button type="button" class="fo-kachel ${offeneArt === art ? 'on' : ''}" data-foart="${esc(art)}" aria-expanded="${offeneArt === art}"><b>${esc(art)}</b><span class="fo-st ${k}">${esc(txt)}</span></button>`;
     };
-    const liste = offeneArt ? defsFuer(offeneArt).map(d => {
-      const s = status(c, d);
-      const knopf = s.k === 'offen' ? `<button class="btn small" data-fogo="${esc(d.id)}">${esc(s.teil.h)} unterschreiben lassen</button>`
-        : s.k === 'ok' ? `<button class="btn ghost small" data-fogo="${esc(d.id)}" data-neu="1">Neu ausfüllen lassen</button>`
-        : `<button class="btn small" data-fogo="${esc(d.id)}">Ausfüllen lassen</button>`;
-      return `<li><span><b style="font-weight:500">${esc(d.titel)}</b>${d.optional ? ' <span class="cmeta">(nur bei Model-Terminen)</span>' : ''}<br><span class="fo-st ${s.k}">${esc(s.text)}</span>${d.teile.length > 1 ? `<span class="cmeta"> · ${d.teile.map(t => esc(t.h) + ' ' + esc(t.wann)).join(', ')}</span>` : ''}</span>${knopf}</li>`;
-    }).join('') : '';
-    const recs = [...c.formulare].sort((a, b) => (letzteUnterschrift(b) || '').localeCompare(letzteUnterschrift(a) || ''));
+    let schritte = '';
+    if (offeneArt) {
+      const zeile = d => {
+        const s = status(c, d);
+        const knopf = s.k === 'offen' ? `<button class="btn small" data-fogo="${esc(d.id)}">${esc(s.teil.h)} unterschreiben lassen</button>`
+          : s.k === 'ok' ? `<button class="btn ghost small" data-fogo="${esc(d.id)}" data-neu="1">Neu</button>`
+          : `<button class="btn small" data-fogo="${esc(d.id)}">Ausfüllen lassen</button>`;
+        return `<li><span><b style="font-weight:500">${esc(d.kurz)}</b><br><span class="fo-st ${s.k}">${s.k === 'ok' ? '✓ ' : ''}${esc(s.text)}</span></span>${knopf}</li>`;
+      };
+      const alleOk = pflicht(offeneArt).every(d => status(c, d).k === 'ok');
+      const tfp = defsFuer(offeneArt).find(d => d.optional);
+      schritte = `<ol class="fo-schritte">
+        <li><span class="fo-nr ${alleOk ? 'ok' : ''}">${alleOk ? '✓' : '1'}</span><div><b>Formulare</b> <span class="cmeta">Kundin füllt am iPad aus</span>
+          <ul class="docs fo-liste">${pflicht(offeneArt).map(zeile).join('')}</ul>
+          ${tfp ? `<button type="button" class="fo-link" data-fogo="${esc(tfp.id)}">Model-Termin? ${esc(tfp.kurz)} ausfüllen lassen</button>` : ''}</div></li>
+        <li><span class="fo-nr">2</span><div><b>Behandlung dokumentieren</b>
+          <div style="margin-top:8px"><button class="btn ${alleOk ? '' : 'ghost'} small" data-fobogen="${esc(offeneArt)}">${esc(offeneArt)}-Bogen öffnen</button></div></div></li>
+      </ol>`;
+    }
     el.innerHTML = `<div class="panel card">
-      <div class="row between"><div class="row" style="gap:6px"><h2>Formulare & Unterschriften</h2><button class="qhelp" data-hilfe="formulare" aria-label="Hilfe zu Formularen" title="Hilfe">?</button></div><span class="label">${recs.length} ${recs.length === 1 ? 'Formular' : 'Formulare'}</span></div>
-      <p class="cmeta" style="margin:6px 0 0">Tippe auf die Behandlung. Die Kundin füllt am iPad aus und unterschreibt mit dem Stift.</p>
+      <div class="row between"><div class="row" style="gap:6px"><h2>Termin heute</h2><button class="qhelp" data-hilfe="termin" aria-label="Hilfe zum Termin" title="Hilfe">?</button></div></div>
+      <p class="cmeta" style="margin:4px 0 0">Tippe auf die Behandlung.</p>
       <div class="fo-kacheln">${ARTS.map(kachel).join('')}</div>
-      ${offeneArt ? `<ul class="docs fo-liste">${liste}</ul>` : ''}
-      ${recs.length ? `<span class="label" style="display:block;margin-top:16px">Unterschrieben</span><ul class="docs">${recs.map(r => {
-        const d = DEFS[r.typ]; if (!d) return '';
-        const h = hinweise(r); const fertig = istFertig(r);
-        return `<li><span><b style="font-weight:500">${esc(d.titel)}</b><br><span class="cmeta">${fertig ? 'vollständig, ' + esc(fmtZeit(letzteUnterschrift(r))) : esc(offenerTeil(r).h) + ' noch offen · begonnen ' + esc(fmt(r.start))}</span>
-          ${h.length ? `<br><span class="fo-st alt">Angekreuzt: ${esc(h.join(' · '))}</span>` : ''}</span>
-          <span class="row" style="gap:6px;flex-wrap:nowrap;align-self:center"><button class="btn ghost small" data-foview="${esc(r.id)}">Ansehen</button><button class="btn ghost small" data-fopdf="${esc(r.id)}">PDF</button></span></li>`;
-      }).join('')}</ul>` : ''}
+      ${schritte}
     </div>`;
     el.querySelectorAll('[data-hilfe]').forEach(b => b.onclick = () => FCC.hilfe && FCC.hilfe(b.dataset.hilfe));
     el.querySelectorAll('[data-foart]').forEach(b => b.onclick = () => { offeneArt = offeneArt === b.dataset.foart ? null : b.dataset.foart; FCC.formCard(c, el, u); });
     el.querySelectorAll('[data-fogo]').forEach(b => b.onclick = () => starte(c, b.dataset.fogo, { art: offeneArt, neu: b.dataset.neu === '1', u }));
+    el.querySelectorAll('[data-fobogen]').forEach(b => b.onclick = () => u && u.neueBehandlung && u.neueBehandlung(b.dataset.fobogen));
+  };
+
+  // Liste der unterschriebenen Formulare (in der Karte „Dokumente“)
+  FCC.formListe = (c, el, u) => {
+    if (!el) return;
+    const recs = [...(c.formulare || [])].sort((a, b) => (letzteUnterschrift(b) || '').localeCompare(letzteUnterschrift(a) || ''));
+    if (!recs.length) { el.innerHTML = ''; return; }
+    el.innerHTML = `<ul class="docs">${recs.map(r => {
+      const d = DEFS[r.typ]; if (!d) return '';
+      const h = hinweise(r); const fertig = istFertig(r);
+      return `<li><span><b style="font-weight:500">${esc(d.titel)}</b><br><span class="cmeta">${fertig ? 'unterschrieben ' + esc(fmtZeit(letzteUnterschrift(r))) : esc(offenerTeil(r).h) + ' noch offen'}</span>
+        ${h.length ? `<br><span class="fo-st alt">Angekreuzt: ${esc(h.join(' · '))}</span>` : ''}</span>
+        <span class="row" style="gap:6px;flex-wrap:nowrap;align-self:center"><button class="btn ghost small" data-foview="${esc(r.id)}">Ansehen</button><button class="btn ghost small" data-fopdf="${esc(r.id)}">PDF</button></span></li>`;
+    }).join('')}</ul>`;
     el.querySelectorAll('[data-foview]').forEach(b => b.onclick = () => ansehen(c, c.formulare.find(r => r.id === b.dataset.foview), u));
     el.querySelectorAll('[data-fopdf]').forEach(b => b.onclick = () => pdfAusgeben(c, c.formulare.find(r => r.id === b.dataset.fopdf), false, b));
   };
@@ -1146,7 +1167,7 @@
     .fo-kachel:hover{border-color:var(--rose);transform:translateY(-1px)} .fo-kachel.on{border-color:var(--rose);background:var(--rose-soft)}
     .fo-kachel b{font-family:var(--display);font-size:19px;font-weight:600;line-height:1.1}
     .fo-st{font-size:12.5px;color:var(--muted)} .fo-st.ok{color:var(--ok)} .fo-st.fehlt,.fo-st.alt{color:var(--warn)} .fo-st.offen{color:var(--rose-ink);font-weight:500}
-    .fo-liste li{align-items:center}.fo-liste li>span{overflow-wrap:normal;-webkit-hyphens:auto;hyphens:auto} .fo-liste li .btn{flex-shrink:0}
+    .fo-liste li{align-items:center}.fo-schritte{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:14px}.fo-schritte>li{display:grid;grid-template-columns:32px minmax(0,1fr);gap:12px;align-items:start}.fo-nr{width:30px;height:30px;border-radius:50%;background:var(--rose);color:#fff;font-weight:600;font-size:14px;display:inline-flex;align-items:center;justify-content:center}.fo-nr.ok{background:var(--ok)}.fo-link{border:0;background:none;color:var(--rose-ink);text-decoration:underline;padding:6px 0;font:inherit;font-size:14px;cursor:pointer}.fo-liste li>span{overflow-wrap:normal;-webkit-hyphens:auto;hyphens:auto} .fo-liste li .btn{flex-shrink:0}
     .fo-banner{margin-top:12px} .fo-banner b{font-weight:500}
     .fo-vh{font-family:var(--body);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--rose-ink);margin:16px 0 6px;font-weight:600}
     .fo-vl{list-style:none;margin:0;padding:0}.fo-vl li{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,auto);gap:4px 16px;padding:8px 0;border-top:1px solid var(--line);font-size:15px}.fo-vl li:first-child{border-top:0}.fo-vl b{font-weight:500;text-align:right;max-width:340px}.fo-vl b.fo-ja{color:var(--warn)}@media(max-width:520px){.fo-vl li{grid-template-columns:1fr}.fo-vl b{text-align:left}}

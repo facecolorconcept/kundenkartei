@@ -16,10 +16,10 @@
     ], tipp: 'Google fragt etwa einmal pro Stunde kurz nach. Ein Tipp auf „Mit Google anmelden“ genügt, du arbeitest danach an derselben Stelle weiter.' },
     { id: 'termin', t: 'Ein Termin von Anfang bis Ende', k: 'Der ganze Ablauf auf einen Blick', s: [
       '<b>Vor dem Termin</b>: Neue Kundin? Tippe in der Kartei auf <b>+ Kundin</b>, Vor- und Nachname reichen. Den Rest trägt sie gleich selbst ein.',
-      '<b>Kundin kommt</b>: Akte öffnen, unter <b>Formulare & Unterschriften</b> die Behandlung antippen. Was fehlt, steht orange da. Tippe auf <b>Ausfüllen lassen</b> und gib ihr das iPad.',
+      '<b>Kundin kommt</b>: Akte öffnen, ganz oben unter <b>Termin heute</b> die Behandlung antippen. Bei <b>1 Formulare</b> steht orange, was fehlt. Tippe auf <b>Ausfüllen lassen</b> und gib ihr das iPad.',
       '<b>Sie unterschreibt</b> mit dem Stift. Braucht es auch deine Unterschrift, gibt sie dir das iPad zurück. Zum Schluss den Knopf <b>gedrückt halten</b>.',
       '<b>Schau kurz in die Akte</b>: Hat sie etwas angekreuzt, steht es orange unter „Angekreuzt“. Entscheide dann, ob du behandelst.',
-      '<b>Behandlung</b>: Unter <b>Neue Behandlung</b> die Behandlung antippen und den Bogen ausfüllen. Vorher-Foto direkt im Bogen machen.',
+      '<b>Behandlung</b>: Bei <b>2 Behandlung dokumentieren</b> auf <b>Bogen öffnen</b> tippen und ausfüllen. Vorher-Foto direkt im Bogen machen.',
       '<b>Nur beim PMU</b>: Nach dem Vorzeichnen in der Akte auf <b>Freigabe der Vorzeichnung unterschreiben lassen</b>, nach der Behandlung auf <b>Abnahme unterschreiben lassen</b>.',
       '<b>Nach der Behandlung</b>: Nachher-Foto, Ergebnis und „Kundin zufrieden“ eintragen, <b>Bogen speichern</b>.',
       '<b>Folgetermin</b>: Die Kartei schlägt ihn vor. Ein Tipp auf <b>Als Aufgabe anlegen</b>, und du wirst rechtzeitig erinnert.'
@@ -48,7 +48,7 @@
       '<b>CSV exportieren</b> in der Tabelle: lädt eine Liste für Excel oder Numbers herunter, ohne Gesundheitsdaten.'
     ] },
     { id: 'behandlung', t: 'Behandlung dokumentieren', k: 'Bogen ausfüllen, Folgetermin', s: [
-      'Öffne die Akte und tippe unter <b>Neue Behandlung</b> auf die Behandlung, zum Beispiel „+ Lash Lift“.',
+      'Öffne die Akte, tippe oben unter <b>Termin heute</b> auf die Behandlung, zum Beispiel <b>Lash Lift</b>, und dann auf <b>Lash Lift-Bogen öffnen</b>.',
       'War die Kundin schon einmal da, siehst du oben <b>„Nächstes Mal anders“</b> vom letzten Termin. <b>Werte übernehmen</b> füllt alles vom letzten Mal vor, das Ergebnis bleibt leer.',
       '<b>Gestrichelte Kreise</b> zeigen, was du beim letzten Mal gewählt hattest.',
       'Fülle die Abschnitte von oben nach unten aus. Antippen wählt aus, noch einmal antippen nimmt es zurück.',
@@ -57,14 +57,14 @@
       'Tippe auf <b>Bogen speichern</b>. Danach schlägt die Kartei den passenden <b>Folgetermin</b> vor. Ein Tipp auf „Als Aufgabe anlegen“, fertig.'
     ] },
     { id: 'formulare', t: 'Formulare und Unterschrift', k: 'Kundin füllt am iPad aus, PDF als Nachweis', s: [
-      'Öffne die Akte. Unter <b>Formulare & Unterschriften</b> tippst du auf die Behandlung, zum Beispiel <b>Lash Lift</b>. Du siehst, welche Formulare dafür nötig sind und was schon unterschrieben ist.',
+      'Öffne die Akte. Ganz oben unter <b>Termin heute</b> tippst du auf die Behandlung, zum Beispiel <b>Lash Lift</b>. Bei Schritt <b>1 Formulare</b> siehst du, was nötig ist und was schon unterschrieben ist. Der TFP-Vertrag für Model-Termine steht als Link darunter.',
       'Tippe auf <b>Ausfüllen lassen</b>. Name, Telefon und E-Mail aus der Akte sind schon eingetragen.',
       'Bei manchen Formularen kommt zuerst die <b>Vorbereitung für dich</b>, zum Beispiel Preis und Bereich beim PMU. Danach tippst du auf <b>iPad an die Kundin geben</b>.',
       'Die Kundin geht Seite für Seite durch und <b>unterschreibt mit dem Stift</b>. Fehlt eine Antwort, markiert die Kartei sie rot.',
       'Braucht das Formular auch deine Unterschrift, bittet die Kartei die Kundin, dir das iPad zu geben. Dann unterschreibst du.',
       'Zum Schluss steht da „Danke“. Halte den Knopf unten <b>gedrückt</b>, um zur Akte zurückzukehren. So kann die Kundin nicht versehentlich in deiner Kartei landen.',
       'Beim <b>PMU</b> gibt es drei Unterschriften zu verschiedenen Zeitpunkten: <b>Einverständnis</b> vorher, <b>Freigabe der Vorzeichnung</b> vor dem Pigmentieren und <b>Abnahme</b> danach. Die Karte zeigt dir jeweils den nächsten Schritt.',
-      'Unter <b>Unterschrieben</b> siehst du alle Formulare. <b>Ansehen</b> zeigt Antworten und Unterschriften, <b>PDF</b> lädt den Nachweis mit deinem Logo herunter. Eine Kopie liegt automatisch in Drive im Ordner der Kundin unter Dokumente.',
+      'Alle unterschriebenen Formulare stehen in der Akte unten bei <b>Dokumente</b>. <b>Ansehen</b> zeigt Antworten und Unterschriften, <b>PDF</b> lädt den Nachweis mit deinem Logo herunter. Eine Kopie liegt automatisch in Drive im Ordner der Kundin.',
       'Im <b>Behandlungsbogen</b> steht oben, ob alles unterschrieben ist. Was die Kundin heute unterschrieben hat, ist in der Checkliste schon abgehakt.'
     ], tipp: 'Nach der Unterschrift ist das Formular gesperrt und bekommt eine Prüfsumme. Ändern geht nicht, nur neu ausfüllen lassen. Angaben wie Geburtsdatum, Anschrift, Allergien und Blutverdünner übernimmt die Kartei in die Akte. Was die Kundin angekreuzt hat, siehst du in der Akte orange unter „Angekreuzt“.' },
     { id: 'fotos', t: 'Fotos, Notizen, Dokumente', k: 'Alles rund um die Akte', s: [
@@ -82,7 +82,7 @@
       'Ändern oder löschen: Aufgabe antippen.'
     ], tipp: 'Deine Aufgaben stehen auch in <b>Gmail</b> (rechte Seitenleiste) und in der App <b>Google Tasks</b>. Die Mitteilung aufs iPhone kommt über den <b>Google Kalender</b>: Installiere dafür die Google-Kalender-App oder richte dein Studio-Konto im iPhone-Kalender ein.' },
     { id: 'brows', t: 'If I could do your Brows', k: 'Instagram-Reihe Schritt für Schritt', s: [
-      'Leg die Interessentin als Kundin an (Name reicht) und tippe in der Akte auf <b>+ Neue Folge</b>.',
+      'Leg die Interessentin als Kundin an (Name reicht) und tippe ganz unten in der Akte auf <b>+ Folge „If I could do your Brows“</b>.',
       '<b>Einwilligung</b>: „Anfrage kopieren“ und per DM schicken. Nach dem Ja: Datum eintragen, „volljährig“ antippen, Screenshot hochladen.',
       '<b>Foto und Analyse</b>: Foto hochladen, mit dem Finger in den Kreis schieben, mit zwei Fingern zoomen. „Linien zeichnen“ und „Nummern setzen“, darunter die drei Punkte.',
       '<b>Vorschlag</b>: Behandlung antippen, Begründung schreiben.',

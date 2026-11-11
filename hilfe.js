@@ -14,6 +14,16 @@
       'Der <b>Pfeil im Kreis</b> lädt alles neu, zum Beispiel wenn du am Laptop etwas eingetragen hast.',
       'Die <b>Tür mit Pfeil</b> meldet dich ab. Mach das immer an fremden Geräten.'
     ], tipp: 'Google fragt etwa einmal pro Stunde kurz nach. Ein Tipp auf „Mit Google anmelden“ genügt, du arbeitest danach an derselben Stelle weiter.' },
+    { id: 'termin', t: 'Ein Termin von Anfang bis Ende', k: 'Der ganze Ablauf auf einen Blick', s: [
+      '<b>Vor dem Termin</b>: Neue Kundin? Tippe in der Kartei auf <b>+ Kundin</b>, Vor- und Nachname reichen. Den Rest trägt sie gleich selbst ein.',
+      '<b>Kundin kommt</b>: Akte öffnen, unter <b>Formulare & Unterschriften</b> die Behandlung antippen. Was fehlt, steht orange da. Tippe auf <b>Ausfüllen lassen</b> und gib ihr das iPad.',
+      '<b>Sie unterschreibt</b> mit dem Stift. Braucht es auch deine Unterschrift, gibt sie dir das iPad zurück. Zum Schluss den Knopf <b>gedrückt halten</b>.',
+      '<b>Schau kurz in die Akte</b>: Hat sie etwas angekreuzt, steht es orange unter „Angekreuzt“. Entscheide dann, ob du behandelst.',
+      '<b>Behandlung</b>: Unter <b>Neue Behandlung</b> die Behandlung antippen und den Bogen ausfüllen. Vorher-Foto direkt im Bogen machen.',
+      '<b>Nur beim PMU</b>: Nach dem Vorzeichnen in der Akte auf <b>Freigabe der Vorzeichnung unterschreiben lassen</b>, nach der Behandlung auf <b>Abnahme unterschreiben lassen</b>.',
+      '<b>Nach der Behandlung</b>: Nachher-Foto, Ergebnis und „Kundin zufrieden“ eintragen, <b>Bogen speichern</b>.',
+      '<b>Folgetermin</b>: Die Kartei schlägt ihn vor. Ein Tipp auf <b>Als Aufgabe anlegen</b>, und du wirst rechtzeitig erinnert.'
+    ], tipp: 'Mehr musst du dir nicht merken. Alles Weitere, zum Beispiel PDFs und Nachweise, legt die Kartei selbst in Drive ab.' },
     { id: 'uebersicht', t: 'Die Übersicht', k: 'Was heute wichtig ist', s: [
       'Die Übersicht ist deine Startseite. <b>Alles darauf lässt sich antippen.</b>',
       '<b>Kennzahlen oben</b>: Ein Tipp auf die Zahl zeigt genau diese Kundinnen in der Kartei.',
@@ -103,6 +113,7 @@
       'In Google Kontakte, Aufgaben und Kalender landen nur Name, Telefon, E-Mail und Titel, <b>nie Gesundheitsdaten</b>. Schreib auch in Aufgaben-Notizen keine Gesundheitsdaten.',
       'Schütz dein iPhone mit <b>Code und Face ID</b> und dein Google-Konto mit <b>Bestätigung in zwei Schritten</b>.',
       'Melde dich an fremden Geräten immer <b>ab</b>.',
+      'Verlangt eine Kundin <b>Auskunft über ihre Daten</b>: Akte öffnen, ganz unten bei Dokumente auf <b>Datenauskunft für die Kundin (PDF)</b> tippen. Das PDF enthält alles, was über sie gespeichert ist, und ihre Rechte. Gib es nur ihr persönlich, zum Beispiel per E-Mail an ihre eigene Adresse.',
       'Allergien und Kontraindikationen sind Gesundheitsdaten. Mit <b>Google Workspace</b> bekommst du einen Vertrag zur Auftragsverarbeitung mit Google, mit einem privaten Gmail-Konto nicht.'
     ] },
     { id: 'probleme', t: 'Wenn etwas nicht klappt', k: 'Häufige Fragen', faq: [

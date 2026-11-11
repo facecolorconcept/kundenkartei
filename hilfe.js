@@ -46,10 +46,21 @@
       'Fotos machst du direkt im Bogen unter <b>Fotos</b>: „+ Foto“ bei Vorher oder Nachher.',
       'Tippe auf <b>Bogen speichern</b>. Danach schlägt die Kartei den passenden <b>Folgetermin</b> vor. Ein Tipp auf „Als Aufgabe anlegen“, fertig.'
     ] },
+    { id: 'formulare', t: 'Formulare und Unterschrift', k: 'Kundin füllt am iPad aus, PDF als Nachweis', s: [
+      'Öffne die Akte. Unter <b>Formulare & Unterschriften</b> tippst du auf die Behandlung, zum Beispiel <b>Lash Lift</b>. Du siehst, welche Formulare dafür nötig sind und was schon unterschrieben ist.',
+      'Tippe auf <b>Ausfüllen lassen</b>. Name, Telefon und E-Mail aus der Akte sind schon eingetragen.',
+      'Bei manchen Formularen kommt zuerst die <b>Vorbereitung für dich</b>, zum Beispiel Preis und Bereich beim PMU. Danach tippst du auf <b>iPad an die Kundin geben</b>.',
+      'Die Kundin geht Seite für Seite durch und <b>unterschreibt mit dem Stift</b>. Fehlt eine Antwort, markiert die Kartei sie rot.',
+      'Braucht das Formular auch deine Unterschrift, bittet die Kartei die Kundin, dir das iPad zu geben. Dann unterschreibst du.',
+      'Zum Schluss steht da „Danke“. Halte den Knopf unten <b>gedrückt</b>, um zur Akte zurückzukehren. So kann die Kundin nicht versehentlich in deiner Kartei landen.',
+      'Beim <b>PMU</b> gibt es drei Unterschriften zu verschiedenen Zeitpunkten: <b>Einverständnis</b> vorher, <b>Freigabe der Vorzeichnung</b> vor dem Pigmentieren und <b>Abnahme</b> danach. Die Karte zeigt dir jeweils den nächsten Schritt.',
+      'Unter <b>Unterschrieben</b> siehst du alle Formulare. <b>Ansehen</b> zeigt Antworten und Unterschriften, <b>PDF</b> lädt den Nachweis mit deinem Logo herunter. Eine Kopie liegt automatisch in Drive im Ordner der Kundin unter Dokumente.',
+      'Im <b>Behandlungsbogen</b> steht oben, ob alles unterschrieben ist. Was die Kundin heute unterschrieben hat, ist in der Checkliste schon abgehakt.'
+    ], tipp: 'Nach der Unterschrift ist das Formular gesperrt und bekommt eine Prüfsumme. Ändern geht nicht, nur neu ausfüllen lassen. Angaben wie Geburtsdatum, Anschrift, Allergien und Blutverdünner übernimmt die Kartei in die Akte. Was die Kundin angekreuzt hat, siehst du in der Akte orange unter „Angekreuzt“.' },
     { id: 'fotos', t: 'Fotos, Notizen, Dokumente', k: 'Alles rund um die Akte', s: [
       '<b>Vorher / Nachher</b> in der Akte: „+ Vorher-Foto“ oder „+ Nachher-Foto“. Du kannst fotografieren oder aus deinen Bildern wählen. Antippen vergrößert.',
       '<b>Notizen</b>: Text eintippen, „Notiz speichern“. Mit Datum, neueste oben.',
-      '<b>Dokumente</b>: unterschriebene Fragebögen, Einwilligungen, Rechnungen (bis 5 MB). Sie liegen im Ordner der Kundin in Drive.',
+      '<b>Dokumente</b>: die PDFs der digital unterschriebenen Formulare landen hier von selbst. Rechnungen oder alte Papier-Formulare lädst du mit „+ Dokument“ hoch (bis 5 MB). Alles liegt im Ordner der Kundin in Drive.',
       'Die Fotos werden vor dem Hochladen verkleinert, damit es auch unterwegs schnell geht.'
     ] },
     { id: 'aufgaben', t: 'Aufgaben und Erinnerungen', k: 'Nichts mehr vergessen', s: [

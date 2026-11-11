@@ -278,6 +278,8 @@
         <div class="facts">
           <div><span class="label">Telefon</span><br>${tel}</div>
           <div><span class="label">E-Mail</span><br>${esc(c.email) || '–'}</div>
+          ${c.geburtsdatum ? `<div><span class="label">Geburtsdatum</span><br>${fmt(c.geburtsdatum)}</div>` : ''}
+          ${c.strasse || c.ort ? `<div><span class="label">Anschrift</span><br>${esc(c.strasse)}${c.strasse ? '<br>' : ''}${esc([c.plz, c.ort].filter(Boolean).join(' '))}</div>` : ''}
           <div><span class="label">Allergien</span><br>${esc(c.allergien) || '–'}</div>
           <div><span class="label">Blutverdünner</span><br>${esc(c.blutverduenner) || '–'}</div>
           <div><span class="label">Kontraindikationen</span><br><span class="pill ${fbOk ? 'ok' : 'warn'}">${fbOk ? 'Fragebogen vom ' + fmt(c.fragebogen) : 'Fragebogen fehlt'}</span></div>
@@ -288,6 +290,7 @@
         <span class="label">Neue Behandlung</span>
         <div class="chips">${ARTS.map(a => `<button class="chip add" data-new="${esc(a)}">+ ${esc(a)}</button>`).join('')}</div>
       </div>
+      <div id="formSlot"></div>
       ${folgeHinweis && folgeHinweis.cid === c.id ? `<div class="banner" id="folgeHinweis" style="margin-top:0"><span><b>Folgetermin merken?</b> ${esc(folgeHinweis.f.text)}, also am ${fmt(folgeHinweis.f.due)}. Mit Erinnerung 1 Tag vorher.</span><span class="row"><button class="btn small" id="fhJa">Als Aufgabe anlegen</button><button class="btn ghost small" id="fhNein">Nein danke</button></span></div>` : ''}
       ${lastTimeCard(c)}
       <div id="aufgSlot"></div>
@@ -318,13 +321,14 @@
       <div class="panel card">
           <div class="row between"><h2>Dokumente</h2><button class="btn ghost small" id="docBtn">+ Dokument</button></div>
           <input type="file" id="docInput" hidden>
-          ${c.dokumente.length ? `<ul class="docs">${c.dokumente.map(d => `<li><span>${esc(d.name)}<br><span class="cmeta">${fmt(d.datum)}</span></span>${safeUrl(d.link) ? `<a class="mini" href="${esc(safeUrl(d.link))}" target="_blank" rel="noopener">In Drive öffnen</a>` : ''}</li>`).join('')}</ul>` : '<p class="cmeta">Hier landen unterschriebene Fragebögen, Einwilligungen und Rechnungen.</p>'}
+          ${c.dokumente.length ? `<ul class="docs">${c.dokumente.map(d => `<li><span>${esc(d.name)}<br><span class="cmeta">${fmt(d.datum)}</span></span>${safeUrl(d.link) ? `<a class="mini" href="${esc(safeUrl(d.link))}" target="_blank" rel="noopener">In Drive öffnen</a>` : ''}</li>`).join('')}</ul>` : '<p class="cmeta">Hier landen die PDFs der digital unterschriebenen Formulare, außerdem Rechnungen und ältere Papier-Formulare.</p>'}
           <button class="btn ghost small" id="auskunftBtn" style="margin-top:12px" title="Alle gespeicherten Angaben zur Kundin als Datei, z. B. wenn sie nach DSGVO Auskunft verlangt">Datenauskunft für die Kundin</button>
         </div>
       </div>`;
     $('#backBtn').onclick = back;
     if (FCC.aufgabenKarte) FCC.aufgabenKarte($('#aufgSlot'), { kunde: c });
     if (FCC.browsCard) FCC.browsCard(c, $('#browsSlot'), { toast, busy, rerender: render });
+    if (FCC.formCard) FCC.formCard(c, $('#formSlot'), { toast, busy, rerender: render });
     $('#editCust').onclick = () => openCustomerSheet(c);
     // Archivieren statt löschen: nichts wird entfernt, die Kundin wird nur ausgeblendet
     $('#archBtn').onclick = e => {
@@ -380,7 +384,7 @@
     $$('#detail .thumb').forEach(t => t.onclick = () => { const src = t.querySelector('img').src; if (src) showPhoto(src); });
     // DSGVO Art. 15: alle gespeicherten Angaben zur Kundin als lesbare Datei
     $('#auskunftBtn').onclick = () => {
-      const strip = o => JSON.parse(JSON.stringify(o, (k, v) => ['ordnerId', 'fotosId', 'dokuId', 'kontaktId', 'data', 'fileId', 'link', 'altdaten'].includes(k) ? undefined : v));
+      const strip = o => JSON.parse(JSON.stringify(o, (k, v) => ['ordnerId', 'fotosId', 'dokuId', 'kontaktId', 'data', 'fileId', 'link', 'altdaten', 'png', 'pdf'].includes(k) ? undefined : v));
       const daten = { erstellt_am: today(), studio: C.STUDIO || 'Facecolorconcept', adresse: C.ADRESSE || '', hinweis: 'Diese Datei enthält alle Angaben, die in der Kundenkartei zu dir gespeichert sind. Fotos und Dokumente sind namentlich aufgeführt und können als Kopie ausgehändigt werden.',
         kundin: strip(c), fotos: allPhotos(c).map(p => `${p.typ || ''} ${p.datum || ''} ${p.art || ''}`.trim()), dokumente: (c.dokumente || []).map(d => d.name) };
       const a = document.createElement('a');
@@ -423,11 +427,16 @@
 
   function openCustomerSheet(c) {
     const d = c || { vorname: '', nachname: '', telefon: '', email: '', allergien: '', blutverduenner: '', fragebogen: '', notiz: '' };
+    ['geburtsdatum', 'strasse', 'plz', 'ort'].forEach(k => { if (d[k] == null) d[k] = ''; });
     const close = sheetShell(c ? 'Daten ändern' : 'Neue Kundin', '', `<form class="wrap sec" id="cf"><div class="grid2">
       <div class="field"><label for="f-vn">Vorname *</label><input id="f-vn" autocomplete="off" value="${esc(d.vorname)}"></div>
       <div class="field"><label for="f-nn">Nachname *</label><input id="f-nn" autocomplete="off" value="${esc(d.nachname)}"></div>
       <div class="field"><label for="f-tel">Telefon</label><input id="f-tel" type="tel" value="${esc(d.telefon)}"></div>
       <div class="field"><label for="f-mail">E-Mail</label><input id="f-mail" type="email" value="${esc(d.email)}"></div>
+      <div class="field"><label for="f-gd">Geburtsdatum</label><input id="f-gd" type="date" value="${esc(d.geburtsdatum)}"></div>
+      <div class="field"><label for="f-str">Straße und Hausnummer</label><input id="f-str" value="${esc(d.strasse)}"></div>
+      <div class="field"><label for="f-plz">PLZ</label><input id="f-plz" inputmode="numeric" value="${esc(d.plz)}"></div>
+      <div class="field"><label for="f-ort">Ort</label><input id="f-ort" value="${esc(d.ort)}"></div>
       <div class="field"><label for="f-all">Allergien</label><input id="f-all" value="${esc(d.allergien)}"></div>
       <div class="field"><label for="f-bv">Blutverdünner</label><select id="f-bv">${['', 'nein', 'ja'].map(v => `<option value="${v}" ${d.blutverduenner === v ? 'selected' : ''}>${v || 'nicht gefragt'}</option>`).join('')}</select></div>
       <div class="field"><label for="f-fb">Kontraindikations-Fragebogen unterschrieben am</label><input id="f-fb" type="date" value="${esc(d.fragebogen)}"></div>
@@ -435,7 +444,8 @@
     </div></form>`, 'Speichern');
     $('#f-vn').focus();
     $('#save').onclick = e => {
-      const v = { vorname: $('#f-vn').value.trim(), nachname: $('#f-nn').value.trim(), telefon: $('#f-tel').value.trim(), email: $('#f-mail').value.trim(), allergien: $('#f-all').value.trim(), blutverduenner: $('#f-bv').value, fragebogen: $('#f-fb').value, notiz: $('#f-notiz').value.trim() };
+      const v = { vorname: $('#f-vn').value.trim(), nachname: $('#f-nn').value.trim(), telefon: $('#f-tel').value.trim(), email: $('#f-mail').value.trim(), allergien: $('#f-all').value.trim(), blutverduenner: $('#f-bv').value, fragebogen: $('#f-fb').value, notiz: $('#f-notiz').value.trim(),
+        geburtsdatum: $('#f-gd').value, strasse: $('#f-str').value.trim(), plz: $('#f-plz').value.trim(), ort: $('#f-ort').value.trim() };
       if (!v.vorname || !v.nachname) { toast('Bitte Vor- und Nachname eintragen.'); return; }
       busy(e.currentTarget, 'Speichert …', async () => {
         let target = c;
@@ -455,6 +465,8 @@
     const t = { id: uid(), art, datum: today(), nr: c.behandlungen.filter(b => b.art === art).length + 1, daten: {}, check: [], fotos: [], naechstes: '', notizen: '' };
     if (f.augen) t.augen = Object.fromEntries(Object.entries(EYE).map(([k, s]) => [k, { L: s.multi ? [] : '', R: s.multi ? [] : '' }]));
     f.sections.forEach(s => s.items.forEach(it => { if (it.multi) t.daten[it.k] = []; }));
+    // Was die Kundin heute digital unterschrieben hat, ist in der Checkliste schon abgehakt
+    if (FCC.formChecks) t.check = FCC.formChecks(c, art, t.datum).filter(x => f.checks.includes(x));
     return t;
   }
 
@@ -508,6 +520,7 @@
             <div class="field"><label for="t-datum">Datum</label><input id="t-datum" type="date" value="${esc(d.datum)}"></div>
             <div class="field"><label for="t-nr">Behandlung Nr.</label><input id="t-nr" inputmode="numeric" value="${esc(d.nr)}"></div>
           </div>
+          ${FCC.formBanner ? FCC.formBanner(c, art) : ''}
           ${prev ? `<div class="banner"><span>Letzte ${esc(art)}-Behandlung am ${fmt(prev.datum)}.${prev.naechstes ? ' <b>Nächstes Mal anders:</b> ' + esc(prev.naechstes) : ''}</span><button type="button" class="btn small" id="takeOver">Werte übernehmen</button></div>
           <div class="legend"><span class="dot prev"></span> gestrichelt = so war es beim letzten Mal</div>` : ''}
         </div>
@@ -558,6 +571,7 @@
         else d.daten[k] = d.daten[k] === o ? '' : o;
       }));
       $$('.chip[data-check]').forEach(b => b.onclick = () => redraw(() => { const x = b.dataset.check; const i = d.check.indexOf(x); i >= 0 ? d.check.splice(i, 1) : d.check.push(x); }));
+      if (FCC.formBind) FCC.formBind($('.sheet'), c, art, () => { if (!$('.sheet')) return; redraw(() => FCC.formChecks(c, art, d.datum).forEach(x => { if (f.checks.includes(x) && !d.check.includes(x)) d.check.push(x); })); }, { rerender: render });
       const tk = $('#takeOver');
       if (tk) tk.onclick = () => redraw(() => {
         if (prev.augen) d.augen = clone(prev.augen);

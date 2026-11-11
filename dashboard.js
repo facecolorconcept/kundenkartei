@@ -33,12 +33,15 @@
         if (l) { const n = days(l.d); if (n >= 42 && n <= 120) out.push({ e, t: art === 'Lash Lift' ? 'lash' : 'brow', sev: 'due', prio: 2, txt: `${art} wieder fällig, zuletzt vor ${ago(n)}` }); }
       });
       // Rückmeldungen und auffällige Ergebnisse bleiben sichtbar, bis ich sie als erledigt markiere
+      // Nur der jüngste Termin je Behandlung zählt (ein neuerer Termin hat den älteren abgelöst), eine Zeile je Termin
       (e.b || []).forEach(b => {
         if (b.n) return;
+        if ((e.b || []).some(x => x.a === b.a && x.d > b.d)) return;
         const n = days(b.d);
-        if (b.z === 'nein' && n <= 120) out.push({ e, b, t: 'b:' + b.id, sev: 'bad', prio: -1, txt: `War unzufrieden mit ${b.a} am ${fmt(b.d)}, bitte nachfassen` });
-        else if (b.z === 'teils' && n <= 90) out.push({ e, b, t: 'b:' + b.id, sev: 'warn', prio: 1, txt: `Nur teilweise zufrieden mit ${b.a} am ${fmt(b.d)}` });
-        if (b.p && n <= 60) out.push({ e, b, t: 'p:' + b.id, sev: 'warn', prio: 1, txt: `${b.a} am ${fmt(b.d)}: ${b.p}` });
+        const auff = b.p && n <= 60 ? ' · ' + b.p : '';
+        if (b.z === 'nein' && n <= 120) out.push({ e, b, t: 'b:' + b.id, sev: 'bad', prio: -1, txt: `War unzufrieden mit ${b.a} am ${fmt(b.d)}, bitte nachfassen${auff}` });
+        else if (b.z === 'teils' && n <= 90) out.push({ e, b, t: 'b:' + b.id, sev: 'warn', prio: 1, txt: `Nur teilweise zufrieden mit ${b.a} am ${fmt(b.d)}${auff}` });
+        else if (auff) out.push({ e, b, t: 'p:' + b.id, sev: 'warn', prio: 1, txt: `${b.a} am ${fmt(b.d)}: ${b.p}` });
       });
       if (FCC.browsTodos) out.push(...FCC.browsTodos(e));
       const nurInteressentin = (e.w || []).length && !(e.b || []).length;

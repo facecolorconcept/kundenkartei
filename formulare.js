@@ -407,10 +407,12 @@
     el.innerHTML = `<ul class="docs">${recs.map(r => {
       const d = DEFS[r.typ]; if (!d) return '';
       const h = hinweise(r); const fertig = istFertig(r);
-      return `<li><span><b style="font-weight:500">${esc(d.titel)}</b><br><span class="cmeta">${fertig ? 'unterschrieben ' + esc(fmtZeit(letzteUnterschrift(r))) : esc(offenerTeil(r).h) + ' noch offen'}</span>
+      const mail = (r.versand || []).slice(-1)[0];
+      return `<li><span><b style="font-weight:500">${esc(d.titel)}</b><br><span class="cmeta">${fertig ? 'unterschrieben ' + esc(fmtZeit(letzteUnterschrift(r))) : esc(offenerTeil(r).h) + ' noch offen'}${mail ? ' · per Mail gesendet ' + esc(fmtZeit(mail.zeit)) : ''}</span>
         ${h.length ? `<br><span class="fo-st alt">Angekreuzt: ${esc(h.join(' · '))}</span>` : ''}</span>
-        <span class="row" style="gap:6px;flex-wrap:nowrap;align-self:center"><button class="btn ghost small" data-foview="${esc(r.id)}">Ansehen</button><button class="btn ghost small" data-fopdf="${esc(r.id)}">PDF</button></span></li>`;
+        <span class="row" style="gap:6px;flex-wrap:nowrap;align-self:center"><button class="btn ghost small" data-foview="${esc(r.id)}">Ansehen</button><button class="btn ghost small" data-fopdf="${esc(r.id)}">PDF</button>${fertig ? `<button class="btn ghost small" data-fomail="${esc(r.id)}">Mail</button>` : ''}</span></li>`;
     }).join('')}</ul>`;
+    el.querySelectorAll('[data-fomail]').forEach(b => b.onclick = () => mailFenster(c, c.formulare.find(r => r.id === b.dataset.fomail), u));
     el.querySelectorAll('[data-foview]').forEach(b => b.onclick = () => ansehen(c, c.formulare.find(r => r.id === b.dataset.foview), u));
     el.querySelectorAll('[data-fopdf]').forEach(b => b.onclick = () => pdfAusgeben(c, c.formulare.find(r => r.id === b.dataset.fopdf), false, b));
   };
@@ -719,11 +721,11 @@
     rt.innerHTML = `<div class="sheet-bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(def.titel)}">
       <div class="sheet-head"><div class="wrap"><div><span class="label">${esc(nameVon(w))}</span><h2>${esc(def.titel)}</h2></div><button class="btn ghost small" id="foVz">Schließen</button></div></div>
       ${bereich}
-      <div class="sheet-foot"><div class="wrap"><button class="btn ghost" id="foVt" ${navigator.canShare ? '' : 'hidden'}>PDF teilen</button><button class="btn" id="foVp">PDF herunterladen</button></div></div>
+      <div class="sheet-foot"><div class="wrap"><button class="btn ghost" id="foVm" ${istFertig(rec) ? '' : 'hidden'}>Per Mail senden</button><button class="btn" id="foVp">PDF herunterladen</button></div></div>
     </div></div>`;
     rt.querySelector('#foVz').onclick = () => { rt.innerHTML = ''; };
     rt.querySelector('#foVp').onclick = e => pdfAusgeben(c, rec, false, e.currentTarget);
-    rt.querySelector('#foVt').onclick = e => pdfAusgeben(c, rec, true, e.currentTarget);
+    rt.querySelector('#foVm').onclick = () => mailFenster(c, rec);
   }
 
   // ---------- PDF im Design von Facecolorconcept ----------
@@ -974,7 +976,7 @@
       obj(id + 1, () => push(`<< /Length ${enc.encode(inhalt).length} >>\nstream\n${inhalt}\nendstream`));
     });
     const infoId = SEITE0 + n * 2;
-    obj(infoId, () => push(`<< /Title ${hex(def.titel + ' – ' + nameVon(w))} /Author ${hex(S.voll)} /Subject ${hex('Formular-Nr. ' + rec.id)} /Producer (Facecolorconcept Kartei) >>`));
+    obj(infoId, () => push(`<< /Title ${hex(def.titel + ' - ' + nameVon(w))} /Author ${hex(S.voll)} /Subject ${hex('Formular-Nr. ' + rec.id)} /Producer (Facecolorconcept Kartei) >>`));
     const xref = len;
     let xr = `xref\n0 ${infoId + 1}\n0000000000 65535 f \n`;
     for (let i = 1; i <= infoId; i++) xr += String(offs[i]).padStart(10, '0') + ' 00000 n \n';
@@ -1010,6 +1012,50 @@
     finally { if (btn) { btn.disabled = false; btn.textContent = alt; } }
   }
   FCC.formPdf = pdfBauen; // für Tests
+
+  // ---------- Formular per E-Mail an die Kundin (über Gmail, Absender = angemeldetes Konto) ----------
+  async function mailFenster(c, rec, u) {
+    if (!rec || !istFertig(rec)) return;
+    const def = DEFS[rec.typ]; const w = rec.werte || {};
+    const du = def.du;
+    const text = du
+      ? `Hallo ${c.vorname || w.vorname || ''},\n\nwie gewünscht schicke ich dir dein unterschriebenes Formular „${def.titel}“ als PDF im Anhang.\n\nBei Fragen melde dich gern.\n\nLiebe Grüße\n${S.kurz}\n\n${S.voll}\n${S.adr}\n${S.tel} · ${S.web}`
+      : `Hallo ${[c.vorname || w.vorname, c.nachname || w.nachname].filter(Boolean).join(' ')},\n\nwie gewünscht erhalten Sie Ihr unterschriebenes Formular „${def.titel}“ als PDF im Anhang.\n\nBei Fragen melden Sie sich gern.\n\nViele Grüße\n${S.inh}\n\n${S.voll}\n${S.adr}\n${S.tel} · ${S.web}`;
+    const rt = document.getElementById('sheetRoot');
+    rt.innerHTML = `<div class="sheet-bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="Formular per Mail senden">
+      <div class="sheet-head"><div class="wrap"><div><span class="label">${esc(def.titel)}</span><h2>Per Mail an die Kundin</h2></div><button class="btn ghost small" id="foMz">Schließen</button></div></div>
+      <div class="wrap sec"><div class="grid2">
+        <div class="field full"><label for="foMan">An</label><input id="foMan" type="email" autocapitalize="off" value="${esc(c.email || w.email || '')}" placeholder="E-Mail-Adresse der Kundin"></div>
+        <div class="field full"><label for="foMb">Betreff</label><input id="foMb" value="${esc(`${du ? 'Dein' : 'Ihr'} Formular „${def.kurz}“ von ${S.name}`)}"></div>
+        <div class="field full"><label for="foMt">Text</label><textarea id="foMt" rows="12">${esc(text)}</textarea></div>
+      </div>
+      <p class="cmeta" style="margin:12px 0 0">Anhang: <b>${esc(pdfName(c, rec))}</b><br>Absender: <b id="foMabs">wird geprüft …</b></p>
+      <label style="display:flex;gap:12px;margin-top:16px;align-items:flex-start;cursor:pointer;background:var(--rose-soft);border-radius:12px;padding:12px 14px"><input type="checkbox" id="foMok" style="width:22px;height:22px;accent-color:var(--rose);flex-shrink:0;margin-top:2px"> <span>Die Kundin wünscht den Versand per E-Mail an genau diese Adresse. <span class="cmeta">Das Formular enthält Gesundheitsangaben.</span></span></label>
+      </div>
+      <div class="sheet-foot"><div class="wrap"><button class="btn ghost" id="foMz2">Abbrechen</button><button class="btn" id="foMs">Senden</button></div></div>
+    </div></div>`;
+    const zu = () => { rt.innerHTML = ''; };
+    rt.querySelector('#foMz').onclick = zu; rt.querySelector('#foMz2').onclick = zu;
+    const abs = rt.querySelector('#foMabs');
+    if (Store.absender) Store.absender().then(a => { abs.textContent = a || 'dein angemeldetes Google-Konto'; }).catch(() => { abs.textContent = 'dein angemeldetes Google-Konto'; });
+    rt.querySelector('#foMs').onclick = async e => {
+      const toast = (m, l) => FCC.toast && FCC.toast(m, l);
+      const an = rt.querySelector('#foMan').value.trim();
+      if (!/^[^\s@<>,;"]+@[^\s@<>,;"]+\.[^\s@<>,;"]+$/.test(an)) { toast('Bitte eine gültige E-Mail-Adresse eintragen.'); return; }
+      if (!rt.querySelector('#foMok').checked) { toast('Bitte bestätigen, dass die Kundin den Versand per E-Mail wünscht.'); return; }
+      if (!Store.mailSenden) { toast('Mail-Versand ist in dieser Version nicht verfügbar.', true); return; }
+      const btn = e.currentTarget; btn.disabled = true; btn.textContent = 'Sendet …';
+      try {
+        const blob = await pdfBauen(c, rec);
+        await Store.mailSenden({ an, betreff: rt.querySelector('#foMb').value.trim() || def.titel, text: rt.querySelector('#foMt').value, anhang: { name: pdfName(c, rec), blob } });
+        rec.versand = rec.versand || []; rec.versand.push({ an, zeit: jetzt(), wunsch: true });
+        if (!c.email) c.email = an;
+        try { await Store.save(c); } catch (x) { toast('Mail gesendet, aber der Vermerk in der Akte konnte nicht gespeichert werden: ' + x.message, true); }
+        zu(); if (u && u.rerender) u.rerender(); else if (FCC.openCustomer && c.id) FCC.openCustomer(c.id);
+        toast('Mail gesendet an ' + an + '. Du findest sie in Gmail unter „Gesendet“.', true);
+      } catch (x) { toast(x.message || String(x), true); btn.disabled = false; btn.textContent = 'Senden'; }
+    };
+  }
 
   // ---------- Datenauskunft (Art. 15 DSGVO) als PDF ----------
   // Allgemeiner Seitenbau im Studio-Design: Kopf mit Logo, Abschnitte, Zeilen, Fuß mit Seitenzahl

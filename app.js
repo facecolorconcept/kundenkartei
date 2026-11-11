@@ -1,6 +1,7 @@
 // Facecolorconcept Kundenkartei – Oberfläche
 (function () {
   const C = window.FCC_CONFIG || {};
+  let FCC_BOGEN_ZEILEN = null;
 
   // ---------- Behandlungsbögen ----------
   const EYE = {
@@ -92,6 +93,19 @@
     }
   };
   const ARTS = Object.keys(FORMS);
+  // Behandlungsbogen als lesbare Zeilen [Bezeichnung, Wert], z. B. für die Datenauskunft
+  const wert = v => Array.isArray(v) ? v.join(', ') : String(v == null ? '' : v);
+  FCC_BOGEN_ZEILEN = b => {
+    const f = FORMS[b.art]; const out = [];
+    if (b.augen) Object.entries(EYE).forEach(([k, s]) => { const a = b.augen[k] || {}; const l = wert(a.L), r = wert(a.R); if (l || r) out.push([s.t, `links: ${l || '–'} · rechts: ${r || '–'}`]); });
+    if (f) f.sections.forEach(s => s.items.forEach(it => { const roh = (b.daten || {})[it.k]; const v = it.date && roh ? fmt(roh) : wert(roh); if (v) out.push([it.l, v]); }));
+    else Object.entries(b.daten || {}).forEach(([k, v]) => { if (wert(v)) out.push([k, wert(v)]); });
+    if ((b.check || []).length) out.push(['Checkliste', b.check.join(', ')]);
+    if (b.naechstes) out.push(['Nächstes Mal anders', b.naechstes]);
+    if (b.notizen) out.push(['Notizen', b.notizen]);
+    if ((b.fotos || []).length) out.push(['Fotos', `${b.fotos.length} Foto${b.fotos.length > 1 ? 's' : ''}`]);
+    return out;
+  };
 
   // ---------- Beispieldaten ----------
   window.FCC_DEMO = [
@@ -322,7 +336,7 @@
           <div class="row between"><h2>Dokumente</h2><button class="btn ghost small" id="docBtn">+ Dokument</button></div>
           <input type="file" id="docInput" hidden>
           ${c.dokumente.length ? `<ul class="docs">${c.dokumente.map(d => `<li><span>${esc(d.name)}<br><span class="cmeta">${fmt(d.datum)}</span></span>${safeUrl(d.link) ? `<a class="mini" href="${esc(safeUrl(d.link))}" target="_blank" rel="noopener">In Drive öffnen</a>` : ''}</li>`).join('')}</ul>` : '<p class="cmeta">Hier landen die PDFs der digital unterschriebenen Formulare, außerdem Rechnungen und ältere Papier-Formulare.</p>'}
-          <button class="btn ghost small" id="auskunftBtn" style="margin-top:12px" title="Alle gespeicherten Angaben zur Kundin als Datei, z. B. wenn sie nach DSGVO Auskunft verlangt">Datenauskunft für die Kundin</button>
+          <button class="btn ghost small" id="auskunftBtn" style="margin-top:12px" title="Alle gespeicherten Angaben zur Kundin als PDF, z. B. wenn sie nach DSGVO Auskunft verlangt">Datenauskunft für die Kundin (PDF)</button>
         </div>
       </div>`;
     $('#backBtn').onclick = back;
@@ -382,17 +396,8 @@
       try { img.src = await Store.photoUrl(p); } catch (err) { img.alt = 'Foto lädt nicht'; }
     });
     $$('#detail .thumb').forEach(t => t.onclick = () => { const src = t.querySelector('img').src; if (src) showPhoto(src); });
-    // DSGVO Art. 15: alle gespeicherten Angaben zur Kundin als lesbare Datei
-    $('#auskunftBtn').onclick = () => {
-      const strip = o => JSON.parse(JSON.stringify(o, (k, v) => ['ordnerId', 'fotosId', 'dokuId', 'kontaktId', 'data', 'fileId', 'link', 'altdaten', 'png', 'pdf'].includes(k) ? undefined : v));
-      const daten = { erstellt_am: today(), studio: C.STUDIO || 'Facecolorconcept', adresse: C.ADRESSE || '', hinweis: 'Diese Datei enthält alle Angaben, die in der Kundenkartei zu dir gespeichert sind. Fotos und Dokumente sind namentlich aufgeführt und können als Kopie ausgehändigt werden.',
-        kundin: strip(c), fotos: allPhotos(c).map(p => `${p.typ || ''} ${p.datum || ''} ${p.art || ''}`.trim()), dokumente: (c.dokumente || []).map(d => d.name) };
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([JSON.stringify(daten, null, 2)], { type: 'application/json' }));
-      a.download = `Datenauskunft_${(c.nachname || '').replace(/[^\wäöüÄÖÜß-]/g, '')}_${today()}.json`;
-      document.body.append(a); a.click(); a.remove();
-      toast('Datei erstellt. Bitte nur direkt an die Kundin weitergeben.', true);
-    };
+    // DSGVO Art. 15: alle gespeicherten Angaben zur Kundin als lesbares PDF im Studio-Design
+    $('#auskunftBtn').onclick = e => { if (FCC.auskunftPdf) FCC.auskunftPdf(c, e.currentTarget, allPhotos(c)); };
     $('#docBtn').onclick = () => $('#docInput').click();
     $('#docInput').onchange = e => {
       const file = e.target.files[0]; e.target.value = '';
@@ -647,6 +652,7 @@
   window.FCC = window.FCC || {};
   FCC.openCustomer = id => { FCC.show('kartei'); return openCustomer(id); };
   FCC.showPhoto = showPhoto;
+  FCC.bogenZeilen = FCC_BOGEN_ZEILEN;
   FCC.toast = toast;
   FCC.newCustomer = () => { FCC.show('kartei'); openCustomerSheet(null); };
   // Liste mit Filter öffnen, z. B. FCC.openList('Jetzt dran', e => …, 'zuletzt')

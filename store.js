@@ -402,6 +402,53 @@
       catch (e) { if (!/\((404|410)\)/.test(e.message)) throw e; }
     },
 
+    // ---------- E-Mail über Gmail (nur Senden) ----------
+    // Eigene Erlaubnis, die erst beim ersten Versand abgefragt wird. Die normale Anmeldung bleibt davon unberührt.
+    async mailToken() {
+      if (this.mailTok && Date.now() < this.mailTok.e) return this.mailTok.t;
+      await this.loadGoogle();
+      const MAIL = 'https://www.googleapis.com/auth/gmail.send';
+      return new Promise((res, rej) => {
+        const cl = google.accounts.oauth2.initTokenClient({ client_id: C.CLIENT_ID, scope: MAIL, include_granted_scopes: true, login_hint: C.LOGIN_HINT || undefined,
+          callback: r => {
+            if (r.error) return rej(new Error('Die Erlaubnis zum Senden wurde nicht erteilt.'));
+            if (!google.accounts.oauth2.hasGrantedAllScopes(r, MAIL)) return rej(new Error('Bitte beim Google-Fenster das Häkchen „E-Mails in Ihrem Namen senden“ setzen.'));
+            this.mailTok = { t: r.access_token, e: Date.now() + (Number(r.expires_in || 3600) - 120) * 1000 };
+            res(r.access_token);
+          },
+          error_callback: e => rej(new Error(e && e.type === 'popup_closed' ? 'Das Google-Fenster wurde geschlossen.' : 'Google-Fenster konnte nicht geöffnet werden. Ist ein Popup-Blocker aktiv?')) });
+        cl.requestAccessToken({ prompt: '' });
+      });
+    },
+    // Adresse des angemeldeten Kontos (Absender)
+    async absender() {
+      if (this._absender) return this._absender;
+      const r = await this.json(`${API}/about?fields=user(emailAddress)`);
+      return (this._absender = (r.user && r.user.emailAddress) || '');
+    },
+    async mailSenden({ an, betreff, text, anhang }) {
+      const tok = await this.mailToken();
+      const b64 = async blob => { const u = new Uint8Array(await blob.arrayBuffer()); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s).replace(/.{76}/g, '$&\r\n'); };
+      const utf8b64 = t => btoa(unescape(encodeURIComponent(t)));
+      const kopf = t => '=?UTF-8?B?' + utf8b64(t) + '?=';
+      const grenze = 'fcc' + Math.random().toString(36).slice(2);
+      const mime = [
+        `To: ${an}`, `Subject: ${kopf(betreff)}`, 'MIME-Version: 1.0', `Content-Type: multipart/mixed; boundary="${grenze}"`, '',
+        `--${grenze}`, 'Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: base64', '', utf8b64(text).replace(/.{76}/g, '$&\r\n'), '',
+        `--${grenze}`, `Content-Type: application/pdf; name="${kopf(anhang.name)}"`, `Content-Disposition: attachment; filename="${kopf(anhang.name)}"`, 'Content-Transfer-Encoding: base64', '',
+        await b64(anhang.blob), '', `--${grenze}--`, ''
+      ].join('\r\n');
+      const roh = utf8b64(mime).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      const r = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify({ raw: roh }) });
+      if (!r.ok) {
+        if (r.status === 401) this.mailTok = null;
+        let m = ''; try { m = (await r.json()).error.message || ''; } catch (e) {}
+        if (r.status === 403 && /has not been used|disabled/i.test(m)) throw new Error('Die Gmail-Schnittstelle ist bei Google noch nicht eingeschaltet. Anleitung in der Hilfe unter „Formulare und Unterschrift“.');
+        throw new Error('Gmail meldet einen Fehler (' + r.status + ')' + (m ? ': ' + m : ''));
+      }
+      return r.json();
+    },
+
     async remind(title, date, desc) {
       const end = new Date(date + 'T12:00');
       end.setDate(end.getDate() + 1);
@@ -460,6 +507,8 @@
     async aufgabeAendern(liste, id, f) { const l = this._t() || []; const t = l.find(x => x.id === id); if (t) Object.assign(t, f); this._ts(l); return t; },
     async aufgabeLoeschen(liste, id) { this._ts((this._t() || []).filter(x => x.id !== id)); },
     async erinnerung() { return 'demo_' + Date.now(); },
+    async absender() { return 'info@facecolorconcept.de (Beispielmodus)'; },
+    async mailSenden() { await new Promise(r => setTimeout(r, 400)); return { id: 'demo' }; },
     async erinnerungWeg() {},
     async remind() {}
   };

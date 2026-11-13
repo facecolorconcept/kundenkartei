@@ -635,7 +635,7 @@ ${INH}`;
       <div class="panel card">
         <div class="row between"><h2>${esc(g[1])}</h2>${filt ? '<button class="btn ghost small" data-g="">Filter aufheben</button>' : ''}</div>
         ${shown.length ? `<ul class="todo">${shown.map(x => `<li><span class="sev ${x.s.sev}" aria-hidden="true"></span><button class="who" data-c="${esc(x.e.id)}" data-b="${esc(x.id)}"><b>Folge ${esc(x.f)} · ${esc(name(x.e))}</b><span class="cmeta">${esc(x.s.l)}</span></button></li>`).join('')}</ul>`
-          : `<p class="cmeta" style="margin-top:10px">${all.length ? 'Nichts in dieser Auswahl.' : 'Noch keine Folge. So geht es los: Interessentin anlegen (Name reicht), in ihrer Akte auf „+ Neue Folge“ tippen und die Schritte von oben nach unten ausfüllen.'}</p>`}
+          : `<p class="cmeta" style="margin-top:10px">${all.length ? 'Nichts in dieser Auswahl.' : 'Noch keine Folge. So geht es los: Interessentin anlegen (Name reicht), in ihrer Akte ganz unten auf „+ Brauen-Folge“ tippen und die Schritte von oben nach unten ausfüllen.'}</p>`}
       </div>`;
     el.querySelector('#bNeu').onclick = () => FCC.newCustomer && FCC.newCustomer();
     el.querySelectorAll('[data-g]').forEach(x => x.onclick = () => { filt = x.dataset.g && filt !== x.dataset.g ? x.dataset.g : null; renderModule(); });

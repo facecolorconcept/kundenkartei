@@ -10,7 +10,7 @@
     form: { t: 'Wimpernform (Seitenansicht)', o: ['gerade', 'gerade bis sehr leichte Biegung', 'mit Biegung'] },
     staerke: { t: 'Wimpernstärke', o: ['sehr fein', 'fein', 'normal', 'sehr stark'], note: 'bestimmt die Einwirkzeit der Lotionen' },
     laenge: { t: 'Wimpernlänge', o: ['kurz', 'normal lang', 'sehr lang'], note: 'bestimmt die Pad-Größe' },
-    zustand: { t: 'Zustand der Wimpern', o: ['gesund, kräftig', 'trocken / brüchig', 'lückenhaft', 'Verlängerung / Kleberreste'], multi: true }
+    zustand: { t: 'Zustand der Wimpern', o: ['gesund, kräftig', 'trocken / brüchig', 'lückenhaft', 'Verlängerung / Kleberreste'] }
   };
   const yes = d => d.faerben === 'ja';
 
@@ -21,22 +21,22 @@
         { h: 'Behandlungsplan', items: [
           { k: 'padL', l: 'Pad-Größe L' }, { k: 'padR', l: 'Pad-Größe R' },
           { k: 'lotion1', l: 'Lotion 1 Einwirkzeit (min)', num: 1 }, { k: 'lotion2', l: 'Lotion 2 Einwirkzeit (min)', num: 1 },
-          { k: 'faerben', l: 'Färben', chips: ['ja', 'nein'] },
+          { k: 'faerben', l: 'Färben', chips: ['ja', 'nein'], single: true },
           { k: 'farbe', l: 'Farbe', show: yes }, { k: 'farbeZeit', l: 'Einwirkzeit Farbe (min)', num: 1, show: yes },
-          { k: 'browLift', l: 'Brow Lift dazu', chips: ['ja', 'nein'] }
+          { k: 'browLift', l: 'Brow Lift dazu', chips: ['ja', 'nein'], single: true }
         ] },
         { h: 'Ergebnis', result: true, items: [
-          { k: 'biegung', l: 'Biegung', chips: ['zu schwach', 'genau richtig', 'zu stark'] },
-          { k: 'zufrieden', l: 'Kundin zufrieden', chips: ['ja', 'teils', 'nein'] }
+          { k: 'biegung', l: 'Biegung', chips: ['zu schwach', 'genau richtig', 'zu stark'], solo: ['genau richtig'] },
+          { k: 'zufrieden', l: 'Kundin zufrieden', chips: ['ja', 'teils', 'nein'], single: true }
         ] }
       ],
       checks: ['Kontraindikationen geprüft', 'Fragebogen unterschrieben', 'Kontaktlinsen raus', 'Wimpern gereinigt, fettfrei', 'Foto vorher', 'Foto nachher', 'Pflegehinweise erklärt', 'Folgetermin vereinbart'],
-      summary: d => [['Pad L / R', `${d.padL || '–'} / ${d.padR || '–'}`], ['Lotion 1 / 2', `${d.lotion1 || '–'} / ${d.lotion2 || '–'} min`], ['Färben', yes(d) ? `${d.farbe || '–'} · ${d.farbeZeit || '–'} min` : 'nein'], ['Biegung', d.biegung || '–']]
+      summary: d => [['Pad L / R', `${d.padL || '–'} / ${d.padR || '–'}`], ['Lotion 1 / 2', `${d.lotion1 || '–'} / ${d.lotion2 || '–'} min`], ['Färben', yes(d) ? `${d.farbe || '–'} · ${d.farbeZeit || '–'} min` : 'nein'], ['Biegung', wert(d.biegung) || '–']]
     },
     'PMU': {
       sections: [
         { h: 'Behandlung', items: [
-          { k: 'bereich', l: 'Bereich', chips: ['Augenbrauen', 'Lippen', 'Lidstrich oben', 'Lidstrich unten'], multi: true },
+          { k: 'bereich', l: 'Bereich', chips: ['Augenbrauen', 'Lippen', 'Lidstrich oben', 'Lidstrich unten'] },
           { k: 'technik', l: 'Technik', chips: ['Powder Brows', 'Ombré Brows', 'Hairstroke maschinell', 'Lip Blush', 'Aquarell-Lippen', 'Lidstrich', 'Wimpernkranz'] },
           { k: 'termin', l: 'Termin', chips: ['Ersttermin', 'Nachbehandlung', 'Auffrischung', 'Korrektur'] },
           { k: 'haut', l: 'Hautbild', chips: ['normal', 'trocken', 'ölig', 'empfindlich', 'reif'] }
@@ -49,52 +49,73 @@
         { h: 'Gerät & Arbeitsweise', items: [
           { k: 'geraet', l: 'Gerät' }, { k: 'nadel', l: 'Nadel / Modul' },
           { k: 'stufe', l: 'Hub / Stufe / Geschwindigkeit' }, { k: 'durchgaenge', l: 'Durchgänge', num: 1 },
-          { k: 'betaeubung', l: 'Betäubung', chips: ['keine', 'Creme vorher', 'Gel während', 'beides'] },
+          { k: 'betaeubung', l: 'Betäubung', chips: ['keine', 'Creme vorher', 'Gel während'], solo: ['keine'] },
           { k: 'betaeubungMittel', l: 'Betäubungsmittel' }
         ] },
         { h: 'Ergebnis', result: true, items: [
-          { k: 'reaktion', l: 'Hautreaktion', chips: ['keine', 'leichte Rötung', 'Schwellung', 'starkes Nachbluten'] },
+          { k: 'reaktion', l: 'Hautreaktion', chips: ['keine', 'leichte Rötung', 'Schwellung', 'starkes Nachbluten'], solo: ['keine'] },
           { k: 'aufnahme', l: 'Pigmentaufnahme', chips: ['gleichmäßig', 'fleckig', 'schwach'] },
-          { k: 'zufrieden', l: 'Kundin zufrieden', chips: ['ja', 'teils', 'nein'] }
+          { k: 'zufrieden', l: 'Kundin zufrieden', chips: ['ja', 'teils', 'nein'], single: true }
         ] }
       ],
       checks: ['Kontraindikationen geprüft', 'Einwilligung unterschrieben', 'Vorzeichnung von Kundin freigegeben', 'Foto vorher', 'Foto nachher', 'Pflegehinweise mitgegeben', 'Nachbehandlung vereinbart'],
-      summary: d => [['Technik', d.technik || '–'], ['Termin', d.termin || '–'], ['Pigment', [d.pigment1, d.pigment2].filter(Boolean).join(' + ') || '–'], ['Nadel', d.nadel || '–']]
+      summary: d => [['Technik', wert(d.technik) || '–'], ['Termin', wert(d.termin) || '–'], ['Pigment', [d.pigment1, d.pigment2].filter(Boolean).join(' + ') || '–'], ['Nadel', d.nadel || '–']]
     },
     'Brow Lift': {
       sections: [
         { h: 'Behandlungsplan', items: [
           { k: 'lotion1', l: 'Lotion 1 Einwirkzeit (min)', num: 1 }, { k: 'lotion2', l: 'Lotion 2 Einwirkzeit (min)', num: 1 },
-          { k: 'faerben', l: 'Färben', chips: ['ja', 'nein'] },
+          { k: 'faerben', l: 'Färben', chips: ['ja', 'nein'], single: true },
           { k: 'farbe', l: 'Farbe', show: yes }, { k: 'farbeZeit', l: 'Einwirkzeit Farbe (min)', num: 1, show: yes },
-          { k: 'form', l: 'Formen', chips: ['Zupfen', 'Waxing', 'Faden', 'keins'] }
+          { k: 'form', l: 'Formen', chips: ['Zupfen', 'Waxing', 'Faden', 'keins'], solo: ['keins'] }
         ] },
         { h: 'Ergebnis', result: true, items: [
-          { k: 'ergebnis', l: 'Lifting', chips: ['zu schwach', 'genau richtig', 'zu stark'] },
-          { k: 'zufrieden', l: 'Kundin zufrieden', chips: ['ja', 'teils', 'nein'] }
+          { k: 'ergebnis', l: 'Lifting', chips: ['zu schwach', 'genau richtig', 'zu stark'], solo: ['genau richtig'] },
+          { k: 'zufrieden', l: 'Kundin zufrieden', chips: ['ja', 'teils', 'nein'], single: true }
         ] }
       ],
       checks: ['Kontraindikationen geprüft', 'Fragebogen unterschrieben', 'Foto vorher', 'Foto nachher', 'Pflegehinweise erklärt', 'Folgetermin vereinbart'],
-      summary: d => [['Lotion 1 / 2', `${d.lotion1 || '–'} / ${d.lotion2 || '–'} min`], ['Färben', yes(d) ? `${d.farbe || '–'} · ${d.farbeZeit || '–'} min` : 'nein'], ['Lifting', d.ergebnis || '–']]
+      summary: d => [['Lotion 1 / 2', `${d.lotion1 || '–'} / ${d.lotion2 || '–'} min`], ['Färben', yes(d) ? `${d.farbe || '–'} · ${d.farbeZeit || '–'} min` : 'nein'], ['Lifting', wert(d.ergebnis) || '–']]
     },
     'Waxing': {
       sections: [
         { h: 'Behandlung', items: [
-          { k: 'zonen', l: 'Zonen', chips: ['Augenbrauen', 'Oberlippe', 'Kinn', 'Gesicht', 'Achseln', 'Arme', 'Beine', 'Bikinizone'], multi: true },
+          { k: 'zonen', l: 'Zonen', chips: ['Augenbrauen', 'Oberlippe', 'Kinn', 'Gesicht', 'Achseln', 'Arme', 'Beine', 'Bikinizone'] },
           { k: 'wachs', l: 'Wachs / Zuckerpaste' }, { k: 'temperatur', l: 'Temperatur / Konsistenz' }
         ] },
         { h: 'Ergebnis', result: true, items: [
-          { k: 'reaktion', l: 'Hautreaktion', chips: ['keine', 'leichte Rötung', 'Pickelchen', 'Hautabriss'] },
-          { k: 'zufrieden', l: 'Kundin zufrieden', chips: ['ja', 'teils', 'nein'] }
+          { k: 'reaktion', l: 'Hautreaktion', chips: ['keine', 'leichte Rötung', 'Pickelchen', 'Hautabriss'], solo: ['keine'] },
+          { k: 'zufrieden', l: 'Kundin zufrieden', chips: ['ja', 'teils', 'nein'], single: true }
         ] }
       ],
       checks: ['Kontraindikationen geprüft', 'Haut gereinigt', 'Pflegehinweise erklärt', 'Folgetermin vereinbart'],
-      summary: d => [['Zonen', (d.zonen || []).join(', ') || '–'], ['Wachs', d.wachs || '–'], ['Reaktion', d.reaktion || '–']]
+      summary: d => [['Zonen', wert(d.zonen) || '–'], ['Wachs', d.wachs || '–'], ['Reaktion', wert(d.reaktion) || '–']]
     }
   };
   const ARTS = Object.keys(FORMS);
   // Behandlungsbogen als lesbare Zeilen [Bezeichnung, Wert], z. B. für die Datenauskunft
   const wert = v => Array.isArray(v) ? v.join(', ') : String(v == null ? '' : v);
+  // Auswahlfelder: immer mehrere möglich. Ältere Bögen haben noch einen einzelnen Wert, der wird zur Liste.
+  const liste = v => Array.isArray(v) ? v : (v ? [v] : []);
+  const BETAEUBUNG_ALT = { beides: ['Creme vorher', 'Gel während'] };
+  function alsListen(b, f) {
+    if (b.augen) Object.keys(EYE).forEach(k => { const a = b.augen[k] || (b.augen[k] = {}); a.L = liste(a.L); a.R = liste(a.R); });
+    if (b.daten) f.sections.forEach(s => s.items.forEach(it => {
+      if (!it.chips || it.single) return;
+      let a = liste(b.daten[it.k]);
+      if (it.k === 'betaeubung') a = [...new Set(a.flatMap(x => BETAEUBUNG_ALT[x] || [x]))];
+      b.daten[it.k] = a;
+    }));
+    return b;
+  }
+  // Antippen: an/aus. Eine Solo-Auswahl wie „keine“ nimmt die anderen heraus und umgekehrt.
+  function umschalten(a, o, solo) {
+    const i = a.indexOf(o);
+    if (i >= 0) { a.splice(i, 1); return; }
+    const s = solo || [];
+    if (s.includes(o)) a.length = 0; else s.forEach(x => { const j = a.indexOf(x); if (j >= 0) a.splice(j, 1); });
+    a.push(o);
+  }
   FCC_BOGEN_ZEILEN = b => {
     const f = FORMS[b.art]; const out = [];
     if (b.augen) Object.entries(EYE).forEach(([k, s]) => { const a = b.augen[k] || {}; const l = wert(a.L), r = wert(a.R); if (l || r) out.push([s.t, `links: ${l || '–'} · rechts: ${r || '–'}`]); });
@@ -475,8 +496,8 @@
   function emptyTreatment(c, art) {
     const f = FORMS[art];
     const t = { id: uid(), art, datum: today(), nr: c.behandlungen.filter(b => b.art === art).length + 1, daten: {}, check: [], fotos: [], naechstes: '', notizen: '' };
-    if (f.augen) t.augen = Object.fromEntries(Object.entries(EYE).map(([k, s]) => [k, { L: s.multi ? [] : '', R: s.multi ? [] : '' }]));
-    f.sections.forEach(s => s.items.forEach(it => { if (it.multi) t.daten[it.k] = []; }));
+    if (f.augen) t.augen = Object.fromEntries(Object.entries(EYE).map(([k, s]) => [k, { L: [], R: [] }]));
+    f.sections.forEach(s => s.items.forEach(it => { if (it.chips && !it.single) t.daten[it.k] = []; }));
     // Was die Kundin heute digital unterschrieben hat, ist in der Checkliste schon abgehakt
     if (FCC.formChecks) t.check = FCC.formChecks(c, art, t.datum).filter(x => f.checks.includes(x));
     return t;
@@ -489,6 +510,7 @@
     const prev = isNew ? lastOfArt(c, art) : null;
     const d = existing ? clone(existing) : emptyTreatment(c, art);
     d.fotos = d.fotos || []; d.daten = d.daten || {}; d.check = d.check || [];
+    alsListen(d, f);
     let uploading = 0;
 
     const has = (val, o) => Array.isArray(val) ? val.includes(o) : val === o;
@@ -509,7 +531,7 @@
       const val = d.daten[it.k];
       const pv = prev && prev.daten ? prev.daten[it.k] : undefined;
       if (it.chips) {
-        return `<div class="field full"><span class="flabel">${esc(it.l)}${it.multi ? ' <span class="cmeta">(mehrere möglich)</span>' : ''}</span><div class="chips">${it.chips.map(o => {
+        return `<div class="field full"><span class="flabel">${esc(it.l)}</span><div class="chips">${it.chips.map(o => {
           const on = has(val, o); const was = pv != null && has(pv, o);
           return `<button type="button" class="chip ${on ? 'on' : ''} ${!on && was ? 'prev' : ''}" data-k="${it.k}" data-o="${esc(o)}" aria-pressed="${on}">${esc(o)}</button>`;
         }).join('')}</div></div>`;
@@ -572,15 +594,14 @@
 
     function bind() {
       $$('.dot[data-eye]').forEach(b => b.onclick = () => redraw(() => {
-        const { k, eye, o } = b.dataset; const s = EYE[k];
-        if (s.multi) { const a = d.augen[k][eye]; const i = a.indexOf(o); i >= 0 ? a.splice(i, 1) : a.push(o); }
-        else d.augen[k][eye] = d.augen[k][eye] === o ? '' : o;
+        const { k, eye, o } = b.dataset;
+        umschalten(d.augen[k][eye], o);
       }));
       $$('.chip[data-k]').forEach(b => b.onclick = () => redraw(() => {
         const { k, o } = b.dataset;
         const it = f.sections.flatMap(s => s.items).find(x => x.k === k);
-        if (it.multi) { const a = Array.isArray(d.daten[k]) ? d.daten[k] : (d.daten[k] = []); const i = a.indexOf(o); i >= 0 ? a.splice(i, 1) : a.push(o); }
-        else d.daten[k] = d.daten[k] === o ? '' : o;
+        if (it.single) d.daten[k] = d.daten[k] === o ? '' : o;
+        else umschalten(d.daten[k] = liste(d.daten[k]), o, it.solo);
       }));
       $$('.chip[data-check]').forEach(b => b.onclick = () => redraw(() => { const x = b.dataset.check; const i = d.check.indexOf(x); i >= 0 ? d.check.splice(i, 1) : d.check.push(x); }));
       if (FCC.formBind) FCC.formBind($('.sheet'), c, art, () => { if (!$('.sheet')) return; redraw(() => FCC.formChecks(c, art, d.datum).forEach(x => { if (f.checks.includes(x) && !d.check.includes(x)) d.check.push(x); })); }, { rerender: render });
@@ -589,6 +610,7 @@
         if (prev.augen) d.augen = clone(prev.augen);
         const resetKeys = f.sections.filter(s => s.result).flatMap(s => s.items.map(i => i.k));
         d.daten = clone(prev.daten || {});
+        alsListen(d, f);
         resetKeys.forEach(k => { d.daten[k] = Array.isArray(d.daten[k]) ? [] : ''; });
         toast('Werte vom ' + fmt(prev.datum) + ' übernommen. Bitte anpassen.');
       });

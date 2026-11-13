@@ -52,6 +52,7 @@
       'War die Kundin schon einmal da, siehst du oben <b>„Nächstes Mal anders“</b> vom letzten Termin. <b>Werte übernehmen</b> füllt alles vom letzten Mal vor, das Ergebnis bleibt leer.',
       '<b>Gestrichelte Kreise</b> zeigen, was du beim letzten Mal gewählt hattest.',
       'Fülle die Abschnitte von oben nach unten aus. Antippen wählt aus, noch einmal antippen nimmt es zurück.',
+      'Bei jeder Auswahl kannst du <b>mehrere Felder</b> antippen, zum Beispiel zwei Techniken oder Zupfen und Waxing. Nur bei Ja/Nein-Fragen und bei „Kundin zufrieden“ gilt eine Antwort. Tippst du „keine“ an, gehen die anderen Felder aus.',
       'Trag unter <b>Kundin zufrieden</b> ja, teils oder nein ein. Das erscheint in der Übersicht.',
       'Fotos machst du direkt im Bogen unter <b>Fotos</b>: „+ Foto“ bei Vorher oder Nachher.',
       'Tippe auf <b>Bogen speichern</b>. Danach schlägt die Kartei den passenden <b>Folgetermin</b> vor. Ein Tipp auf „Als Aufgabe anlegen“, fertig.'

@@ -48,7 +48,7 @@
   const dauer = n => n % 365 === 0 ? (n / 365 === 1 ? '12 Monaten' : n / 365 + ' Jahren') : n % 7 === 0 ? (n / 7 === 1 ? '1 Woche' : n / 7 + ' Wochen') : n + ' Tagen';
   FCC.folgeFuer = b => {
     const d = b.daten || {};
-    const t = b.art === 'PMU' ? (d.termin === 'Ersttermin' ? 'pmu-nach' : 'pmu-auff') : b.art === 'Lash Lift' ? 'lash' : b.art === 'Brow Lift' ? 'brow' : b.art === 'Waxing' ? 'wax' : '';
+    const t = b.art === 'PMU' ? ([].concat(d.termin || []).includes('Ersttermin') ? 'pmu-nach' : 'pmu-auff') : b.art === 'Lash Lift' ? 'lash' : b.art === 'Brow Lift' ? 'brow' : b.art === 'Waxing' ? 'wax' : '';
     const f = FOLGE.find(x => x.t === t);
     return f ? { ...f, due: plus(b.datum || heute(), f.tage), text: `${f.l} in ${dauer(f.tage)}` } : null;
   };

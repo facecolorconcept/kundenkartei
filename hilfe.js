@@ -85,7 +85,7 @@
       'Ändern oder löschen: Aufgabe antippen.'
     ], tipp: 'Deine Aufgaben stehen auch in <b>Gmail</b> (rechte Seitenleiste) und in der App <b>Google Tasks</b>. Die Mitteilung aufs iPhone kommt über den <b>Google Kalender</b>: Installiere dafür die Google-Kalender-App oder richte dein Studio-Konto im iPhone-Kalender ein.' },
     { id: 'brows', t: 'If I could do your Brows', k: 'Instagram-Reihe Schritt für Schritt', s: [
-      'Leg die Interessentin als Kundin an (Name reicht) und tippe ganz unten in der Akte auf <b>+ Folge „If I could do your Brows“</b>.',
+      'Leg die Interessentin als Kundin an (Name reicht) und tippe ganz unten in der Akte auf <b>+ Brauen-Folge</b>.',
       '<b>Einwilligung</b>: „Anfrage kopieren“ und per DM schicken. Nach dem Ja: Datum eintragen, „volljährig“ antippen, Screenshot hochladen.',
       '<b>Foto und Analyse</b>: Foto hochladen, mit dem Finger in den Kreis schieben, mit zwei Fingern zoomen. „Linien zeichnen“ und „Nummern setzen“, darunter die drei Punkte.',
       '<b>Vorschlag</b>: Behandlung antippen, Begründung schreiben.',
@@ -105,7 +105,7 @@
       'Druck das PDF aus oder öffne es am iPad und <b>unterschreibe</b> unten auf der letzten Seite.'
     ], tipp: 'Im Bericht stehen nur Datum, Kundin und Leistung. Gesundheitsdaten, Telefonnummern und Fotos sind nie darin. Preise kennt die Kartei nicht, für Umsätze nimm deine Abrechnung.' },
     { id: 'archiv', t: 'Archivieren statt Löschen', k: 'Nichts geht verloren', s: [
-      'In der Akte oben auf <b>Archivieren</b>, dann noch einmal bestätigen.',
+      'In der Akte ganz unten bei Dokumente auf <b>Akte archivieren</b>, dann noch einmal bestätigen.',
       'Die Akte bleibt vollständig erhalten, taucht aber nicht mehr in Übersicht, Liste und Tabelle auf.',
       'Unter der Kundenliste: <b>Archiv anzeigen</b>. Dort öffnest du die Akte und tippst auf <b>Wiederherstellen</b>.',
       'Die globale Suche findet auch archivierte Kundinnen.'
@@ -116,7 +116,7 @@
       'In Google Kontakte, Aufgaben und Kalender landen nur Name, Telefon, E-Mail und Titel, <b>nie Gesundheitsdaten</b>. Schreib auch in Aufgaben-Notizen keine Gesundheitsdaten.',
       'Schütz dein iPhone mit <b>Code und Face ID</b> und dein Google-Konto mit <b>Bestätigung in zwei Schritten</b>.',
       'Melde dich an fremden Geräten immer <b>ab</b>.',
-      'Verlangt eine Kundin <b>Auskunft über ihre Daten</b>: Akte öffnen, ganz unten bei Dokumente auf <b>Datenauskunft für die Kundin (PDF)</b> tippen. Das PDF enthält alles, was über sie gespeichert ist, und ihre Rechte. Gib es nur ihr persönlich, zum Beispiel per E-Mail an ihre eigene Adresse.',
+      'Verlangt eine Kundin <b>Auskunft über ihre Daten</b>: Akte öffnen, ganz unten bei Dokumente auf <b>Datenauskunft (PDF)</b> tippen. Das PDF enthält alles, was über sie gespeichert ist, und ihre Rechte. Gib es nur ihr persönlich, zum Beispiel per E-Mail an ihre eigene Adresse.',
       'Allergien und Kontraindikationen sind Gesundheitsdaten. Mit <b>Google Workspace</b> bekommst du einen Vertrag zur Auftragsverarbeitung mit Google, mit einem privaten Gmail-Konto nicht.'
     ] },
     { id: 'probleme', t: 'Wenn etwas nicht klappt', k: 'Häufige Fragen', faq: [

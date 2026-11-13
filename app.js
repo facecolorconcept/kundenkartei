@@ -56,8 +56,13 @@
           { k: 'reaktion', l: 'Hautreaktion', chips: ['keine', 'leichte Rötung', 'Schwellung', 'starkes Nachbluten'], solo: ['keine'] },
           { k: 'aufnahme', l: 'Pigmentaufnahme', chips: ['gleichmäßig', 'fleckig', 'schwach'] },
           { k: 'zufrieden', l: 'Kundin zufrieden', chips: ['ja', 'teils', 'nein'], single: true }
+        ] },
+        { h: 'Abgeheilt (nach etwa 4 Wochen)', result: true, hint: 'Erst bei der Nachbehandlung ausfüllen. Das frische Ergebnis täuscht, das abgeheilte zeigt, wie gut das Pigment hält.', items: [
+          { k: 'abgeheilt', l: 'Pigment hält', chips: ['gut', 'teils', 'schwach'], single: true },
+          { k: 'abgeheiltNotiz', l: 'Was fällt auf?' }
         ] }
       ],
+      abgeheilt: true,
       checks: ['Kontraindikationen geprüft', 'Einwilligung unterschrieben', 'Vorzeichnung von Kundin freigegeben', 'Foto vorher', 'Foto nachher', 'Pflegehinweise mitgegeben', 'Nachbehandlung vereinbart'],
       summary: d => [['Technik', wert(d.technik) || '–'], ['Termin', wert(d.termin) || '–'], ['Pigment', [d.pigment1, d.pigment2].filter(Boolean).join(' + ') || '–'], ['Nadel', d.nadel || '–']]
     },
@@ -93,6 +98,7 @@
     }
   };
   const ARTS = Object.keys(FORMS);
+  const HERKUNFT = ['Instagram', 'Empfehlung', 'Google', 'Brauen-Reihe', 'Vorbeigekommen', 'Sonstiges'];
   // Behandlungsbogen als lesbare Zeilen [Bezeichnung, Wert], z. B. für die Datenauskunft
   const wert = v => Array.isArray(v) ? v.join(', ') : String(v == null ? '' : v);
   // Auswahlfelder: immer mehrere möglich. Ältere Bögen haben noch einen einzelnen Wert, der wird zur Liste.
@@ -121,6 +127,7 @@
     if (b.augen) Object.entries(EYE).forEach(([k, s]) => { const a = b.augen[k] || {}; const l = wert(a.L), r = wert(a.R); if (l || r) out.push([s.t, `links: ${l || '–'} · rechts: ${r || '–'}`]); });
     if (f) f.sections.forEach(s => s.items.forEach(it => { const roh = (b.daten || {})[it.k]; const v = it.date && roh ? fmt(roh) : wert(roh); if (v) out.push([it.l, v]); }));
     else Object.entries(b.daten || {}).forEach(([k, v]) => { if (wert(v)) out.push([k, wert(v)]); });
+    if ((b.daten || {}).dauer) out.push(['Dauer', b.daten.dauer + ' Minuten']);
     if ((b.check || []).length) out.push(['Checkliste', b.check.join(', ')]);
     if (b.naechstes) out.push(['Nächstes Mal anders', b.naechstes]);
     if (b.notizen) out.push(['Notizen', b.notizen]);
@@ -318,6 +325,8 @@
           <div><span class="label">Allergien</span><br>${esc(c.allergien) || '–'}</div>
           <div><span class="label">Blutverdünner</span><br>${esc(c.blutverduenner) || '–'}</div>
           <div><span class="label">Kontraindikationen</span><br><span class="pill ${fbOk ? 'ok' : 'warn'}">${fbOk ? 'Fragebogen vom ' + fmt(c.fragebogen) : 'Fragebogen fehlt'}</span></div>
+          ${(c.herkunft || []).length ? `<div><span class="label">Gefunden über</span><br>${esc(c.herkunft.join(', '))}</div>` : ''}
+          <div style="grid-column:span 2"><span class="label">Google-Bewertung</span><div class="chips" style="margin-top:4px">${[['gebeten', 'gebeten'], ['erhalten', 'erhalten']].map(([k, l]) => { const on = !!(c.bewertung || {})[k]; return `<button type="button" class="chip ${on ? 'on' : ''}" data-bew="${k}" aria-pressed="${on}" title="${on ? 'am ' + fmt(c.bewertung[k]) : ''}">${on ? '✓ ' : ''}${l}</button>`; }).join('')}</div></div>
         </div>
         ${c.notiz ? `<p class="cnote">${esc(c.notiz)}</p>` : ''}
       </div>
@@ -372,6 +381,12 @@
     if (FCC.formCard) FCC.formCard(c, $('#formSlot'), formU);
     if (FCC.formListe) FCC.formListe(c, $('#foListe'), formU);
     $('#editCust').onclick = () => openCustomerSheet(c);
+    // Google-Bewertung: gebeten / erhalten, ein Tipp speichert sofort
+    $$('[data-bew]').forEach(b => b.onclick = e => {
+      const k = b.dataset.bew; const bw = c.bewertung = c.bewertung || {};
+      if (bw[k]) delete bw[k]; else { bw[k] = today(); if (k === 'erhalten' && !bw.gebeten) bw.gebeten = today(); }
+      busy(e.currentTarget, '…', async () => { await Store.save(c); render(); }).catch(() => {});
+    });
     // Archivieren statt löschen: nichts wird entfernt, die Kundin wird nur ausgeblendet
     $('#archBtn').onclick = e => {
       const b = e.currentTarget;
@@ -470,15 +485,22 @@
       <div class="field"><label for="f-str">Straße und Hausnummer</label><input id="f-str" value="${esc(d.strasse)}"></div>
       <div class="field"><label for="f-plz">PLZ</label><input id="f-plz" inputmode="numeric" value="${esc(d.plz)}"></div>
       <div class="field"><label for="f-ort">Ort</label><input id="f-ort" value="${esc(d.ort)}"></div>
-      <div class="field"><label for="f-all">Allergien</label><input id="f-all" value="${esc(d.allergien)}"></div>
-      <div class="field"><label for="f-bv">Blutverdünner</label><select id="f-bv">${['', 'nein', 'ja'].map(v => `<option value="${v}" ${d.blutverduenner === v ? 'selected' : ''}>${v || 'nicht gefragt'}</option>`).join('')}</select></div>
-      <div class="field"><label for="f-fb">Kontraindikations-Fragebogen unterschrieben am</label><input id="f-fb" type="date" value="${esc(d.fragebogen)}"></div>
+      <div class="field full"><span class="flabel">Wie hat sie dich gefunden?</span><div class="chips" id="f-hk">${HERKUNFT.map(h => `<button type="button" class="chip ${(d.herkunft || []).includes(h) ? 'on' : ''}" data-hk="${esc(h)}" aria-pressed="${(d.herkunft || []).includes(h)}">${esc(h)}</button>`).join('')}</div></div>
       <div class="field full"><label for="f-notiz">Notiz zur Kundin</label><textarea id="f-notiz" rows="2">${esc(d.notiz)}</textarea></div>
+      <details class="field full folge"><summary>Gesundheitsangaben von Hand ändern</summary>
+        <p class="cmeta" style="margin:6px 0 0">Diese Angaben übernimmt die Kartei aus den unterschriebenen Formularen. Hier brauchst du nur etwas zu ändern, wenn eine Kundin noch auf Papier unterschrieben hat.</p>
+        <div class="grid2">
+          <div class="field"><label for="f-all">Allergien</label><input id="f-all" value="${esc(d.allergien)}"></div>
+          <div class="field"><label for="f-bv">Blutverdünner</label><select id="f-bv">${['', 'nein', 'ja'].map(v => `<option value="${v}" ${d.blutverduenner === v ? 'selected' : ''}>${v || 'nicht gefragt'}</option>`).join('')}</select></div>
+          <div class="field"><label for="f-fb">Fragebogen unterschrieben am</label><input id="f-fb" type="date" value="${esc(d.fragebogen)}"></div>
+        </div></details>
     </div></form>`, 'Speichern');
+    $$('#f-hk .chip').forEach(b => b.onclick = () => { const on = !b.classList.contains('on'); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
     $('#f-vn').focus();
     $('#save').onclick = e => {
       const v = { vorname: $('#f-vn').value.trim(), nachname: $('#f-nn').value.trim(), telefon: $('#f-tel').value.trim(), email: $('#f-mail').value.trim(), allergien: $('#f-all').value.trim(), blutverduenner: $('#f-bv').value, fragebogen: $('#f-fb').value, notiz: $('#f-notiz').value.trim(),
-        geburtsdatum: $('#f-gd').value, strasse: $('#f-str').value.trim(), plz: $('#f-plz').value.trim(), ort: $('#f-ort').value.trim() };
+        geburtsdatum: $('#f-gd').value, strasse: $('#f-str').value.trim(), plz: $('#f-plz').value.trim(), ort: $('#f-ort').value.trim(),
+        herkunft: [...$$('#f-hk .chip.on')].map(b => b.dataset.hk) };
       if (!v.vorname || !v.nachname) { toast('Bitte Vor- und Nachname eintragen.'); return; }
       busy(e.currentTarget, 'Speichert …', async () => {
         let target = c;
@@ -553,19 +575,20 @@
           <div class="grid2">
             <div class="field"><label for="t-datum">Datum</label><input id="t-datum" type="date" value="${esc(d.datum)}"></div>
             <div class="field"><label for="t-nr">Behandlung Nr.</label><input id="t-nr" inputmode="numeric" value="${esc(d.nr)}"></div>
+            <div class="field"><label for="d-dauer">Dauer in Minuten</label><input id="d-dauer" data-dk="dauer" inputmode="numeric" placeholder="${prev && prev.daten && prev.daten.dauer ? 'zuletzt: ' + esc(prev.daten.dauer) : 'z. B. 60'}" value="${esc(d.daten.dauer || '')}"></div>
           </div>
           ${FCC.formBanner ? FCC.formBanner(c, art) : ''}
           ${prev ? `<div class="banner"><span>Letzte ${esc(art)}-Behandlung am ${fmt(prev.datum)}.${prev.naechstes ? ' <b>Nächstes Mal anders:</b> ' + esc(prev.naechstes) : ''}</span><button type="button" class="btn small" id="takeOver">Werte übernehmen</button></div>
           <div class="legend"><span class="dot prev"></span> gestrichelt = so war es beim letzten Mal</div>` : ''}
         </div>
         ${f.augen ? Object.keys(EYE).map(eyeTable).join('') : ''}
-        ${f.sections.map((s, i) => `<div class="sec wrap"><h3><span class="n">${startNr + i + 1}</span>${esc(s.h)}</h3><div class="grid2">${s.items.map(item).join('')}</div></div>`).join('')}
+        ${f.sections.map((s, i) => `<div class="sec wrap"><h3><span class="n">${startNr + i + 1}</span>${esc(s.h)}</h3>${s.hint ? `<p class="cmeta" style="margin:6px 0 0">${esc(s.hint)}</p>` : ''}<div class="grid2">${s.items.map(item).join('')}</div></div>`).join('')}
         <div class="sec wrap"><h3><span class="n">${startNr + f.sections.length + 1}</span>Checkliste</h3>
           <div class="chips">${f.checks.map(x => `<button type="button" class="chip ${d.check.includes(x) ? 'on' : ''}" data-check="${esc(x)}" aria-pressed="${d.check.includes(x)}">${d.check.includes(x) ? '✓ ' : ''}${esc(x)}</button>`).join('')}</div>
         </div>
         <div class="sec wrap"><h3><span class="n">${startNr + f.sections.length + 2}</span>Fotos</h3>
           <input type="file" id="photoInput" accept="image/*" multiple hidden>
-          <div class="grid2">${photos('Vorher')}${photos('Nachher')}</div>
+          <div class="grid2">${photos('Vorher')}${photos('Nachher')}${f.abgeheilt ? photos('Abgeheilt') : ''}</div>
           ${uploading ? `<p class="cmeta">${uploading === 1 ? '1 Foto wird' : uploading + ' Fotos werden'} hochgeladen …</p>` : ''}
         </div>
         <div class="sec wrap"><h3><span class="n">${startNr + f.sections.length + 3}</span>Notizen</h3>
@@ -612,6 +635,7 @@
         d.daten = clone(prev.daten || {});
         alsListen(d, f);
         resetKeys.forEach(k => { d.daten[k] = Array.isArray(d.daten[k]) ? [] : ''; });
+        d.daten.dauer = '';
         toast('Werte vom ' + fmt(prev.datum) + ' übernommen. Bitte anpassen.');
       });
       // Fotos

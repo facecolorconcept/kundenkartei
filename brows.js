@@ -35,8 +35,8 @@
     if (!k.v) return { k: 'arbeit', l: 'In Arbeit', sev: 'info', todo: 'Analyse und Vorschau vorbereiten' };
     if (!k.p) return { k: 'bereit', l: 'Bereit für den Bericht', sev: 'due', todo: 'Bericht erzeugen und vorab schicken' };
     if (!k.fr) return { k: 'wartet', l: 'Wartet auf Freigabe', sev: 'due', todo: 'Wartet auf das Ja zur Vorschau' };
-    if (!k.o) return { k: 'frei', l: 'Freigegeben, noch nicht online', sev: 'due', todo: 'Freigegeben: Bilder posten' };
-    return { k: 'online', l: 'Online seit ' + fmt(k.o), sev: '' };
+    if (!k.o) return { k: 'frei', l: 'Freigegeben, noch nicht veröffentlicht', sev: 'due', todo: 'Freigegeben: Bilder veröffentlichen' };
+    return { k: 'online', l: 'Veröffentlicht seit ' + fmt(k.o), sev: '' };
   }
   const kurz = b => ({ id: b.id, f: b.folge, e: b.einwilligung && b.einwilligung.datum && b.einwilligung.volljaehrig ? b.einwilligung.datum : '',
     wd: b.widerrufen || '', gel: b.geloescht || '', v: b.vorschau && b.vorschau.fileId ? 1 : 0, p: b.pdf ? b.pdf.datum : '', fr: b.freigabe || '', o: b.online || '' });
@@ -51,7 +51,7 @@
 
   // Punkte für „Jetzt dran“ in der Übersicht
   FCC.browsTodos = e => (e.w || []).map(w => ({ w, s: status(w) })).filter(x => x.s.todo)
-    .map(x => ({ e, brows: x.w.id, sev: x.s.sev, prio: x.s.sev === 'bad' ? -1 : x.s.sev === 'warn' ? 1 : 2, txt: `Brows Folge ${x.w.f}: ${x.s.todo}` }));
+    .map(x => ({ e, brows: x.w.id, sev: x.s.sev, prio: x.s.sev === 'bad' ? -1 : x.s.sev === 'warn' ? 1 : 2, txt: `Brauen-Reihe Folge ${x.w.f}: ${x.s.todo}` }));
 
   // ---------- Fotos ----------
   const imgCache = {};
@@ -310,7 +310,7 @@ ${INH}`;
     c.brows = c.brows || [];
     const list = [...c.brows].sort((a, b) => (b.folge || 0) - (a.folge || 0));
     el.innerHTML = `<div class="panel card">
-      <div class="row between"><div class="row" style="gap:6px"><h2>If I could do your Brows</h2><button class="qhelp" data-hilfe="brows" aria-label="Hilfe zur Brows-Reihe" title="Hilfe">?</button></div><button class="btn small" id="browsNew">+ Neue Folge</button></div>
+      <div class="row between"><div class="row" style="gap:6px"><h2>Brauen-Reihe (Instagram)</h2><button class="qhelp" data-hilfe="brows" aria-label="Hilfe zur Brauen-Reihe" title="Hilfe">?</button></div><button class="btn small" id="browsNew">+ Neue Folge</button></div>
       ${list.length ? `<ul class="docs">${list.map(b => { const s = status(kurz(b)); return `<li><span><b style="font-weight:500">Folge ${esc(b.folge)}</b> · <span class="bst ${s.sev}">${esc(s.l)}</span><br><span class="cmeta">angelegt ${fmt(b.erstellt)}</span></span><button class="btn ghost small" data-brows="${esc(b.id)}">Öffnen</button></li>`; }).join('')}</ul>`
         : '<p class="cmeta" style="margin-top:10px">Virtuelle Vorschau für Instagram: Einwilligung, Foto, Analyse, Vorschlag und Vorschau eintragen. Daraus entstehen mit einem Klick das PDF für die Kundin und die sechs Bilder für Instagram.</p>'}
     </div>`;
@@ -333,8 +333,8 @@ ${INH}`;
 
     function html() {
       const e = b.einwilligung; const s = status(kurz(b));
-      return `<div class="sheet-bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="Brows Folge ${esc(b.folge)}">
-        <div class="sheet-head"><div class="wrap"><div><span class="label">${esc(c.vorname)} ${esc(c.nachname)} · <span class="bst ${s.sev}">${esc(s.l)}</span></span><h2>Brows · Folge ${esc(b.folge)}</h2></div><button class="btn ghost small" id="bx">Schließen</button></div></div>
+      return `<div class="sheet-bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="Brauen-Reihe Folge ${esc(b.folge)}">
+        <div class="sheet-head"><div class="wrap"><div><span class="label">${esc(c.vorname)} ${esc(c.nachname)} · <span class="bst ${s.sev}">${esc(s.l)}</span></span><h2>Brauen-Reihe · Folge ${esc(b.folge)}</h2></div><button class="btn ghost small" id="bx">Schließen</button></div></div>
 
         <div class="sec wrap"><h3><span class="n">1</span>Einwilligung</h3>
           ${b.widerrufen ? `<div class="banner bad"><span><b>Einwilligung am ${fmt(b.widerrufen)} zurückgezogen.</b> ${b.geloescht ? 'Beitrag und Fotos wurden am ' + fmt(b.geloescht) + ' gelöscht.' : 'Bitte den Beitrag auf Instagram löschen und danach hier bestätigen. Die Kartei legt die Fotos dieser Folge dann in den Drive-Papierkorb.'}</span>${b.geloescht ? '' : '<button type="button" class="btn small" id="bDel">Beitrag gelöscht, Fotos entfernen</button>'}</div>` : ''}
@@ -342,7 +342,7 @@ ${INH}`;
           <div class="row" style="margin-top:10px"><button type="button" class="btn ghost small" id="cpE">Anfrage kopieren</button><button type="button" class="btn ghost small" id="cpD">Danke-Text kopieren</button></div>
           <div class="grid2">
             <div class="field"><label for="eD">Ja erhalten am</label><input type="date" id="eD" value="${esc(e.datum || '')}"></div>
-            <div class="field"><span class="flabel">Screenshot vom Ja</span>${e.beleg ? `<a class="mini" style="margin:0" href="${esc(/^https:\/\//i.test(e.beleg.link || '') ? e.beleg.link : '#')}" target="_blank" rel="noopener">${esc(e.beleg.name)}</a> ` : ''}<button type="button" class="btn ghost small" id="eB">${e.beleg ? 'Ersetzen' : '+ Screenshot'}</button><input type="file" id="eBi" accept="image/*,application/pdf" hidden></div>
+            <div class="field"><span class="flabel">Bildschirmfoto vom Ja</span>${e.beleg ? `<a class="mini" style="margin:0" href="${esc(/^https:\/\//i.test(e.beleg.link || '') ? e.beleg.link : '#')}" target="_blank" rel="noopener">${esc(e.beleg.name)}</a> ` : ''}<button type="button" class="btn ghost small" id="eB">${e.beleg ? 'Ersetzen' : '+ Bildschirmfoto'}</button><input type="file" id="eBi" accept="image/*,application/pdf" hidden></div>
           </div>
           <div class="chips"><button type="button" class="chip ${e.volljaehrig ? 'on' : ''}" id="eV" aria-pressed="${!!e.volljaehrig}">${e.volljaehrig ? '✓ ' : ''}Kundin ist volljährig</button>
             <button type="button" class="chip ${e.markieren ? 'on' : ''}" id="eM" aria-pressed="${!!e.markieren}">${e.markieren ? '✓ ' : ''}möchte markiert werden</button></div>
@@ -401,9 +401,9 @@ ${INH}`;
           </div>
           <div class="grid2">
             <div class="field"><label for="fFr">Kundin hat die Vorschau freigegeben am</label><input type="date" id="fFr" value="${esc(b.freigabe || '')}" ${ok() ? '' : 'disabled'}></div>
-            <div class="field"><label for="fOn">Online seit</label><input type="date" id="fOn" value="${esc(b.online || '')}" ${ok() && b.freigabe ? '' : 'disabled'}></div>
+            <div class="field"><label for="fOn">Veröffentlicht seit</label><input type="date" id="fOn" value="${esc(b.online || '')}" ${ok() && b.freigabe ? '' : 'disabled'}></div>
           </div>
-          <p class="cmeta">Die Instagram-Bilder gibt es erst nach der Freigabe. So geht nichts online, was die Kundin nicht gesehen hat.</p>
+          <p class="cmeta">Die Instagram-Bilder gibt es erst nach der Freigabe. So wird nichts veröffentlicht, was die Kundin nicht gesehen hat.</p>
         </div>
         <div class="sheet-foot"><div class="wrap"><button class="btn ghost" id="bx2">Abbrechen</button><button class="btn" id="bSave">Speichern</button></div></div>
       </div></div>`;
@@ -536,7 +536,7 @@ ${INH}`;
           c.dokumente = c.dokumente || []; c.dokumente.unshift(d);
           read(); b.einwilligung.beleg = { fileId: d.fileId, name: d.name, link: d.link };
           if (!b.einwilligung.datum) b.einwilligung.datum = today();
-          await persist('Screenshot abgelegt');
+          await persist('Bildschirmfoto abgelegt');
           draw();
         }).catch(() => {});
       };
@@ -627,10 +627,10 @@ ${INH}`;
     const el = document.getElementById('mod-brows');
     if (!el || !window.Store) return;
     const all = alleFolgen().map(x => ({ ...x, s: status(x) }));
-    const groups = [['offen', 'Offen', x => !!x.s.todo && x.s.sev !== 'bad'], ['zurueck', 'Zurückgezogen', x => x.s.k === 'zurueck'], ['online', 'Online', x => x.s.k === 'online'], ['alle', 'Alle', () => true]];
+    const groups = [['offen', 'Offen', x => !!x.s.todo && x.s.sev !== 'bad'], ['zurueck', 'Zurückgezogen', x => x.s.k === 'zurueck'], ['online', 'Veröffentlicht', x => x.s.k === 'online'], ['alle', 'Alle', () => true]];
     const g = groups.find(x => x[0] === filt) || groups[3];
     const shown = all.filter(g[2]);
-    el.innerHTML = `<div class="row between hello"><div><h1>If I could do your Brows</h1><p>Erst sehen, dann entscheiden.</p></div><button class="btn" id="bNeu">+ Neue Interessentin</button></div>
+    el.innerHTML = `<div class="row between hello"><div><h1>Brauen-Reihe</h1><p>Deine Instagram-Reihe „If I could do your Brows“: Eine Interessentin schickt dir ein Foto, du zeigst ihr am Bild, wie du ihre Brauen machen würdest. Veröffentlicht wird erst nach ihrem Ja.</p></div><button class="btn" id="bNeu">+ Neue Interessentin</button></div>
       <div class="kpis">${groups.slice(0, 3).map(([k, l, t]) => `<button class="panel kpi tap" data-g="${k}"${filt === k ? ' aria-pressed="true"' : ''}><b>${all.filter(t).length}</b><span>${l}</span></button>`).join('')}</div>
       <div class="panel card">
         <div class="row between"><h2>${esc(g[1])}</h2>${filt ? '<button class="btn ghost small" data-g="">Filter aufheben</button>' : ''}</div>
@@ -655,6 +655,6 @@ ${INH}`;
     '.kpi[aria-pressed="true"]{border-color:var(--rose)}';
   document.head.append(st);
 
-  FCC.register && FCC.register({ id: 'brows', titel: 'Brows', el: 'mod-brows', order: 3, render: renderModule,
+  FCC.register && FCC.register({ id: 'brows', titel: 'Brauen-Reihe', el: 'mod-brows', order: 3, render: renderModule,
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11c3-3.5 7-4.5 10.5-3.5S19 10 21 11.5"/><circle cx="12" cy="16" r="2.5"/><path d="M6.5 16c1.2-1.8 3.2-3 5.5-3s4.3 1.2 5.5 3c-1.2 1.8-3.2 3-5.5 3s-4.3-1.2-5.5-3z"/></svg>' });
 })();

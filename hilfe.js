@@ -84,9 +84,10 @@
       'Erledigt? Tippe auf den <b>Kreis</b> vor der Aufgabe. Die Erinnerung verschwindet dann auch aus dem Kalender.',
       'Ändern oder löschen: Aufgabe antippen.'
     ], tipp: 'Deine Aufgaben stehen auch in <b>Gmail</b> (rechte Seitenleiste) und in der App <b>Google Tasks</b>. Die Mitteilung aufs iPhone kommt über den <b>Google Kalender</b>: Installiere dafür die Google-Kalender-App oder richte dein Studio-Konto im iPhone-Kalender ein.' },
-    { id: 'brows', t: 'If I could do your Brows', k: 'Instagram-Reihe Schritt für Schritt', s: [
+    { id: 'brows', t: 'Brauen-Reihe (Instagram)', k: 'Deine Reihe „If I could do your Brows“ Schritt für Schritt', s: [
+      'Darum geht es: Eine Interessentin schickt dir ein Foto ihrer Brauen. Du zeigst ihr am Bild, wie du sie machen würdest, und veröffentlichst das mit ihrer Erlaubnis auf Instagram.',
       'Leg die Interessentin als Kundin an (Name reicht) und tippe ganz unten in der Akte auf <b>+ Brauen-Folge</b>.',
-      '<b>Einwilligung</b>: „Anfrage kopieren“ und per DM schicken. Nach dem Ja: Datum eintragen, „volljährig“ antippen, Screenshot hochladen.',
+      '<b>Einwilligung</b>: „Anfrage kopieren“ und als Instagram-Nachricht schicken. Nach dem Ja: Datum eintragen, „volljährig“ antippen, Bildschirmfoto der Antwort hochladen.',
       '<b>Foto und Analyse</b>: Foto hochladen, mit dem Finger in den Kreis schieben, mit zwei Fingern zoomen. „Linien zeichnen“ und „Nummern setzen“, darunter die drei Punkte.',
       '<b>Vorschlag</b>: Behandlung antippen, Begründung schreiben.',
       '<b>Vorschau</b>: Simulation in Procreate machen und das fertige Bild hochladen.',

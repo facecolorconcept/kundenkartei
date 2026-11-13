@@ -1151,7 +1151,7 @@
       ['Speicherdauer', 'So lange du Kundin bist und solange gesetzliche Aufbewahrungs- und Nachweispflichten bestehen.']
     ]);
     d.ueberschrift('Deine Kontaktdaten');
-    d.zeilen([['Name', name], ['Geburtsdatum', fmt(c.geburtsdatum)], ['Anschrift', [c.strasse, [c.plz, c.ort].filter(Boolean).join(' ')].filter(Boolean).join(', ')], ['Telefon', c.telefon], ['E-Mail', c.email], ['Kundin seit', fmt(c.erstellt)], ...(c.archiviert ? [['Archiviert seit', fmt(c.archiviert)]] : [])]);
+    d.zeilen([['Name', name], ['Geburtsdatum', fmt(c.geburtsdatum)], ['Anschrift', [c.strasse, [c.plz, c.ort].filter(Boolean).join(' ')].filter(Boolean).join(', ')], ['Telefon', c.telefon], ['E-Mail', c.email], ['Kundin seit', fmt(c.erstellt)], ...((c.herkunft || []).length ? [['Auf das Studio aufmerksam geworden über', c.herkunft.join(', ')]] : []), ...((c.bewertung || {}).gebeten ? [['Um Google-Bewertung gebeten am', fmt(c.bewertung.gebeten)]] : []), ...((c.bewertung || {}).erhalten ? [['Google-Bewertung erhalten (vermerkt am)', fmt(c.bewertung.erhalten)]] : []), ...(c.archiviert ? [['Archiviert seit', fmt(c.archiviert)]] : [])]);
     d.ueberschrift('Gesundheitsangaben');
     d.zeilen([['Allergien', c.allergien], ['Blutverdünner', c.blutverduenner], ['Kontraindikations-Fragebogen vom', fmt(c.fragebogen)]]);
     if (c.notiz || (c.notizen || []).length) {

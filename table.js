@@ -10,7 +10,7 @@
 
   let mode = 'karten';
   try { mode = localStorage.getItem('fcc_kartei_mode') || 'karten'; } catch (e) {}
-  const st = { sort: 'name', dir: 1, q: '', art: '', fb: '', besuch: '' };
+  const st = { sort: 'name', dir: 1, q: '', arts: [], fb: '', besuch: '' };
 
   const COLS = [
     { k: 'name', t: 'Name', v: e => `${e.nachname || ''}, ${e.vorname || ''}`.replace(/^, |, $/g, '') },
@@ -26,7 +26,7 @@
     const q = st.q.toLowerCase().trim();
     let list = (window.Store && Store.list ? Store.list() : []).filter(e => {
       if (q && !(`${e.vorname} ${e.nachname} ${e.telefon} ${(e.f || []).join(' ')}`.toLowerCase().includes(q))) return false;
-      if (st.art && !(e.b || []).some(b => b.a === st.art)) return false;
+      if (st.arts.length && !(e.b || []).some(b => st.arts.includes(b.a))) return false;
       if (st.fb === 'fehlt' && (e.fragebogen || e.nurKontakt)) return false;
       if (st.fb === 'da' && !e.fragebogen) return false;
       const n = days(e.letzte && e.letzte.datum);
@@ -54,14 +54,14 @@
     const box = document.getElementById('tableView');
     if (!box) return;
     const list = rows();
-    const active = st.q || st.art || st.fb || st.besuch;
+    const active = st.q || st.arts.length || st.fb || st.besuch;
     box.innerHTML = `
       <div class="panel card">
         <div class="tfilters">
           <div class="field tq"><label for="t-q">Filtern</label><input id="t-q" type="search" placeholder="Name, Telefon, Pigment, Charge …" value="${esc(st.q)}"></div>
-          ${sel('t-art', 'Behandlung', st.art, [['', 'Alle'], ...ARTS.map(a => [a, a])])}
           ${sel('t-fb', 'Fragebogen', st.fb, [['', 'Alle'], ['fehlt', 'fehlt'], ['da', 'vorhanden']])}
           ${sel('t-besuch', 'Letzter Besuch', st.besuch, [['', 'Alle'], ['30', 'in den letzten 30 Tagen'], ['90', 'in den letzten 90 Tagen'], ['180+', 'vor mehr als 6 Monaten'], ['nie', 'noch nie behandelt']])}
+          <div class="field tarts"><span class="flabel">Behandlung</span><div class="chips"><button type="button" class="chip${st.arts.length ? '' : ' on'}" data-tartall="1" aria-pressed="${!st.arts.length}">Alle</button>${ARTS.map(a => `<button type="button" class="chip${st.arts.includes(a) ? ' on' : ''}" data-tart="${esc(a)}" aria-pressed="${st.arts.includes(a)}">${esc(a)}</button>`).join('')}</div></div>
         </div>
         <div class="row between" style="margin-top:12px">
           <span class="label">${list.length} ${list.length === 1 ? 'Kundin' : 'Kundinnen'}${active ? ' · gefiltert' : ''}</span>
@@ -88,8 +88,10 @@
 
     const q = box.querySelector('#t-q');
     q.oninput = () => { st.q = q.value; const pos = q.selectionStart; renderTable(); const n = document.getElementById('t-q'); n.focus(); n.setSelectionRange(pos, pos); };
-    ['art', 'fb', 'besuch'].forEach(k => { box.querySelector('#t-' + k).onchange = ev => { st[k] = ev.target.value; renderTable(); }; });
-    const r = box.querySelector('#t-reset'); if (r) r.onclick = () => { st.q = st.art = st.fb = st.besuch = ''; renderTable(); };
+    box.querySelector('[data-tartall]').onclick = () => { st.arts = []; renderTable(); };
+    box.querySelectorAll('[data-tart]').forEach(b => b.onclick = () => { const a = b.dataset.tart; const i = st.arts.indexOf(a); i >= 0 ? st.arts.splice(i, 1) : st.arts.push(a); renderTable(); });
+    ['fb', 'besuch'].forEach(k => { box.querySelector('#t-' + k).onchange = ev => { st[k] = ev.target.value; renderTable(); }; });
+    const r = box.querySelector('#t-reset'); if (r) r.onclick = () => { st.q = st.fb = st.besuch = ''; st.arts = []; renderTable(); };
     box.querySelectorAll('[data-sort]').forEach(b => b.onclick = () => {
       if (st.sort === b.dataset.sort) st.dir = -st.dir; else { st.sort = b.dataset.sort; st.dir = ['datum', 'anzahl', 'fb'].includes(st.sort) ? -1 : 1; } // Datum und Anzahl: neueste/meiste zuerst
       renderTable();
@@ -156,7 +158,7 @@
     #tableView{grid-column:1/-1;min-width:0}
     main:not(.table-mode) #tableView{display:none}
     main.table-mode .list-col, main.table-mode .detail-col{display:none!important}
-    .tfilters{display:grid;grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr));gap:12px}
+    .tfilters{display:grid;grid-template-columns:minmax(0,2fr) repeat(2,minmax(0,1fr));gap:12px}.tfilters .tarts{grid-column:1/-1}
     @media(max-width:820px){.tfilters{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.tfilters .tq{grid-column:1/-1}}
     .tscroll{overflow-x:auto;margin-top:12px;border-top:1px solid var(--line)}
     .ktab{width:100%;border-collapse:collapse;font-size:14.5px}

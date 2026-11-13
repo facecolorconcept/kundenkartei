@@ -104,6 +104,15 @@
       'Willst du das PDF direkt verschicken, tippe unten auf <b>PDF teilen</b> und wähle Mail oder WhatsApp.',
       'Druck das PDF aus oder öffne es am iPad und <b>unterschreibe</b> unten auf der letzten Seite.'
     ], tipp: 'Im Bericht stehen nur Datum, Kundin und Leistung. Gesundheitsdaten, Telefonnummern und Fotos sind nie darin. Preise kennt die Kartei nicht, für Umsätze nimm deine Abrechnung.' },
+    { id: 'auswertung', t: 'Meine Auswertung', k: 'Aus den eigenen Behandlungen lernen', s: [
+      'Tippe unten auf <b>Bericht</b> und oben auf <b>Meine Auswertung</b>. „Nachweis“ bringt dich zurück zum Bericht für die Förderung.',
+      '<b>Lerntagebuch</b>: zeigt alles, was du im Bogen unter „Nächstes Mal anders“ notiert hast, und was beim Termin danach herauskam.',
+      '<b>Ergebnis nach Einstellung</b>: zeigt, bei welcher Einwirkzeit ein Lifting zu stark oder zu schwach wurde und bei welchem Hautbild das Pigment gut hält. Ein Tipp auf eine Zeile zeigt die Behandlungen dahinter.',
+      '<b>Dauer</b>: Trag im Bogen oben die Minuten ein, dann siehst du, wie du schneller wirst.',
+      '<b>Abgeheilt</b>: Im PMU-Bogen gibt es den Abschnitt „Abgeheilt (nach etwa 4 Wochen)“ und ein Foto „Abgeheilt“. Öffne bei der Nachbehandlung den Bogen vom Ersttermin und trag ein, wie gut das Pigment gehalten hat.',
+      '<b>Woher kommen die Kundinnen?</b> Tippe beim Anlegen oder unter „Daten ändern“ an, wie sie dich gefunden hat. Mehrere Angaben sind möglich.',
+      '<b>Google-Bewertung</b>: In der Akte oben tippst du „gebeten“ und später „erhalten“ an. Die Auswertung zeigt dir zufriedene Kundinnen, die du noch nicht gefragt hast.'
+    ], tipp: 'Bei wenigen Behandlungen zeigen die Zahlen nur eine Richtung. Die Auswertung ist nur für dich und steht in keinem PDF.' },
     { id: 'archiv', t: 'Archivieren statt Löschen', k: 'Nichts geht verloren', s: [
       'In der Akte ganz unten bei Dokumente auf <b>Akte archivieren</b>, dann noch einmal bestätigen.',
       'Die Akte bleibt vollständig erhalten, taucht aber nicht mehr in Übersicht, Liste und Tabelle auf.',

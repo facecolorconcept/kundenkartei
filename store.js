@@ -22,12 +22,17 @@
   const q = s => String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
   // Auffällige Ergebnisse, die in der Übersicht nicht untergehen sollen
+  const liste = v => Array.isArray(v) ? v : (v ? [v] : []);
   function auffaellig(d) {
     const out = [];
-    if (['Schwellung', 'starkes Nachbluten', 'Hautabriss', 'Pickelchen'].includes(d.reaktion)) out.push('Hautreaktion: ' + d.reaktion);
-    if (['fleckig', 'schwach'].includes(d.aufnahme)) out.push('Pigmentaufnahme ' + d.aufnahme);
-    const erg = d.biegung || d.ergebnis;
-    if (['zu schwach', 'zu stark'].includes(erg)) out.push('Ergebnis ' + erg);
+    // Auswahlfelder können mehrere Werte haben (ältere Bögen: ein einzelner Wert)
+    const treffer = (v, werte) => liste(v).filter(x => werte.includes(x)).join(', ');
+    const rk = treffer(d.reaktion, ['Schwellung', 'starkes Nachbluten', 'Hautabriss', 'Pickelchen']);
+    if (rk) out.push('Hautreaktion: ' + rk);
+    const au = treffer(d.aufnahme, ['fleckig', 'schwach']);
+    if (au) out.push('Pigmentaufnahme ' + au);
+    const erg = treffer(liste(d.biegung).concat(liste(d.ergebnis)), ['zu schwach', 'zu stark']);
+    if (erg) out.push('Ergebnis ' + erg);
     return out.join(', ');
   }
 
@@ -41,7 +46,7 @@
       const d = x.daten || {};
       out.push(d.pigment1 && 'Pigment: ' + d.pigment1, d.charge1 && 'Charge: ' + d.charge1,
         d.pigment2 && 'Pigment: ' + d.pigment2, d.charge2 && 'Charge: ' + d.charge2,
-        d.farbe && 'Farbe: ' + d.farbe, d.technik && 'Technik: ' + d.technik,
+        d.farbe && 'Farbe: ' + d.farbe, liste(d.technik).length && 'Technik: ' + liste(d.technik).join(', '),
         x.notizen && 'Notiz ' + x.art + ': ' + x.notizen, x.naechstes && 'Nächstes Mal: ' + x.naechstes);
     });
     return out.filter(Boolean).map(s => String(s).slice(0, 200));
@@ -57,7 +62,7 @@
       archiv: c.archiviert || '',
       // Kurzfassung für die Übersicht
       fragebogen: c.fragebogen || '', erstellt: c.erstellt || '',
-      b: (c.behandlungen || []).map(x => ({ d: x.datum, a: x.art, t: (x.daten || {}).termin || '', id: x.id,
+      b: (c.behandlungen || []).map(x => ({ d: x.datum, a: x.art, t: liste((x.daten || {}).termin).join(', '), id: x.id,
         z: (x.daten || {}).zufrieden || '', p: auffaellig(x.daten || {}), n: x.nachgefasst || '' })),
       // Suchtexte für die globale Suche (Telefon, Allergien, Notizen, Pigmente, Chargen …)
       // Brows-Reihe: Kurzform für Übersicht und Reiter

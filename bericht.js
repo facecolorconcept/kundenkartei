@@ -143,6 +143,7 @@
   function render() {
     const el = document.getElementById('mod-bericht');
     if (!el || !window.Store) return;
+    if (FCC.lernenModus && FCC.lernenModus()) { FCC.lernen(el); return; }
     const D = daten();
     const aw = auswertung(D.rows);
     const [, , zrName] = zeitraum();
@@ -160,6 +161,7 @@
     const fText = st.filter ? st.filter.text : (sicht === 'kundinnen' ? 'Alle Kundinnen' : 'Alle Behandlungen');
 
     el.innerHTML = `
+      ${FCC.lernenSchalter ? FCC.lernenSchalter() : ''}
       <div class="row between hello">
         <div><div class="row" style="gap:8px"><h1>Bericht</h1><button class="qhelp" data-hilfe="bericht" aria-label="Hilfe zum Bericht" title="Hilfe">?</button></div>
         <p>Kundinnen und Behandlungen auswerten, zum Beispiel als Nachweis für die Förderung.</p></div>

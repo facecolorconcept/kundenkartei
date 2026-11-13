@@ -52,6 +52,16 @@
     return out.filter(Boolean).map(s => String(s).slice(0, 200));
   }
 
+  // Kurzfassung eines Behandlungsbogens für die Auswertung (Einstellungen und Ergebnis)
+  function kurzBogen(x) {
+    const d = x.daten || {}, a = x.augen || {}, j = v => liste(v).join(', ');
+    const o = { m: d.dauer, l1: d.lotion1, l2: d.lotion2, pad: [d.padL, d.padR].filter(Boolean).join(' / '),
+      ws: [...new Set(liste((a.staerke || {}).L).concat(liste((a.staerke || {}).R)))].join(', '),
+      hb: j(d.haut), te: j(d.technik), au: j(d.aufnahme), re: j(d.reaktion), er: j(liste(d.biegung).concat(liste(d.ergebnis))), ab: d.abgeheilt };
+    Object.keys(o).forEach(k => { if (!o[k]) delete o[k]; });
+    return o;
+  }
+
   // Kurzeintrag für die Kundenliste
   function entry(c, dateiId) {
     const last = [...(c.behandlungen || [])].sort((a, b) => b.datum.localeCompare(a.datum))[0];
@@ -63,11 +73,13 @@
       // Kurzfassung für die Übersicht
       fragebogen: c.fragebogen || '', erstellt: c.erstellt || '',
       b: (c.behandlungen || []).map(x => ({ d: x.datum, a: x.art, t: liste((x.daten || {}).termin).join(', '), id: x.id,
-        z: (x.daten || {}).zufrieden || '', p: auffaellig(x.daten || {}), n: x.nachgefasst || '' })),
+        z: (x.daten || {}).zufrieden || '', p: auffaellig(x.daten || {}), n: x.nachgefasst || '',
+        nx: String(x.naechstes || '').slice(0, 300), r: kurzBogen(x) })),
+      hk: liste(c.herkunft), bw: c.bewertung || {},
       // Suchtexte für die globale Suche (Telefon, Allergien, Notizen, Pigmente, Chargen …)
       // Brows-Reihe: Kurzform für Übersicht und Reiter
       w: (c.brows || []).map(x => window.FCC && FCC.browsKurz ? FCC.browsKurz(x) : { id: x.id, f: x.folge }),
-      f: suchfelder(c), v: 3
+      f: suchfelder(c), v: 4
     };
   }
 
@@ -200,7 +212,7 @@
         this.indexId = f.id;
         this.index = await (await this.api(`${API}/files/${f.id}?alt=media`)).json();
         // Ältere Verzeichnisse ohne Kurzfassung einmalig neu aufbauen
-        if (this.index.some(e => e.v !== 3)) await this.rebuildIndex();
+        if (this.index.some(e => e.v !== 4)) await this.rebuildIndex();
       } else {
         await this.rebuildIndex();
       }

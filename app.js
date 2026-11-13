@@ -307,7 +307,7 @@
       <div class="panel card">
         <div class="row between top-align">
           <div><span class="label">Kundenakte</span><h1>${esc(c.vorname)} ${esc(c.nachname)}</h1></div>
-          <div class="row"><button class="btn ghost small" id="editCust">Daten ändern</button><button class="btn ghost small" id="archBtn">${c.archiviert ? 'Wiederherstellen' : 'Archivieren'}</button></div>
+          <div class="row"><button class="btn ghost small" id="editCust">Daten ändern</button></div>
         </div>
         ${c.archiviert ? `<div class="banner"><span><b>Archiviert seit ${fmt(c.archiviert)}.</b> Die Akte bleibt vollständig erhalten, erscheint aber nicht mehr in Übersicht, Liste und Tabelle.</span></div>` : ''}
         <div class="facts">
@@ -333,7 +333,7 @@
           <div class="row"><button class="btn small" data-cphoto="Vorher">+ Vorher-Foto</button><button class="btn small" data-cphoto="Nachher">+ Nachher-Foto</button></div></div>
         <input type="file" id="cPhotoInput" accept="image/*" multiple hidden>
         ${allPhotos(c).length ? `<div class="thumbs" style="margin-top:12px">${allPhotos(c).map(p => `<div style="display:flex;flex-direction:column;gap:4px;min-width:0"><button type="button" class="thumb" data-fid="${esc(p.fileId)}" aria-label="Foto vergrößern"><img alt="" data-src="${esc(p.fileId)}"></button><span class="cmeta">${esc(p.typ)} · ${fmt(p.datum)}${p.art ? ' · ' + esc(p.art) : ''}</span></div>`).join('')}</div>`
-          : '<p class="cmeta" style="margin-top:10px">Noch keine Fotos. Tippe auf „+ Vorher-Foto“ oder „+ Nachher-Foto“. Du kannst ein Foto machen oder aus deinen Bildern wählen.</p>'}
+          : '<p class="cmeta" style="margin-top:10px">Noch keine Fotos. Du kannst ein Foto machen oder aus deinen Bildern wählen.</p>'}
       </div>
       <div class="panel card">
         <div class="row between"><h2>Behandlungsverlauf</h2><span class="label">${sorted.length} ${sorted.length === 1 ? 'Eintrag' : 'Einträge'}</span></div>
@@ -347,7 +347,7 @@
       </div>
       <div class="panel card">
         <div class="row between"><h2>Notizen</h2><span class="label">${c.notizen.length} ${c.notizen.length === 1 ? 'Notiz' : 'Notizen'}</span></div>
-        <div class="field" style="margin-top:10px"><label for="noteText">Neue Notiz</label><textarea id="noteText" rows="2" placeholder="z. B. Termin verschoben, Wunsch für nächstes Mal, Rückmeldung zur Heilung"></textarea></div>
+        <div class="field" style="margin-top:10px"><label for="noteText">Neue Notiz</label><textarea id="noteText" rows="2" placeholder="z. B. Termin verschoben"></textarea></div>
         <button class="btn small" id="noteBtn" style="margin-top:10px">Notiz speichern</button>
         ${c.notizen.length ? `<ul class="docs">${c.notizen.map((n, i) => `<li><span style="white-space:pre-wrap">${esc(n.text)}<br><span class="cmeta">${fmt(n.datum)}</span></span><button class="btn ghost small" style="white-space:nowrap;flex-shrink:0" data-delnote="${i}" aria-label="Notiz löschen">Löschen</button></li>`).join('')}</ul>` : ''}
       </div>
@@ -356,7 +356,7 @@
           <input type="file" id="docInput" hidden>
           <div id="foListe"></div>
           ${c.dokumente.filter(d => !d.formular).length ? `<ul class="docs">${c.dokumente.filter(d => !d.formular).map(d => `<li><span>${esc(d.name)}<br><span class="cmeta">${fmt(d.datum)}</span></span>${safeUrl(d.link) ? `<a class="mini" href="${esc(safeUrl(d.link))}" target="_blank" rel="noopener">In Drive öffnen</a>` : ''}</li>`).join('')}</ul>` : ((c.formulare || []).length ? '' : '<p class="cmeta">Hier landen unterschriebene Formulare, Rechnungen und ältere Papier-Formulare.</p>')}
-          <button class="btn ghost small" id="auskunftBtn" style="margin-top:12px" title="Alle gespeicherten Angaben zur Kundin als PDF, z. B. wenn sie nach DSGVO Auskunft verlangt">Datenauskunft für die Kundin (PDF)</button>
+          <div class="aktefuss"><button class="btn ghost small" id="auskunftBtn" title="Alle gespeicherten Angaben zur Kundin als PDF, z. B. wenn sie nach DSGVO Auskunft verlangt">Datenauskunft (PDF)</button><button class="btn ghost small" id="archBtn">${c.archiviert ? 'Akte wiederherstellen' : 'Akte archivieren'}</button></div>
         </div>
       <div id="browsSlot"></div>
       </div>`;
@@ -365,7 +365,7 @@
     const browsU = { toast, busy, rerender: render };
     if (FCC.browsCard && (c.brows || []).length) FCC.browsCard(c, $('#browsSlot'), browsU);
     else if (FCC.browsCard) {
-      $('#browsSlot').innerHTML = '<button class="btn ghost small" id="browsStart" style="align-self:flex-start">+ Folge „If I could do your Brows“ (Instagram)</button>';
+      $('#browsSlot').innerHTML = '<button class="btn ghost small" id="browsStart" style="align-self:flex-start">+ Brauen-Folge</button>';
       $('#browsStart').onclick = () => { FCC.browsCard(c, $('#browsSlot'), browsU); const n = $('#browsNew'); if (n) n.click(); };
     }
     const formU = { toast, busy, rerender: render, neueBehandlung: art => openTreatmentSheet(c, art, null) };

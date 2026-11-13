@@ -136,7 +136,8 @@
       ['Eine Kundin fehlt auf dem iPhone.', 'Oben rechts auf den Pfeil im Kreis tippen. Das lädt alles neu, auch die Google Kontakte.'],
       ['Ein neuer Google-Kontakt erscheint nicht.', 'Prüfen, ob der Kontakt das Label „Facecolorconcept“ hat. Dann neu laden.'],
       ['Die Erinnerung kommt nicht aufs Handy.', 'Google-Kalender-App installieren und Mitteilungen erlauben, oder das Studio-Konto unter Einstellungen → Kalender → Accounts einrichten.'],
-      ['Das Anmeldefenster öffnet sich nicht.', 'In Safari den Popup-Blocker für die Kartei ausschalten (Einstellungen → Safari → Popups blockieren).']
+      ['Das Anmeldefenster öffnet sich nicht.', 'In Safari den Popup-Blocker für die Kartei ausschalten (Einstellungen → Safari → Popups blockieren).'],
+      ['Beim Mail-Versand kommt „Google-Fenster konnte nicht geöffnet werden“.', 'Noch einmal auf „Senden“ tippen. Beim ersten Versand fragt Google einmal, ob die Kartei Mails über info@facecolorconcept.de senden darf. Dort das Häkchen setzen.']
     ] }
   ];
 

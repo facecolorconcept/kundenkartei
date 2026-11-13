@@ -1044,8 +1044,11 @@
       if (!/^[^\s@<>,;"]+@[^\s@<>,;"]+\.[^\s@<>,;"]+$/.test(an)) { toast('Bitte eine gültige E-Mail-Adresse eintragen.'); return; }
       if (!rt.querySelector('#foMok').checked) { toast('Bitte bestätigen, dass die Kundin den Versand per E-Mail wünscht.'); return; }
       if (!Store.mailSenden) { toast('Mail-Versand ist in dieser Version nicht verfügbar.', true); return; }
+      // Erlaubnis zuerst holen, noch im Tipp: sonst blockt Safari das Google-Fenster, weil das PDF vorher Zeit braucht
+      const erlaubnis = Store.mailToken ? Store.mailToken() : Promise.resolve();
       const btn = e.currentTarget; btn.disabled = true; btn.textContent = 'Sendet …';
       try {
+        await erlaubnis;
         const blob = await pdfBauen(c, rec);
         await Store.mailSenden({ an, betreff: rt.querySelector('#foMb').value.trim() || def.titel, text: rt.querySelector('#foMt').value, anhang: { name: pdfName(c, rec), blob } });
         rec.versand = rec.versand || []; rec.versand.push({ an, zeit: jetzt(), wunsch: true });

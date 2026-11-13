@@ -421,11 +421,12 @@
 
     // ---------- E-Mail über Gmail (nur Senden) ----------
     // Eigene Erlaubnis, die erst beim ersten Versand abgefragt wird. Die normale Anmeldung bleibt davon unberührt.
-    async mailToken() {
-      if (this.mailTok && Date.now() < this.mailTok.e) return this.mailTok.t;
-      await this.loadGoogle();
+    // Wichtig für Safari (iPad/iPhone): Das Google-Fenster muss im selben Moment wie der Tipp aufgehen.
+    // Deshalb kein await davor, wenn das Google-Skript nach der Anmeldung schon geladen ist.
+    mailToken() {
+      if (this.mailTok && Date.now() < this.mailTok.e) return Promise.resolve(this.mailTok.t);
       const MAIL = 'https://www.googleapis.com/auth/gmail.send';
-      return new Promise((res, rej) => {
+      const los = () => new Promise((res, rej) => {
         const cl = google.accounts.oauth2.initTokenClient({ client_id: C.CLIENT_ID, scope: MAIL, include_granted_scopes: true, login_hint: C.LOGIN_HINT || undefined,
           callback: r => {
             if (r.error) return rej(new Error('Die Erlaubnis zum Senden wurde nicht erteilt.'));
@@ -433,9 +434,11 @@
             this.mailTok = { t: r.access_token, e: Date.now() + (Number(r.expires_in || 3600) - 120) * 1000 };
             res(r.access_token);
           },
-          error_callback: e => rej(new Error(e && e.type === 'popup_closed' ? 'Das Google-Fenster wurde geschlossen.' : 'Google-Fenster konnte nicht geöffnet werden. Ist ein Popup-Blocker aktiv?')) });
+          error_callback: e => rej(new Error(e && e.type === 'popup_closed' ? 'Das Google-Fenster wurde geschlossen.' : 'Google-Fenster konnte nicht geöffnet werden. Bitte noch einmal auf „Senden“ tippen. Hilft das nicht: Popup-Blocker für die Kartei ausschalten.')) });
         cl.requestAccessToken({ prompt: '' });
       });
+      if (window.google && google.accounts && google.accounts.oauth2) return los();
+      return this.loadGoogle().then(los);
     },
     // Adresse des angemeldeten Kontos (Absender)
     async absender() {

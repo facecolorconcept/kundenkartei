@@ -83,7 +83,7 @@
             { t: 'info', text: 'Diese Daten unterliegen dem Datenschutz und werden streng vertraulich behandelt. Bei falschen Angaben übernimmt das Studio keinerlei Haftung für die Behandlung.' }] },
           { h: '3. Vertragliche Leistungen', items: [
             { t: 'info', text: 'Hiermit erklärt sich der Kunde einverstanden, dass folgende Pigmentierung vorgenommen wird:' },
-            { t: 'wahl', k: 'leistung', l: 'Art', o: ['Neuarbeit', 'Auffrischung', 'Korrektur'], req: 1, studio: 1 },
+            { t: 'wahl', k: 'leistung', l: 'Art', o: ['Neuarbeit', 'Auffrischung', 'Korrektur'], multi: 1, req: 1, studio: 1 },
             { t: 'wahl', k: 'bereich', l: 'Bereich', o: ['Augenbrauen', 'Lippe Kontur', 'Lippe Schattierung', 'Sonstiges'], multi: 1, req: 1, studio: 1 },
             { t: 'feld', k: 'bereichSonst', l: 'Sonstiger Bereich', studio: 1, req: 1, show: w => (w.bereich || []).includes('Sonstiges') },
             { t: 'wahl', k: 'nacharbeit', l: 'Nacharbeiten', o: [['inbegriffen', 'sind inbegriffen (innerhalb von 3 Monaten)', 'inbegriffen (innerhalb von 3 Monaten)'], ['berechnet', 'werden berechnet', 'werden berechnet']], req: 1, studio: 1 },
@@ -188,11 +188,11 @@
             o: ['Gute Verträglichkeit', 'Ich bekomme häufig Pickel nach der Enthaarung', 'Meine Haut ist lange Zeit gerötet/gereizt', 'Ich habe häufig eingewachsene Haare'] },
           { t: 'feld', k: 'anmerkungen', l: 'Weitere Anmerkungen', area: 1 }] },
         { h: 'Haarwuchs und Körperstellen', items: [
-          { t: 'wahl', k: 'haarwuchs', l: 'Wie beurteilen Sie Ihren Haarwuchs?', o: ['Normal', 'Langsam', 'Schnell'] },
+          { t: 'wahl', k: 'haarwuchs', l: 'Wie beurteilen Sie Ihren Haarwuchs?', o: ['Normal', 'Langsam', 'Schnell'], multi: 1 },
           { t: 'wahl', k: 'stellen', l: 'Gewünschte Körperstellen', multi: 1, o: ['Gesicht', 'Intimbereich', 'Große Körperflächen (Beine/Rücken)'] }] },
         { h: 'Zustand Ihrer Haut und Anamnese', items: [
-          { t: 'wahl', k: 'hauttyp', l: 'Was für einen Hauttyp haben Sie?', o: ['Normal', 'Trocken', 'Ölig'], req: 1 },
-          { t: 'wahl', k: 'hautgefuehl', l: 'Wie schätzen Sie Ihre Haut ein?', o: ['Normal', 'Sensibel', 'Sehr sensibel'], req: 1 },
+          { t: 'wahl', k: 'hauttyp', l: 'Was für einen Hauttyp haben Sie?', o: ['Normal', 'Trocken', 'Ölig'], multi: 1, req: 1 },
+          { t: 'wahl', k: 'hautgefuehl', l: 'Wie schätzen Sie Ihre Haut ein?', o: ['Normal', 'Sensibel', 'Sehr sensibel'], multi: 1, req: 1 },
           { t: 'wahl', k: 'schwitzen', l: 'Schwitzen Sie viel?', o: ['Nein', 'Mittel', 'Ja'], req: 1 },
           JN('haematome', 'Bekommen Sie schnell Hämatome / blaue Flecken?'), JN('hautprobleme', 'Haben Sie an den zu behandelnden Arealen Hautprobleme?'),
           JN('aerztlich', 'Befinden Sie sich in relevanter (haut)ärztlicher Behandlung?'), JN('schwanger', 'Sind Sie schwanger?')] },
@@ -583,7 +583,7 @@
     qa('[data-yn]').forEach(b => b.onclick = () => { const k = b.dataset.yn; w[k] = w[k] === b.dataset.o ? '' : b.dataset.o; neu(); });
     qa('[data-wahl]').forEach(b => b.onclick = () => {
       const k = b.dataset.wahl; const it = sess.teil.seiten.flatMap(p => p.items).find(x => x.k === k); const o = b.dataset.o;
-      if (it.multi) { const a = Array.isArray(w[k]) ? w[k] : (w[k] = []); const i = a.indexOf(o); i >= 0 ? a.splice(i, 1) : a.push(o); } else w[k] = w[k] === o ? '' : o;
+      if (it.multi) { const a = Array.isArray(w[k]) ? w[k] : (w[k] = w[k] ? [w[k]] : []); const i = a.indexOf(o); i >= 0 ? a.splice(i, 1) : a.push(o); } else w[k] = w[k] === o ? '' : o;
       neu();
     });
     qa('[data-kz]').forEach(b => b.onclick = () => { const k = b.dataset.kz; const a = Array.isArray(w[k]) ? w[k] : (w[k] = []); const i = a.indexOf(b.dataset.o); i >= 0 ? a.splice(i, 1) : a.push(b.dataset.o); if (a.length) w[k + '_keins'] = false; neu(); });

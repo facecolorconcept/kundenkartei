@@ -22,7 +22,7 @@
       const pmu = lastOf(e, 'PMU');
       if (pmu) {
         const n = days(pmu.d);
-        if (pmu.t === 'Ersttermin' && n >= 28) {
+        if (String(pmu.t || '').split(', ').includes('Ersttermin') && n >= 28) {
           out.push({ e, t: 'pmu-nach', sev: n > 70 ? 'warn' : 'due', prio: n > 70 ? 0 : 1, txt: `PMU-Nachbehandlung ${n > 70 ? 'überfällig' : 'fällig'}, Ersttermin vor ${ago(n)}` });
         } else if (n >= 330) {
           out.push({ e, t: 'pmu-auff', sev: 'due', prio: 2, txt: `PMU-Auffrischung anbieten, letzte Behandlung vor ${ago(n)}` });

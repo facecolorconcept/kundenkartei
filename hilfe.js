@@ -87,8 +87,21 @@
       '<b>Fotos zoomen</b>: Foto antippen, dann mit zwei Fingern auseinanderziehen, doppelt tippen oder <b>+</b> und <b>−</b> nutzen. Vergrößert schiebst du das Foto mit einem Finger.',
       '<b>Dokumente</b>: die PDFs der digital unterschriebenen Formulare landen hier von selbst. Rechnungen oder alte Papier-Formulare lädst du mit „+ Dokument“ hoch (bis 5 MB). Alles liegt im Ordner der Kundin in Drive.',
       'Ein Foto passt nicht? Antippen, dann <b>Ausblenden</b> (bleibt gespeichert, „Ausgeblendete Fotos zeigen“ holt es zurück) oder <b>Löschen</b> (zweimal tippen; das Foto liegt danach noch 30 Tage im Papierkorb von Google Drive).',
-      'Die Fotos werden vor dem Hochladen verkleinert, damit es auch unterwegs schnell geht.'
+      'Die Fotos werden vor dem Hochladen verkleinert, damit es auch unterwegs schnell geht.',
+      '<b>Nachher-Foto bearbeiten</b>: Foto antippen, dann <b>Bearbeiten</b>. Wie das geht, steht unter „Nachher-Fotos bearbeiten“.'
     ] },
+    { id: 'retusche', t: 'Nachher-Fotos bearbeiten', k: 'Retusche für Vorher/Nachher-Bilder', s: [
+      'Tippe in der Akte oder im Behandlungsbogen auf ein <b>Nachher-Foto</b> und dann auf <b>Bearbeiten</b>.',
+      'Unten wählst du den Reiter: <b>Retuschieren</b>, <b>Make-up</b>, <b>Überlagern</b> oder <b>Kulisse</b>. Darüber stehen die Werkzeuge, bei Retuschieren nach Haut, Farbe, Augen &amp; Zähne und Makel sortiert. Deine Werte aus dem Spickzettel sind schon eingestellt.',
+      '<b>Pinsel</b>: mit dem Finger über die Stelle fahren. Zu viel erwischt? Auf <b>Radierer</b> umschalten. <b>Fläche</b> zeigt rot, was du schon abgefahren hast.',
+      '<b>Stärke</b> und <b>Pinsel</b> stellst du mit den Reglern ein. <b>Dein Wert</b> holt den Wert aus dem Spickzettel zurück. Ein Tipp auf den Werkzeugnamen erklärt das Werkzeug.',
+      '<b>Verheilen</b>: Kreisgröße einstellen und auf Pickel, Narbe oder Fleck tippen. <b>Überlagern</b>: erst eine schöne Hautstelle antippen, dann über die unruhige Stelle malen.',
+      '<b>Make-up</b>: Mit der <b>Pipette</b> tippst du auf Stirn, Haar oder Auge und übernimmst genau diesen Ton für Kontur, Aufhellen oder Hautton. <b>Schwarz</b> betont den Wimpernkranz.',
+      '<b>Kulisse</b>: <b>Alles füllen</b> tippen, dann mit dem Radierer über die Kundin fahren. Der Hintergrund wird weich, die Kundin bleibt scharf.',
+      'Das <b>Häkchen</b> übernimmt, das <b>X</b> verwirft. Beim Wechsel des Werkzeugs wird automatisch übernommen. Oben gehen <b>Zurück</b> und <b>Vor</b>, <b>Vorher</b> gedrückt halten zeigt das Original.',
+      'Zwei Finger zoomen und verschieben. Für Wimpernkranz und Augen nah heranzoomen.',
+      '<b>In Akte speichern</b> legt das Ergebnis als zusätzliches Nachher-Foto ab, gekennzeichnet mit „bearbeitet“. Das Original bleibt immer erhalten. Im Bogen wird es mit „Bogen speichern“ gesichert.'
+    ], tipp: 'Pigmentierte Stellen wie Brauen, Lidstrich und Lippen immer auslassen. Deine Arbeit soll echt bleiben, sonst sieht die Kundin in echt etwas anderes als auf Instagram. Das Foto wird nur im Browser bearbeitet und erst beim Speichern in deinen Drive-Ordner geladen.' },
     { id: 'simulation', t: 'Brauen simulieren', k: 'Vorschau am Vorher-Foto für die Beratung', s: [
       'Öffne die Akte der Kundin und tippe bei <b>Vorher / Nachher</b> auf <b>Brauen simulieren</b>. Das neueste Vorher-Foto ist schon geladen.',
       'Kein passendes Foto? <b>+ Anderes Foto</b> antippen und ein Foto von vorne machen: gerade Kopfhaltung, gleichmäßiges Licht.',

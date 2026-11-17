@@ -99,7 +99,11 @@
       '<b>Make-up</b>: Mit der <b>Pipette</b> tippst du auf Stirn, Haar oder Auge und übernimmst genau diesen Ton für Kontur, Aufhellen oder Hautton. <b>Schwarz</b> betont den Wimpernkranz.',
       '<b>Kulisse</b>: <b>Alles füllen</b> tippen, dann mit dem Radierer über die Kundin fahren. Der Hintergrund wird weich, die Kundin bleibt scharf.',
       'Das <b>Häkchen</b> übernimmt, das <b>X</b> verwirft. Beim Wechsel des Werkzeugs wird automatisch übernommen. Oben gehen <b>Zurück</b> und <b>Vor</b>, <b>Vorher</b> gedrückt halten zeigt das Original.',
-      'Zwei Finger zoomen und verschieben. Für Wimpernkranz und Augen nah heranzoomen.',
+      '<b>Zoomen</b>: mit zwei Fingern auseinanderziehen oder rechts am Bild <b>+</b> und <b>−</b> tippen. Das Viereck zeigt wieder das ganze Bild. Am iPad mit Trackpad und am Notebook geht es auch mit Zusammenziehen auf dem Trackpad oder dem Mausrad.',
+      'Der Pinsel bleibt auf dem Bildschirm gleich groß. Zoomst du hinein, malst du im Bild also feiner. So arbeitest du am Wimpernkranz und an den Augen genau.',
+      '<b>Hand</b> rechts am Bild: Ein Finger verschiebt das Bild, ohne zu malen. Nochmal tippen, dann malst du wieder. Zwei Finger verschieben immer.',
+      '<b>Vergleich</b> (unterster Knopf rechts): links Vorher, rechts Nachher. Mit dem Finger schiebst du die Linie hin und her.',
+      'Mehr Platz fürs Foto: Tipp auf den <b>Griff</b> oben am Bedienfeld. Die Werkzeuge klappen ein, Reiter und Häkchen bleiben.',
       '<b>In Akte speichern</b> legt das Ergebnis als zusätzliches Nachher-Foto ab, gekennzeichnet mit „bearbeitet“. Das Original bleibt immer erhalten. Im Bogen wird es mit „Bogen speichern“ gesichert.'
     ], tipp: 'Pigmentierte Stellen wie Brauen, Lidstrich und Lippen immer auslassen. Deine Arbeit soll echt bleiben, sonst sieht die Kundin in echt etwas anderes als auf Instagram. Das Foto wird nur im Browser bearbeitet und erst beim Speichern in deinen Drive-Ordner geladen.' },
     { id: 'simulation', t: 'Brauen simulieren', k: 'Vorschau am Vorher-Foto für die Beratung', s: [

@@ -32,7 +32,12 @@
     hilfe: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6"/><path d="M12 17h.01"/>',
     zu: '<path d="M6 6l12 12M18 6L6 18"/>',
     ok: '<path d="M5 12.5l4.5 4.5L19 7"/>',
-    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/>'
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    minus: '<path d="M5 12h14"/>',
+    fit: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+    hand: '<path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11V4.5a1.5 1.5 0 0 1 3 0V12M14 11.5V6a1.5 1.5 0 0 1 3 0v8c0 4-2.5 7-6.5 7-3 0-4.5-1.5-6-4l-2-3.5a1.5 1.5 0 0 1 2.6-1.5L8 15"/>',
+    split: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 2v20"/><path d="M3 4h9v16H3z" fill="currentColor" opacity=".35"/>'
   };
   const svg = n => `<svg class="rt-i" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
 
@@ -71,7 +76,7 @@
       info: 'Kopiert Haut von einer schönen Stelle auf eine unruhige. Erst die Quelle antippen, dann über die Stelle malen, die ebenmäßiger werden soll.' },
     verschwinden: { name: 'Verschwinden', kind: 'brush', def: 80, size: 10, hint: 'Kleine Unebenheiten abfahren', rec: 'nach Gefühl',
       info: 'Für ganz kleine Unebenheiten, die nach allem anderen noch übrig sind.' },
-    unschaerfe: { name: 'Unschärfe', kind: 'brush', param: 'blur', def: 50, size: 60, hint: 'Hintergrund abfahren', rec: 'etwas verschwommen',
+    unschaerfe: { name: 'Unschärfe', kind: 'brush', param: 'blur', def: 50, size: 90, hint: 'Hintergrund abfahren', rec: 'etwas verschwommen',
       info: 'Am schnellsten: „Alles füllen“ tippen, dann mit dem Radierer über die Kundin fahren. So bleibt sie scharf und der Hintergrund verschwimmt.' }
   };
   const TABS = [
@@ -101,8 +106,18 @@
         <div class="rt-cursor"></div><div class="rt-marker"></div>
         <div class="rt-badge">Original</div><div class="rt-busy">rechnet …</div>
         <div class="rt-leer">Foto lädt …</div>
+        <div class="rt-split"><span>Vorher</span><b></b><span>Nachher</span></div>
+        <div class="rt-zoom">
+          <button type="button" data-z="in" title="Hineinzoomen" aria-label="Hineinzoomen">${svg('plus')}</button>
+          <button type="button" data-z="out" title="Herauszoomen" aria-label="Herauszoomen">${svg('minus')}</button>
+          <button type="button" data-z="fit" title="Ganzes Bild" aria-label="Ganzes Bild zeigen">${svg('fit')}</button>
+          <button type="button" data-z="hand" title="Bild verschieben" aria-label="Bild mit einem Finger verschieben">${svg('hand')}</button>
+          <button type="button" data-z="split" title="Vorher und Nachher nebeneinander" aria-label="Vergleich Vorher und Nachher">${svg('split')}</button>
+        </div>
+        <div class="rt-zl"></div>
       </div>
       <div class="rt-panel">
+        <button type="button" class="rt-grab" aria-label="Werkzeuge ein- oder ausklappen" title="Werkzeuge ein- oder ausklappen"><i></i></button>
         <div class="rt-opts"></div>
         <div class="rt-srow rt-rowStr"><label class="rt-lblStr">Stärke</label><input type="range" class="rt-sStr" min="0" max="100" value="50" aria-label="Stärke"><span class="rt-val rt-vStr">50 %</span><button type="button" class="rt-reset">Dein Wert</button></div>
         <div class="rt-srow"><label class="rt-lblSize">Pinsel</label><input type="range" class="rt-sSize" min="1" max="100" value="30" aria-label="Pinselgröße"><span class="rt-val rt-vSize"></span></div>
@@ -129,11 +144,12 @@
     let undo = [], redo = [];
     const used = new Set(), vals = {}, sizes = {}, colors = {}, custom = {};
     for (const k in TOOLS) { vals[k] = TOOLS[k].def != null ? TOOLS[k].def : 50; sizes[k] = TOOLS[k].size; if (TOOLS[k].colors) colors[k] = TOOLS[k].colors[TOOLS[k].start || 0].slice(); }
-    let cloneSrc = null, cloneOff = null;
+    let cloneSrc = null, cloneOff = null, hand = false, compare = false, split = 0.5;
     const view = { s: 1, tx: 0, ty: 0, fit: 1 };
     const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
     const busy = on => { q('.rt-busy').style.display = on ? 'block' : 'none'; };
-    const brushR = () => Math.max(1, S * (0.002 + sizes[tool] / 100 * 0.09));
+    // Pinselgröße gilt auf dem Bildschirm: hineinzoomen macht den Pinsel im Bild feiner, wie in Facetune
+    const brushR = () => Math.max(0.5, (3 + sizes[tool] * 0.5) / view.s);
     const blurR = () => Math.max(1, Math.round(S / 500 + vals.unschaerfe / 100 * S / 40));
     const strengthK = () => { const t = TOOLS[tool]; return t.param === 'blur' ? 1 : Math.min(1, vals[tool] / 100 * (t.mult || 1)); };
 
@@ -188,10 +204,11 @@
     function renderAll() { if (base) renderRect(0, 0, W - 1, H - 1); }
     function renderRect(x0, y0, x1, y1) {
       x0 = clamp(x0 | 0, 0, W - 1); y0 = clamp(y0 | 0, 0, H - 1); x1 = clamp(Math.ceil(x1), 0, W - 1); y1 = clamp(Math.ceil(y1), 0, H - 1);
-      const o = out.data, b = base, e = pending && TOOLS[tool].kind !== 'tap' ? getEff() : null, k = strengthK() / 255, sm = showMask;
+      const o = out.data, b = base, e = pending && TOOLS[tool].kind !== 'tap' ? getEff() : null, k = strengthK() / 255, sm = showMask && !compare, sx = compare ? Math.round(split * W) : -1, od = orig.data;
       for (let y = y0; y <= y1; y++) {
         let i = y * W + x0, j = i * 4;
         for (let x = x0; x <= x1; x++, i++, j += 4) {
+          if (x < sx) { o[j] = od[j]; o[j + 1] = od[j + 1]; o[j + 2] = od[j + 2]; o[j + 3] = 255; continue; }
           let r = b[j], g = b[j + 1], bl = b[j + 2]; const m = mask[i];
           if (m && e) { const a = m * k; r += (e[j] - r) * a; g += (e[j + 1] - g) * a; bl += (e[j + 2] - bl) * a; }
           if (sm && m) { const a = m / 255 * 0.42; r += (225 - r) * a; g += (40 - g) * a; bl += (110 - bl) * a; }
@@ -289,7 +306,12 @@
     }
 
     // ---------- Ansicht ----------
-    function applyView() { cv.style.transform = `translate(${view.tx}px,${view.ty}px) scale(${view.s})`; placeMarker(); }
+    function applyView() { cv.style.transform = `translate(${view.tx}px,${view.ty}px) scale(${view.s})`; placeMarker(); placeSplit(); zoomLabel(); }
+    let zlT;
+    function zoomLabel() { if (!base) return; const z = q('.rt-zl'); z.textContent = Math.round(view.s / view.fit * 100) + ' %'; z.classList.add('show'); clearTimeout(zlT); zlT = setTimeout(() => z.classList.remove('show'), 900); }
+    function placeSplit() { const el = q('.rt-split'); if (!base || !compare) { el.style.display = 'none'; return; } el.style.display = 'flex'; el.style.left = (view.tx + split * W * view.s) + 'px'; }
+    function zoomBy(f) { const r = stage.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, view.s * f); }
+    function zoomBtns() { qa('.rt-zoom [data-z]').forEach(b => { const z = b.dataset.z; b.classList.toggle('on', (z === 'hand' && hand) || (z === 'split' && compare)); }); }
     function fit() { if (!base) return; const r = stage.getBoundingClientRect(), s = Math.min(r.width / W, r.height / H) * 0.96; view.fit = s; view.s = s; view.tx = (r.width - W * s) / 2; view.ty = (r.height - H * s) / 2; applyView(); }
     function toImg(cx, cy) { const r = stage.getBoundingClientRect(); return { x: (cx - r.left - view.tx) / view.s, y: (cy - r.top - view.ty) / view.s }; }
     const zMax = () => Math.max(view.fit * 14, 6);
@@ -306,7 +328,7 @@
     // ---------- Finger, Stift und Maus ----------
     const pts = new Map(); let mode = null, down = null, moved = false, pinch0 = null;
     stage.addEventListener('pointerdown', e => {
-      if (!base) return;
+      if (!base || e.target.closest('.rt-zoom')) return;
       e.preventDefault(); try { stage.setPointerCapture(e.pointerId); } catch (_) {}
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pts.size === 2) { // zweiter Finger: Strich zurücknehmen, zoomen und verschieben
@@ -317,7 +339,8 @@
       }
       if (pts.size > 2) return;
       down = { x: e.clientX, y: e.clientY }; moved = false;
-      if (e.pointerType === 'mouse' && e.button !== 0) { mode = 'pan'; pinch0 = { x: e.clientX, y: e.clientY, tx: view.tx, ty: view.ty }; return; }
+      if ((e.pointerType === 'mouse' && e.button !== 0) || hand || spaceDown) { mode = 'pan'; pinch0 = { x: e.clientX, y: e.clientY, tx: view.tx, ty: view.ty }; return; }
+      if (compare) { mode = 'split'; setSplit(e.clientX); return; }
       const t = TOOLS[tool];
       if (pipette || t.kind === 'tap' || (t.kind === 'clone' && !cloneSrc)) { mode = 'tap'; showCursor(e.clientX, e.clientY); return; }
       mode = 'paint'; showCursor(e.clientX, e.clientY); beginStroke(toImg(e.clientX, e.clientY)); placeMarker();
@@ -331,6 +354,7 @@
         view.s = ns; view.tx = mx - r.left - ix * ns; view.ty = my - r.top - iy * ns; applyView(); return;
       }
       if (mode === 'pan') { view.tx = pinch0.tx + e.clientX - pinch0.x; view.ty = pinch0.ty + e.clientY - pinch0.y; applyView(); return; }
+      if (mode === 'split') { setSplit(e.clientX); return; }
       if (!pts.has(e.pointerId)) { if (e.pointerType === 'mouse') showCursor(e.clientX, e.clientY); return; }
       if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8) moved = true;
       if (mode === 'paint') { showCursor(e.clientX, e.clientY); strokeTo(toImg(e.clientX, e.clientY)); placeMarker(); }
@@ -353,14 +377,36 @@
     stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
     stage.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && !pts.size) hideCursor(); });
     stage.addEventListener('contextmenu', e => e.preventDefault());
-    stage.addEventListener('wheel', e => { if (!base) return; e.preventDefault(); zoomAt(e.clientX, e.clientY, view.s * Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
-    stage.addEventListener('gesturestart', e => e.preventDefault());
+    // Mausrad und Trackpad: Zusammenziehen (Strg) oder Mausrad zoomt, Wischen mit zwei Fingern verschiebt
+    stage.addEventListener('wheel', e => {
+      if (!base) return; e.preventDefault();
+      const rad = e.deltaMode === 1 || (e.deltaX === 0 && Math.abs(e.deltaY) >= 50 && Number.isInteger(e.deltaY));
+      if (e.ctrlKey || e.metaKey || rad) zoomAt(e.clientX, e.clientY, view.s * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)));
+      else { view.tx -= e.deltaX; view.ty -= e.deltaY; applyView(); }
+    }, { passive: false });
+    // Safari (Mac und iPad mit Trackpad) meldet Zusammenziehen als eigene Geste
+    let g0 = null;
+    stage.addEventListener('gesturestart', e => { e.preventDefault(); if (!base || pts.size) return; g0 = { s: view.s, x: e.clientX, y: e.clientY }; });
+    stage.addEventListener('gesturechange', e => { e.preventDefault(); if (!g0 || pts.size) return; zoomAt(g0.x, g0.y, g0.s * e.scale); });
+    stage.addEventListener('gestureend', e => { e.preventDefault(); g0 = null; });
+    // Solange der Editor offen ist, zoomt nie die ganze Seite mit
+    const keinSeitenZoom = e => e.preventDefault();
+    document.addEventListener('gesturestart', keinSeitenZoom); document.addEventListener('gesturechange', keinSeitenZoom);
+    let spaceDown = false;
+    function setSplit(cx) { const r = stage.getBoundingClientRect(); split = clamp((cx - r.left - view.tx) / view.s / W, 0, 1); placeSplit(); renderAll(); }
+    q('.rt-zoom').addEventListener('click', e => {
+      const b = e.target.closest('[data-z]'); if (!b || !base) return; const z = b.dataset.z;
+      if (z === 'in') zoomBy(1.5); else if (z === 'out') zoomBy(1 / 1.5); else if (z === 'fit') fit();
+      else if (z === 'hand') { hand = !hand; if (hand) { compare = false; placeSplit(); renderAll(); } toast(hand ? 'Verschieben an: Ein Finger schiebt das Bild. Nochmal tippen zum Malen.' : 'Verschieben aus, du malst wieder'); }
+      else if (z === 'split') { compare = !compare; if (compare) { hand = false; if (pending) commit(true); split = 0.5; } placeSplit(); renderAll(); toast(compare ? 'Links Vorher, rechts Nachher. Linie verschieben. Nochmal tippen zum Weiterarbeiten.' : 'Vergleich aus'); }
+      zoomBtns();
+    });
 
     // ---------- Bedienfeld ----------
     function selectTab(id, toolId) { if (pending) commit(); tab = id; const T = TABS.find(t => t.id === id); selectTool(toolId || T.groups[0][1][0], true); renderTabs(); }
     function selectTool(id, force) {
       if (id === tool && !force) return;
-      if (pending) commit(); tool = id; erase = false; pipette = false; cloneOff = null;
+      if (pending) commit(); tool = id; erase = false; pipette = false; cloneOff = null; hand = false; if (compare) { compare = false; placeSplit(); renderAll(); } zoomBtns();
       renderTools(); renderOpts(); renderSliders(); renderSwatches();
       q('.rt-tnameTxt').textContent = TOOLS[id].name; q('.rt-thint').textContent = TOOLS[id].hint; placeMarker(); warmEff();
       const el = q('.rt-tile.on'); if (el) el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -445,7 +491,7 @@
       <button type="button" class="rt-step" data-go="ret:bereinigen"><span class="rt-n">4</span><span><b>Nochmal bereinigen</b><small>Zum Schluss alles regelmäßiger machen</small></span></button>
       <button type="button" class="rt-step" data-go="ku:unschaerfe"><span class="rt-n">5</span><span><b>Kulisse</b><small>Hintergrund unscharf, Kundin bleibt scharf</small></span></button>
       </div>
-      <p class="cmeta">Zwei Finger zoomen und verschieben. Das Häkchen übernimmt, das X verwirft, beim Werkzeugwechsel wird automatisch übernommen. Pigmentierte Stellen immer auslassen, deine Arbeit soll echt bleiben. Das Original bleibt in der Akte, das bearbeitete Bild kommt dazu.</p>
+      <p class="cmeta">Zoomen mit zwei Fingern oder mit + und − rechts am Bild. Zoomst du hinein, malt der Pinsel feiner. Die Hand verschiebt das Bild, der unterste Knopf zeigt Vorher und Nachher im Vergleich. Der Griff oben am Bedienfeld klappt die Werkzeuge ein. Das Häkchen übernimmt, das X verwirft, beim Werkzeugwechsel wird automatisch übernommen. Pigmentierte Stellen immer auslassen, deine Arbeit soll echt bleiben. Das Original bleibt in der Akte, das bearbeitete Bild kommt dazu.</p>
       <button type="button" class="btn" data-close>Los geht's</button>`);
     }
 
@@ -453,7 +499,8 @@
     function schliessen() {
       if (raf) cancelAnimationFrame(raf);
       root.remove(); document.documentElement.classList.remove('rt-offen');
-      window.removeEventListener('resize', fit); document.removeEventListener('keydown', taste, true);
+      window.removeEventListener('resize', fit); document.removeEventListener('keydown', taste, true); document.removeEventListener('keyup', tasteHoch, true);
+      document.removeEventListener('gesturestart', keinSeitenZoom); document.removeEventListener('gesturechange', keinSeitenZoom);
       base = orig = mask = out = eff = null; blurCache.clear(); undo = []; redo = [];
     }
     function zu() {
@@ -484,6 +531,13 @@
       else if (a === 'hilfe') hilfe(); else if (a === 'save') speichern();
     });
     q('[data-a=apply]').addEventListener('click', () => commit());
+    // Griff oben am Bedienfeld: Werkzeuge einklappen, damit mehr Platz fürs Foto bleibt
+    q('.rt-grab').addEventListener('click', () => {
+      const p = q('.rt-panel'), zu = p.classList.toggle('klein');
+      const r0 = stage.getBoundingClientRect();
+      requestAnimationFrame(() => { const r1 = stage.getBoundingClientRect(); view.ty += (r1.height - r0.height) / 2; view.tx += (r1.width - r0.width) / 2; if (view.s <= view.fit * 1.01) fit(); else applyView(); });
+      toast(zu ? 'Werkzeuge eingeklappt. Oben am Griff wieder aufklappen.' : 'Werkzeuge aufgeklappt');
+    });
     q('[data-a=cancel]').addEventListener('click', () => { cancel(); toast('Verworfen'); });
     const vb = q('[data-a=vorher]');
     const vorher = on => { if (!base) return; if (on) { ctx.putImageData(orig, 0, 0); q('.rt-badge').style.display = 'block'; } else if (q('.rt-badge').style.display === 'block') { q('.rt-badge').style.display = 'none'; renderAll(); } };
@@ -494,10 +548,15 @@
       if (!base) return;
       if (e.key === 'Escape') { e.stopPropagation(); if (modal.classList.contains('show')) sheetZu(); else zu(); return; }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? step(redo, undo) : step(undo, redo); }
+      else if (e.key === '+' || e.key === '=') zoomBy(1.5);
+      else if (e.key === '-') zoomBy(1 / 1.5);
+      else if (e.key === '0') fit();
+      else if (e.key === ' ' && !spaceDown && !e.target.closest('input,textarea')) { spaceDown = true; e.preventDefault(); }
       else if (e.key === '[') { sizes[tool] = Math.max(1, sizes[tool] - 3); renderSliders(); }
       else if (e.key === ']') { sizes[tool] = Math.min(100, sizes[tool] + 3); renderSliders(); }
     }
-    document.addEventListener('keydown', taste, true);
+    const tasteHoch = e => { if (e.key === ' ') spaceDown = false; };
+    document.addEventListener('keydown', taste, true); document.addEventListener('keyup', tasteHoch, true);
     window.addEventListener('resize', fit);
 
     // ---------- Foto laden ----------
@@ -522,6 +581,7 @@
   const css = document.createElement('style');
   css.textContent = `
     html.rt-offen,html.rt-offen body{overflow:hidden}
+    html.rt-offen #toastRoot{bottom:auto;top:calc(64px + env(safe-area-inset-top,0px))}
     .rt-bg{position:fixed;inset:0;z-index:65;background:var(--shade);display:flex;justify-content:center}
     .rt{position:relative;background:var(--bg);width:min(1100px,100%);height:100%;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none}
     .rt-i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
@@ -539,9 +599,22 @@
     .rt-marker:before{left:12px;top:0;width:2px;height:26px}.rt-marker:after{top:12px;left:0;height:2px;width:26px}
     .rt-badge{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(30,22,18,.8);color:#fff;font-size:13px;padding:5px 12px;border-radius:20px;display:none;pointer-events:none}
     .rt-busy{position:absolute;right:10px;bottom:10px;background:rgba(30,22,18,.75);color:#fff;font-size:12px;padding:4px 10px;border-radius:10px;display:none}
+.rt-zoom{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:2}
+    .rt-zoom button{width:44px;height:44px;border-radius:50%;border:0;background:rgba(30,22,18,.62);color:#f1e9e4;display:flex;align-items:center;justify-content:center;padding:0;touch-action:manipulation}
+    .rt-zoom button.on{background:#fffdfb;color:#2b2522}
+    .rt-zoom .rt-i{width:22px;height:22px}
+    .rt-zl{position:absolute;left:10px;top:10px;background:rgba(30,22,18,.62);color:#fff;font-size:12px;padding:4px 9px;border-radius:9px;opacity:0;transition:opacity .25s;pointer-events:none}
+    .rt-zl.show{opacity:1}
+    .rt-split{position:absolute;top:0;bottom:0;width:0;display:none;align-items:center;justify-content:center;pointer-events:none}
+    .rt-split b{position:absolute;top:0;bottom:0;left:-1px;width:2px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+    .rt-split span{position:absolute;top:10px;background:rgba(30,22,18,.7);color:#fff;font-size:12px;padding:3px 8px;border-radius:8px;white-space:nowrap}
+    .rt-split span:first-child{right:8px}.rt-split span:last-child{left:8px}
     .rt-leer{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#e9ddd5;padding:24px;text-align:center}
     .rt-panel{background:var(--paper);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);flex-shrink:0}
     .rt-panel.off{pointer-events:none;opacity:.45}
+    .rt-grab{display:block;width:100%;height:18px;border:0;background:none;padding:0;touch-action:manipulation}
+    .rt-grab i{display:block;width:44px;height:5px;border-radius:3px;background:var(--line);margin:7px auto 0}
+    .rt-panel.klein .rt-opts,.rt-panel.klein .rt-srow,.rt-panel.klein .rt-swatches,.rt-panel.klein .rt-tools{display:none!important}
     .rt-opts{display:flex;align-items:center;gap:8px;padding:8px 12px 0;flex-wrap:wrap}
     .rt-seg{display:flex;background:var(--bg);border-radius:10px;padding:2px;border:0}
     .rt-seg button{border:0;background:none;padding:6px 11px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:5px;color:var(--ink)}
@@ -592,6 +665,7 @@
     .rt-n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--rose);color:var(--paper);display:flex;align-items:center;justify-content:center;font-weight:600}
     .rt-step b{display:block;font-weight:500}.rt-step small{color:var(--muted);font-size:12.5px}
     .rt-gefahr{background:var(--bad);border-color:var(--bad);color:#fff}
+    @media (max-height:740px){.rt-opts{padding-top:2px}.rt-srow{padding-top:0}.rt-srow input{height:24px}.rt-tools{padding-top:6px}.rt-cap{display:none}.rt-tile{padding:4px 2px 7px;gap:3px}.rt-tile .rt-i,.rt-swc{width:24px;height:24px}.rt-tabs button{padding:8px 2px 6px}.rt-actions{padding:2px 8px 4px}.rt-zoom{gap:6px}.rt-zoom button{width:40px;height:40px}.rt-seg button,.rt-chip{padding:5px 9px}}
     @media (max-width:560px){.rt-hb span{display:none}.rt-hb{min-width:36px}.rt-titel{visibility:hidden}.rt-save{padding-inline:12px}}`;
   document.head.append(css);
 })();

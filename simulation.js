@@ -215,7 +215,8 @@
     griffe(st).forEach(g => {
       const p = z(g.p);
       const gr = o.gross || 1;
-      const aktiv = st.aktiv && st.aktiv.k === g.k && st.aktiv.key === g.key;
+      const aktiv = !o.fix && st.aktiv && st.aktiv.k === g.k && st.aktiv.key === g.key;
+      ctx.globalAlpha = o.fix ? 0.55 : 1;
       ctx.beginPath(); ctx.arc(p.x, p.y, (g.klein ? 6 : aktiv ? 10 : 8) * gr, 0, Math.PI * 2);
       ctx.fillStyle = aktiv ? '#a9725e' : g.nase ? 'rgba(214,170,140,.95)' : '#fff'; ctx.fill();
       ctx.lineWidth = 2 * gr; ctx.strokeStyle = aktiv ? '#fff' : '#a9725e'; ctx.stroke();
@@ -227,6 +228,7 @@
         ctx.fillStyle = 'rgba(30,22,18,.72)'; ctx.fillRect(p.x - w / 2, ty, w, 17 * gr);
         ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(g.txt, p.x, ty + 12 * gr);
       }
+      ctx.globalAlpha = 1;
     });
     ctx.restore();
   }
@@ -272,7 +274,7 @@
     document.documentElement.style.overflow = 'hidden';
     const zu = () => { root.remove(); document.documentElement.style.overflow = ''; window.removeEventListener('resize', neu); };
 
-    const st = { bild: null, p: null, mitte: 0, nase: null, mapping: false, sym: true, nah: false, neuDatei: null, kunde: false, aktiv: null,
+    const st = { bild: null, p: null, mitte: 0, nase: null, mapping: false, sym: true, nah: false, neuDatei: null, kunde: false, aktiv: null, view: null, fix: false,
       o: { technik: 'powder', farbe: FARBEN[1][1], farbname: FARBEN[1][0], deck: 0.75, weich: 0.15, bogen: 0.5 } };
 
     root.innerHTML = `<div class="sim" role="dialog" aria-modal="true" aria-label="Brauen simulieren">
@@ -287,13 +289,15 @@
           <canvas id="simCv"></canvas>
           <div class="sim-oben"><div class="seg"><button type="button" data-v="0" class="on">Gesicht</button><button type="button" data-v="1">Nah</button></div>
             <button type="button" class="sim-pill" id="simMap" aria-pressed="false">Mapping</button>
+            <button type="button" class="sim-pill" id="simFix" aria-pressed="false">Punkte fixieren</button>
             <button type="button" class="sim-pill" id="simKunde" aria-pressed="false">Ansicht für Kundin</button></div>
+          <div class="sim-zoom"><button type="button" class="sim-pill" data-zm="1" aria-label="Heranzoomen">+</button><button type="button" class="sim-pill" data-zm="-1" aria-label="Herauszoomen">−</button></div>
           <div class="sim-unten"><span>Visuelle Simulation. Das abgeheilte Ergebnis kann abweichen.</span><button type="button" class="sim-pill" id="simVorher">Vorher</button></div>
           <div class="sim-leer" id="simLeer">${kandidaten.length ? 'Foto wird geladen …' : 'Mach ein Vorher-Foto von vorne, gerade Kopfhaltung, gleichmäßiges Licht.'}</div>
         </div>
         <div class="sim-fein" id="simFein"><span>Feinjustierung <b id="simAktiv">Punkt antippen</b></span>
           <div class="sim-pfeile"><button type="button" data-n="-1,0" aria-label="nach links">←</button><button type="button" data-n="0,-1" aria-label="nach oben">↑</button><button type="button" data-n="0,1" aria-label="nach unten">↓</button><button type="button" data-n="1,0" aria-label="nach rechts">→</button></div></div>
-        <p class="cmeta sim-tipp">Zieh die Punkte auf die Braue: <b>A</b> Anfang unten, <b>A1</b> Anfang oben, <b>B</b> Bogen oben, <b>B1</b> Bogen unten, <b>C</b> Ende. „Vorher“ gedrückt halten zeigt das Foto ohne Simulation.</p>
+        <p class="cmeta sim-tipp">Zieh die Punkte auf die Braue: <b>A</b> Anfang unten, <b>A1</b> Anfang oben, <b>B</b> Bogen oben, <b>B1</b> Bogen unten, <b>C</b> Ende. Zwei Finger zoomen, ein Finger neben den Punkten verschiebt das Bild. <b>Punkte fixieren</b> sperrt die Punkte, dann kannst du in Ruhe zoomen und schauen.</p>
         <div class="sim-ctl">
           <div><span class="flabel">Technik</span><div class="chips" id="simTech">${TECHNIK.map(t => `<button type="button" class="chip${t.k === st.o.technik ? ' on' : ''}" data-t="${t.k}" title="${esc(t.t)}">${esc(t.l)}</button>`).join('')}</div></div>
           <div><span class="flabel">Farbton <b id="simFn">${esc(st.o.farbname)}</b></span><div class="sim-farben" id="simFarb">${FARBEN.map(([n, h], i) => `<button type="button" class="${i === 1 ? 'on' : ''}" data-f="${h}" data-n="${esc(n)}" style="background:${h}" aria-label="${esc(n)}" title="${esc(n)}"></button>`).join('')}</div></div>
@@ -311,13 +315,33 @@
     const cv = $('#simCv'), ctx = cv.getContext('2d');
     let anzeige = null, ziehen = null, vorher = false;
 
-    function ansicht() {
-      if (!st.nah) return { x: 0, y: 0, w: st.bild.width, h: st.bild.height };
+    // Ausschnitt bleibt fest, bis du zoomst, verschiebst oder Gesicht/Nah tippst. Früher wurde „Nah“ bei jedem Ziehen
+    // neu um die Punkte berechnet, dadurch ist das Bild unter dem Finger mitgewandert.
+    function vorgabe(nah) {
+      if (!nah) return { x: 0, y: 0, w: st.bild.width, h: st.bild.height };
       const pts = ['L', 'R'].flatMap(k => PUNKTE.map(x => st.p[k][x]));
       const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
       const bw = Math.max(...xs) - Math.min(...xs), cx = (Math.max(...xs) + Math.min(...xs)) / 2, cy = (Math.max(...ys) + Math.min(...ys)) / 2;
       const w = Math.min(st.bild.width, bw * 1.45), h = Math.min(st.bild.height, w * 0.62);
       return { x: Math.max(0, Math.min(st.bild.width - w, cx - w / 2)), y: Math.max(0, Math.min(st.bild.height - h, cy - h * 0.45)), w, h };
+    }
+    function ansicht() { if (!st.view) st.view = vorgabe(st.nah); return st.view; }
+    // Zoomen um einen Punkt der Anzeige (cx, cy in Bildschirmpunkten); Seitenverhältnis bleibt, Bild bleibt im Rahmen
+    function zoomAnsicht(f, cx, cy, basis) {
+      const v = basis || ansicht(), r = cv.getBoundingClientRect();
+      if (cx == null) { cx = r.width / 2; cy = r.height / 2; }
+      const ix = v.x + cx / r.width * v.w, iy = v.y + cy / r.height * v.h;
+      const maxW = st.bild.width * 1.0, minW = st.bild.width * 0.06;
+      let w = Math.max(minW, Math.min(maxW, v.w / f)); if (v.w / f > maxW && v.h * (w / v.w) > st.bild.height) w = v.w * Math.min(maxW / v.w, st.bild.height / v.h);
+      const h = v.h * w / v.w;
+      st.view = klemmAnsicht({ x: ix - cx / r.width * w, y: iy - cy / r.height * h, w, h });
+      malen();
+    }
+    function klemmAnsicht(v) {
+      const W = st.bild.width, H = st.bild.height;
+      const x = v.w >= W ? (W - v.w) / 2 : Math.max(0, Math.min(W - v.w, v.x));
+      const y = v.h >= H ? (H - v.h) / 2 : Math.max(0, Math.min(H - v.h, v.y));
+      return { ...v, x, y };
     }
 
     function malen() {
@@ -331,7 +355,7 @@
       cv.style.width = cssW + 'px'; cv.style.height = cssH + 'px';
       cv.width = Math.round(cssW * dpr); cv.height = Math.round(cssH * dpr);
       anzeige = { v, sc: cv.width / v.w, dpr };
-      zeichne(ctx, cv.width, cv.height, st, v, { vorher, punkte: !vorher && !st.kunde, beschriftung: st.nah || cssW > 560 });
+      zeichne(ctx, cv.width, cv.height, st, v, { vorher, punkte: !vorher && !st.kunde, beschriftung: v.w < st.bild.width * 0.7 || cssW > 560, fix: st.fix });
     }
     const neu = () => malen();
     window.addEventListener('resize', neu);
@@ -342,6 +366,7 @@
         st.bild = await bildLaden(quelle);
         st.neuDatei = neueDatei || null;
         Object.assign(st, startPunkte(st.bild.width, st.bild.height));
+        st.view = null;
         $('#simLeer').hidden = true; $('#simSave').disabled = false;
         malen();
       } catch (err) { $('#simLeer').textContent = 'Das Foto lässt sich nicht öffnen. Bitte ein anderes wählen.'; }
@@ -383,7 +408,7 @@
       }
     };
     root.querySelectorAll('.seg [data-v]').forEach(b => b.onclick = () => {
-      st.nah = b.dataset.v === '1'; root.querySelectorAll('.seg [data-v]').forEach(x => x.classList.toggle('on', x === b)); malen();
+      st.nah = b.dataset.v === '1'; st.view = null; root.querySelectorAll('.seg [data-v]').forEach(x => x.classList.toggle('on', x === b)); malen();
     });
     $('#simMap').onclick = e => { st.mapping = !st.mapping; e.currentTarget.classList.toggle('on', st.mapping); e.currentTarget.setAttribute('aria-pressed', st.mapping); malen(); };
     // Ansicht für Kundin: ohne Punkte und Linien, Foto groß, Regler ausgeblendet
@@ -406,7 +431,7 @@
     const NAMEN = { A: 'A Anfang unten', A1: 'A1 Anfang oben', B: 'B Bogen oben', B1: 'B1 Bogen unten', C: 'C Ende', n: 'Nasenflügel' };
     const aktivAnzeigen = () => { $('#simAktiv').textContent = st.aktiv ? (NAMEN[st.aktiv.key] || '') + (st.aktiv.k === 'L' ? ' links im Bild' : ' rechts im Bild') : 'Punkt antippen'; };
     root.querySelectorAll('.sim-pfeile [data-n]').forEach(b => b.onclick = () => {
-      if (!st.aktiv || !anzeige || st.aktiv.key === 'm') return;
+      if (st.fix || !st.aktiv || !anzeige || st.aktiv.key === 'm') return;
       const [nx, ny] = b.dataset.n.split(',').map(Number);
       const schritt = anzeige.v.w / cv.getBoundingClientRect().width; // ein Bildschirmpunkt
       verschiebe(st.aktiv, nx * schritt, ny * schritt); malen();
@@ -415,46 +440,103 @@
     const vAn = e => { e.preventDefault(); vorher = true; malen(); }, vAus = () => { if (vorher) { vorher = false; malen(); } };
     vb.addEventListener('pointerdown', vAn); vb.addEventListener('pointerup', vAus); vb.addEventListener('pointerleave', vAus); vb.addEventListener('pointercancel', vAus);
 
-    // Punkte ziehen (Finger, Stift, Maus)
-    const bildPunkt = e => { const r = cv.getBoundingClientRect(); const v = anzeige.v; return { x: v.x + (e.clientX - r.left) / r.width * v.w, y: v.y + (e.clientY - r.top) / r.height * v.h }; };
+    // Bedienung auf der Bühne (Finger, Stift, Maus)
+    // Ein Finger auf einem Punkt: Punkt ziehen. Er bewegt sich erst ab 6 Bildschirmpunkten (kein Zucken beim Antippen)
+    //   und nur halb so weit wie der Finger, dadurch lässt er sich fein setzen.
+    // Ein Finger daneben: Bild verschieben. Zwei Finger: zoomen. Doppeltipp: heran- bzw. wieder herauszoomen.
+    // „Punkte fixieren“: Punkte reagieren gar nicht mehr, nur noch Zoomen und Verschieben.
+    const TOT = 6, FEIN = 0.5;
+    const finger = new Map();
+    let geste = null, letzterTipp = { t: 0, x: 0, y: 0 };
+    const lokal = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top, w: r.width, h: r.height }; };
+    const zuBild = (p, v) => ({ x: v.x + p.x / p.w * v.w, y: v.y + p.y / p.h * v.h });
+    function setzePunkt(g, q) {
+      const W = st.bild.width, H = st.bild.height;
+      q = { x: Math.max(0, Math.min(W, q.x)), y: Math.max(0, Math.min(H, q.y)) };
+      const anderes = g.k === 'L' ? 'R' : 'L';
+      if (g.key === 'n') st.nase[g.k] = q; else st.p[g.k][g.key] = q;
+      if (st.sym) { const sp = { x: 2 * st.mitte - q.x, y: q.y }; if (g.key === 'n') st.nase[anderes] = sp; else st.p[anderes][g.key] = sp; }
+    }
     cv.addEventListener('pointerdown', e => {
       if (!st.bild || !anzeige) return;
-      const p = bildPunkt(e);
-      const r = cv.getBoundingClientRect(); const proPx = anzeige.v.w / r.width;
-      let best = null, bd = 34 * proPx;
-      griffe(st).forEach(g => { const d = Math.hypot(g.p.x - p.x, g.p.y - p.y); if (d < bd) { bd = d; best = g; } });
-      if (!best) return;
       e.preventDefault();
-      // Abstand Finger zu Punkt merken: der Punkt springt nicht unter den Finger, sondern wandert mit
-      const gp = best.key === 'm' ? best.p : best.key === 'n' ? st.nase[best.k] : st.p[best.k][best.key];
-      ziehen = { g: best, start: p, versatz: { x: gp.x - p.x, y: gp.y - p.y }, mitte0: st.mitte, alt: JSON.parse(JSON.stringify({ p: st.p, nase: st.nase })) };
-      if (best.key !== 'm') { st.aktiv = { k: best.k, key: best.key }; aktivAnzeigen(); malen(); }
-      cv.setPointerCapture(e.pointerId);
+      try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+      const p = lokal(e);
+      finger.set(e.pointerId, p);
+      const v = ansicht();
+      if (finger.size === 2) { // Zwei Finger: Zoom beginnt, ein angefangenes Ziehen wird abgebrochen
+        if (geste && geste.art === 'punkt' && geste.los) { st.p = geste.alt.p; st.nase = geste.alt.nase; st.mitte = geste.mitte0; }
+        const [a, b] = [...finger.values()];
+        geste = { art: 'zoom', v: { ...v }, abstand: Math.hypot(a.x - b.x, a.y - b.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+        return;
+      }
+      if (finger.size > 2) return;
+      // Doppeltipp (nicht auf einem Punkt): zoomen
+      const jetzt = Date.now();
+      const doppelt = jetzt - letzterTipp.t < 320 && Math.hypot(p.x - letzterTipp.x, p.y - letzterTipp.y) < 30;
+      letzterTipp = { t: jetzt, x: p.x, y: p.y };
+      const ip = zuBild(p, v);
+      let best = null;
+      if (!st.fix && !st.kunde) {
+        let bd = 28 * v.w / p.w;
+        griffe(st).forEach(g => { const d = Math.hypot(g.p.x - ip.x, g.p.y - ip.y); if (d < bd) { bd = d; best = g; } });
+      }
+      if (doppelt && !best) { letzterTipp.t = 0; if (v.w < st.bild.width * 0.95) { st.view = null; st.nah = false; root.querySelectorAll('.seg [data-v]').forEach(x => x.classList.toggle('on', x.dataset.v === '0')); malen(); } else zoomAnsicht(2.2, p.x, p.y); geste = null; return; }
+      if (best) {
+        const gp = best.key === 'm' ? best.p : best.key === 'n' ? st.nase[best.k] : st.p[best.k][best.key];
+        geste = { art: 'punkt', g: best, start: p, gp: { ...gp }, v: { ...v }, los: false, mitte0: st.mitte, alt: JSON.parse(JSON.stringify({ p: st.p, nase: st.nase })) };
+        if (best.key !== 'm') { st.aktiv = { k: best.k, key: best.key }; aktivAnzeigen(); malen(); }
+      } else geste = { art: 'bild', start: p, v: { ...v } };
     });
     cv.addEventListener('pointermove', e => {
-      if (!ziehen) return;
+      if (!finger.has(e.pointerId) || !geste) return;
       e.preventDefault();
-      const p = bildPunkt(e);
-      const g = ziehen.g;
-      const W = st.bild.width, H = st.bild.height;
-      const klemm = q => ({ x: Math.max(0, Math.min(W, q.x)), y: Math.max(0, Math.min(H, q.y)) });
-      if (g.key === 'm') {
-        const dx = p.x - ziehen.start.x;
-        st.mitte = ziehen.mitte0 + dx;
-        ['L', 'R'].forEach(k => { PUNKTE.forEach(x => { st.p[k][x] = { x: ziehen.alt.p[k][x].x + dx, y: ziehen.alt.p[k][x].y }; }); st.nase[k] = { x: ziehen.alt.nase[k].x + dx, y: ziehen.alt.nase[k].y }; });
-      } else {
-        const q = klemm({ x: p.x + ziehen.versatz.x, y: p.y + ziehen.versatz.y });
-        const anderes = g.k === 'L' ? 'R' : 'L';
-        if (g.key === 'n') st.nase[g.k] = q; else st.p[g.k][g.key] = q;
-        if (st.sym) {
-          const sp = { x: 2 * st.mitte - q.x, y: q.y };
-          if (g.key === 'n') st.nase[anderes] = sp; else st.p[anderes][g.key] = sp;
-        }
+      const p = lokal(e);
+      finger.set(e.pointerId, p);
+      if (geste.art === 'zoom' && finger.size >= 2) {
+        const [a, b] = [...finger.values()];
+        const f = Math.hypot(a.x - b.x, a.y - b.y) / geste.abstand;
+        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        // zoomen um den Startmittelpunkt und mit den Fingern mitschieben
+        const v = geste.v, w = Math.max(st.bild.width * 0.06, Math.min(st.bild.width, v.w / f)), h = v.h * w / v.w;
+        const ix = v.x + geste.mx / p.w * v.w, iy = v.y + geste.my / p.h * v.h;
+        st.view = klemmAnsicht({ x: ix - mx / p.w * w, y: iy - my / p.h * h, w, h });
+        malen(); return;
       }
-      malen();
+      const dx = p.x - geste.start.x, dy = p.y - geste.start.y;
+      if (geste.art === 'bild') {
+        const v = geste.v;
+        st.view = klemmAnsicht({ ...v, x: v.x - dx / p.w * v.w, y: v.y - dy / p.h * v.h });
+        malen(); return;
+      }
+      if (geste.art === 'punkt') {
+        if (!geste.los && Math.hypot(dx, dy) < TOT) return; // Totzone gegen Zucken
+        geste.los = true;
+        const v = geste.v, g = geste.g;
+        const bx = dx / p.w * v.w * FEIN, by = dy / p.h * v.h * FEIN;
+        if (g.key === 'm') {
+          st.mitte = geste.mitte0 + bx;
+          ['L', 'R'].forEach(k => { PUNKTE.forEach(x => { st.p[k][x] = { x: geste.alt.p[k][x].x + bx, y: geste.alt.p[k][x].y }; }); st.nase[k] = { x: geste.alt.nase[k].x + bx, y: geste.alt.nase[k].y }; });
+        } else setzePunkt(g, { x: geste.gp.x + bx, y: geste.gp.y + by });
+        malen();
+      }
     });
-    const loslassen = () => { ziehen = null; };
+    const loslassen = e => {
+      finger.delete(e.pointerId);
+      if (finger.size === 1 && geste && geste.art === 'zoom') { const [q] = [...finger.values()]; geste = { art: 'bild', start: q, v: { ...ansicht() } }; }
+      else if (!finger.size) geste = null;
+    };
     cv.addEventListener('pointerup', loslassen); cv.addEventListener('pointercancel', loslassen);
+    cv.addEventListener('wheel', e => { e.preventDefault(); const p = lokal(e); zoomAnsicht(e.deltaY < 0 ? 1.15 : 1 / 1.15, p.x, p.y); }, { passive: false });
+    cv.addEventListener('gesturestart', e => e.preventDefault()); // Safari: Seite nicht mitzoomen
+    root.querySelectorAll('[data-zm]').forEach(b => b.onclick = () => zoomAnsicht(b.dataset.zm === '1' ? 1.5 : 1 / 1.5));
+    $('#simFix').onclick = e => {
+      st.fix = !st.fix;
+      e.currentTarget.classList.toggle('on', st.fix); e.currentTarget.setAttribute('aria-pressed', st.fix);
+      e.currentTarget.textContent = st.fix ? 'Punkte gesperrt' : 'Punkte fixieren';
+      root.querySelector('.sim').classList.toggle('fix', st.fix);
+      malen();
+    };
 
     // Speichern: Foto in voller Arbeitsgröße mit Simulation und Hinweiszeile, als Foto „Simulation“ in die Akte
     $('#simSave').onclick = async e => {
@@ -541,6 +623,10 @@
     .sim-fein b{color:var(--rose-ink);font-weight:500;margin-left:4px}
     .sim-pfeile{display:flex;gap:8px}.sim-pfeile button{width:48px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--paper);font-size:20px;color:var(--ink);touch-action:manipulation}
     .sim-pfeile button:active{background:var(--rose-soft)}
+    .sim-zoom{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px}
+    .sim-zoom .sim-pill{width:44px;height:44px;padding:0;font-size:22px;line-height:1}
+    .sim.fix .sim-pfeile{opacity:.35;pointer-events:none}
+    .sim-oben{flex-wrap:wrap}
     .sim.kunde .sim-ctl,.sim.kunde .sim-tipp,.sim.kunde .sim-fotos,.sim.kunde .sim-fein,.sim.kunde #simMap,.sim.kunde .seg{display:none}`;
   document.head.append(css);
 })();

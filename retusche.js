@@ -311,7 +311,7 @@
     function zoomLabel() { if (!base) return; const z = q('.rt-zl'); z.textContent = Math.round(view.s / view.fit * 100) + ' %'; z.classList.add('show'); clearTimeout(zlT); zlT = setTimeout(() => z.classList.remove('show'), 900); }
     function placeSplit() { const el = q('.rt-split'); if (!base || !compare) { el.style.display = 'none'; return; } el.style.display = 'flex'; el.style.left = (view.tx + split * W * view.s) + 'px'; }
     function zoomBy(f) { const r = stage.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, view.s * f); }
-    function zoomBtns() { qa('.rt-zoom [data-z]').forEach(b => { const z = b.dataset.z; b.classList.toggle('on', (z === 'hand' && hand) || (z === 'split' && compare)); }); }
+    function zoomBtns() { qa('.rt-zoom [data-z]').forEach(b => { const z = b.dataset.z; b.classList.toggle('on', (z === 'hand' && hand) || (z === 'split' && compare)); }); stage.classList.toggle('rt-hand', hand); stage.classList.toggle('rt-vgl', compare); if (hand || compare) hideCursor(); }
     function fit() { if (!base) return; const r = stage.getBoundingClientRect(), s = Math.min(r.width / W, r.height / H) * 0.96; view.fit = s; view.s = s; view.tx = (r.width - W * s) / 2; view.ty = (r.height - H * s) / 2; applyView(); }
     function toImg(cx, cy) { const r = stage.getBoundingClientRect(); return { x: (cx - r.left - view.tx) / view.s, y: (cy - r.top - view.ty) / view.s }; }
     const zMax = () => Math.max(view.fit * 14, 6);
@@ -339,7 +339,7 @@
       }
       if (pts.size > 2) return;
       down = { x: e.clientX, y: e.clientY }; moved = false;
-      if ((e.pointerType === 'mouse' && e.button !== 0) || hand || spaceDown) { mode = 'pan'; pinch0 = { x: e.clientX, y: e.clientY, tx: view.tx, ty: view.ty }; return; }
+      if ((e.pointerType === 'mouse' && e.button !== 0) || hand || spaceDown) { mode = 'pan'; stage.classList.add('rt-zieht'); hideCursor(); pinch0 = { x: e.clientX, y: e.clientY, tx: view.tx, ty: view.ty }; return; }
       if (compare) { mode = 'split'; setSplit(e.clientX); return; }
       const t = TOOLS[tool];
       if (pipette || t.kind === 'tap' || (t.kind === 'clone' && !cloneSrc)) { mode = 'tap'; showCursor(e.clientX, e.clientY); return; }
@@ -355,7 +355,7 @@
       }
       if (mode === 'pan') { view.tx = pinch0.tx + e.clientX - pinch0.x; view.ty = pinch0.ty + e.clientY - pinch0.y; applyView(); return; }
       if (mode === 'split') { setSplit(e.clientX); return; }
-      if (!pts.has(e.pointerId)) { if (e.pointerType === 'mouse') showCursor(e.clientX, e.clientY); return; }
+      if (!pts.has(e.pointerId)) { if (e.pointerType === 'mouse') { if (e.target.closest('.rt-zoom') || hand || compare || spaceDown) hideCursor(); else showCursor(e.clientX, e.clientY); } return; }
       if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8) moved = true;
       if (mode === 'paint') { showCursor(e.clientX, e.clientY); strokeTo(toImg(e.clientX, e.clientY)); placeMarker(); }
       else if (mode === 'tap') showCursor(e.clientX, e.clientY);
@@ -371,7 +371,7 @@
         }
       }
       if (mode === 'paint') endStroke();
-      if (pts.size === 0) { mode = null; last = null; if (e.pointerType !== 'mouse') hideCursor(); placeMarker(); }
+      if (pts.size === 0) { stage.classList.remove('rt-zieht'); mode = null; last = null; if (e.pointerType !== 'mouse') hideCursor(); placeMarker(); }
       else if (pts.size === 1 && mode === 'pinch') mode = 'none';
     }
     stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
@@ -394,6 +394,7 @@
     document.addEventListener('gesturestart', keinSeitenZoom); document.addEventListener('gesturechange', keinSeitenZoom);
     let spaceDown = false;
     function setSplit(cx) { const r = stage.getBoundingClientRect(); split = clamp((cx - r.left - view.tx) / view.s / W, 0, 1); placeSplit(); renderAll(); }
+    q('.rt-zoom').addEventListener('pointerenter', hideCursor);
     q('.rt-zoom').addEventListener('click', e => {
       const b = e.target.closest('[data-z]'); if (!b || !base) return; const z = b.dataset.z;
       if (z === 'in') zoomBy(1.5); else if (z === 'out') zoomBy(1 / 1.5); else if (z === 'fit') fit();
@@ -551,11 +552,11 @@
       else if (e.key === '+' || e.key === '=') zoomBy(1.5);
       else if (e.key === '-') zoomBy(1 / 1.5);
       else if (e.key === '0') fit();
-      else if (e.key === ' ' && !spaceDown && !e.target.closest('input,textarea')) { spaceDown = true; e.preventDefault(); }
+      else if (e.key === ' ' && !spaceDown && !e.target.closest('input,textarea')) { spaceDown = true; e.preventDefault(); stage.classList.add('rt-hand'); hideCursor(); }
       else if (e.key === '[') { sizes[tool] = Math.max(1, sizes[tool] - 3); renderSliders(); }
       else if (e.key === ']') { sizes[tool] = Math.min(100, sizes[tool] + 3); renderSliders(); }
     }
-    const tasteHoch = e => { if (e.key === ' ') spaceDown = false; };
+    const tasteHoch = e => { if (e.key === ' ') { spaceDown = false; stage.classList.toggle('rt-hand', hand); } };
     document.addEventListener('keydown', taste, true); document.addEventListener('keyup', tasteHoch, true);
     window.addEventListener('resize', fit);
 
@@ -602,6 +603,8 @@
 .rt-zoom{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:2}
     .rt-zoom button{width:44px;height:44px;border-radius:50%;border:0;background:rgba(30,22,18,.62);color:#f1e9e4;display:flex;align-items:center;justify-content:center;padding:0;touch-action:manipulation}
     .rt-zoom button.on{background:#fffdfb;color:#2b2522}
+    .rt-zoom button{cursor:pointer}.rt-zoom button:hover{background:rgba(30,22,18,.85)}.rt-zoom button.on:hover{background:#fffdfb}
+    .rt-stage.rt-hand{cursor:grab}.rt-stage.rt-hand.rt-zieht,.rt-stage.rt-zieht{cursor:grabbing}.rt-stage.rt-vgl{cursor:ew-resize}
     .rt-zoom .rt-i{width:22px;height:22px}
     .rt-zl{position:absolute;left:10px;top:10px;background:rgba(30,22,18,.62);color:#fff;font-size:12px;padding:4px 9px;border-radius:9px;opacity:0;transition:opacity .25s;pointer-events:none}
     .rt-zl.show{opacity:1}

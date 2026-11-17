@@ -35,7 +35,7 @@
     ] },
     { id: 'kalender', t: 'Kalender und Online-Buchung', k: 'Termine aus Google, Kundin zuordnen', s: [
       'Tippe auf <b>Kalender</b> (am iPhone unten, am Notebook in der Leiste links). Du siehst die Woche mit allen Terminen aus deinem Google Kalender, auch die Online-Buchungen.',
-      'Termine mit Akte sind <b>rosé</b> und zeigen den Namen der Kundin. Ein Tipp auf den Termin, dann <b>Akte öffnen</b>.',
+      'Termine sind volle Blöcke: <b>rosé</b> mit Akte (mit Namen der Kundin), <b>dunkelbraun</b> ohne Akte. Leere Flächen sind frei. Über jedem Tag steht, wie viele Termine es sind oder „frei“. Ein Tipp auf den Termin, dann <b>Akte öffnen</b>.',
       'Neue Buchung ohne Akte: Termin antippen, dann <b>Als Kundin anlegen</b>. Name und E-Mail aus der Buchung sind schon eingetragen.',
       'Mit <b>‹</b> und <b>›</b> blätterst du wochenweise, <b>Heute</b> springt zurück.',
       'Termine anlegen, verschieben oder absagen machst du weiter im <b>Google Kalender</b>. Der Knopf oben rechts öffnet ihn.',
@@ -83,6 +83,8 @@
     { id: 'fotos', t: 'Fotos, Notizen, Dokumente', k: 'Alles rund um die Akte', s: [
       '<b>Vorher / Nachher</b> in der Akte: „+ Vorher-Foto“ oder „+ Nachher-Foto“. Du kannst fotografieren oder aus deinen Bildern wählen. Antippen vergrößert.',
       '<b>Notizen</b>: Text eintippen, „Notiz speichern“. Mit Datum, neueste oben.',
+      'Am Notebook und am iPad klappt die Kundenliste beim Öffnen einer Akte zu einer schmalen Leiste mit Kürzeln ein. Ein Tipp auf ein Kürzel öffnet die nächste Kundin, <b>»</b> zeigt wieder die ganze Liste.',
+      '<b>Fotos zoomen</b>: Foto antippen, dann mit zwei Fingern auseinanderziehen, doppelt tippen oder <b>+</b> und <b>−</b> nutzen. Vergrößert schiebst du das Foto mit einem Finger.',
       '<b>Dokumente</b>: die PDFs der digital unterschriebenen Formulare landen hier von selbst. Rechnungen oder alte Papier-Formulare lädst du mit „+ Dokument“ hoch (bis 5 MB). Alles liegt im Ordner der Kundin in Drive.',
       'Ein Foto passt nicht? Antippen, dann <b>Ausblenden</b> (bleibt gespeichert, „Ausgeblendete Fotos zeigen“ holt es zurück) oder <b>Löschen</b> (zweimal tippen; das Foto liegt danach noch 30 Tage im Papierkorb von Google Drive).',
       'Die Fotos werden vor dem Hochladen verkleinert, damit es auch unterwegs schnell geht.'

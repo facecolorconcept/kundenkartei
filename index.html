@@ -163,6 +163,27 @@ table.lr td.c{text-align:center}
 .sheet-foot .wrap{display:flex;justify-content:flex-end;gap:10px;padding-block:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .lightbox img{max-height:80vh;max-width:100%;object-fit:contain;border-radius:8px}
+.lb-buehne{width:100%;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none;cursor:zoom-in}
+.lb-buehne.gross{cursor:grab}
+.lb-buehne img{max-height:100%;transform-origin:0 0;will-change:transform;-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
+.lb-zoom{min-width:44px}
+/* Akte breit: Kundenliste klappt zu einer schmalen Leiste mit Kürzeln ein (Notebook und iPad) */
+.cini,.cvn{display:none}
+@media(min-width:821px){
+  main.has-detail #listeToggle{display:inline-flex;align-self:flex-start}
+  main.has-detail.liste-zu{grid-template-columns:72px minmax(0,1fr);max-width:1400px}
+  main.liste-zu .list-col>*:not(.panel):not(#listeToggle){display:none!important}
+  main.liste-zu #listeToggle{width:56px;justify-content:center;padding-inline:0;font-size:18px}
+  main.liste-zu .list-col .panel{padding:0;background:transparent;border:0;box-shadow:none}
+  main.liste-zu .clist{padding:0;display:flex;flex-direction:column;gap:4px}
+  main.liste-zu .clist li button{flex-direction:column;justify-content:center;align-items:center;gap:3px;padding:6px 2px;min-height:0}
+  main.liste-zu .clist li button>span:not(.cini):not(.cvn),main.liste-zu .clist .tag{display:none}
+  main.liste-zu .cini{display:flex;width:44px;height:44px;border-radius:50%;background:var(--paper);border:1px solid var(--line);align-items:center;justify-content:center;font-weight:600;font-size:14px;color:var(--ink)}
+  main.liste-zu .cvn{display:block;font-size:10.5px;color:var(--muted);max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  main.liste-zu .clist li button.active{background:transparent}
+  main.liste-zu .clist li button.active .cini{background:var(--rose);border-color:var(--rose);color:#fff}
+  main.liste-zu .clist li button.active .cvn{color:var(--rose-ink);font-weight:600}
+}
 .lightbox .lb-hell{color:#f1e9e4;border-color:rgba(255,255,255,.45)}.lightbox .lb-gefahr{background:#a8463b;border-color:#a8463b;color:#fff}
 #toastRoot{position:fixed;left:16px;right:16px;bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:80;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
 .toast{background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:14px;font-size:14.5px;max-width:100%;text-align:center}
@@ -272,6 +293,7 @@ button.kpi:hover::after{color:var(--rose-ink)}
 
   <main id="main" class="wrap" hidden>
     <section class="list-col">
+      <button type="button" class="btn ghost small" id="listeToggle" hidden></button>
       <div class="row between">
         <span class="label" id="count"></span>
         <button class="btn small" id="newCustBtn">+ Kundin</button>
@@ -291,12 +313,12 @@ button.kpi:hover::after{color:var(--rose-ink)}
 <script src="shell.js?v=9"></script>
 <script src="tasks.js?v=3"></script>
 <script src="brows.js?v=5"></script>
-<script src="hilfe.js?v=16"></script>
+<script src="hilfe.js?v=17"></script>
 <script src="logo.js?v=1"></script>
 <script src="formulare.js?v=7"></script>
-<script src="app.js?v=22"></script>
+<script src="app.js?v=23"></script>
 <!-- Weitere Bereiche: einfach als eigene Datei hier ergänzen -->
-<script src="kalender.js?v=1"></script>
+<script src="kalender.js?v=2"></script>
 <script src="simulation.js?v=3"></script>
 <script src="dashboard.js?v=17"></script>
 <script src="search.js?v=10"></script>

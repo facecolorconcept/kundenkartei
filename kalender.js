@@ -75,6 +75,7 @@
         <button class="btn ghost small" data-w="0">Heute</button>
         <button class="iconbtn" data-w="1" aria-label="Woche vor">›</button>
         <b class="kal-range">${esc(vonTxt)} bis ${esc(bisTxt)}</b>
+        <span class="kal-leg"><i class="kal-f-ok"></i>Termin mit Akte<i class="kal-f-term"></i>Termin ohne Akte<i class="kal-f-frei"></i>frei</span>
       </div>
       <div id="kalDetail"></div>
       <div id="kalBody"><div class="panel empty">Termine werden geladen …</div></div>`;
@@ -98,8 +99,10 @@
     items.forEach(x => { if (!x.z.ganz) { minH = Math.min(minH, x.z.s.getHours()); maxH = Math.max(maxH, Math.ceil(x.z.e.getHours() + x.z.e.getMinutes() / 60)); } });
     maxH = Math.min(24, Math.max(maxH, minH + 1));
 
-    const knopf = (x, stil) => {
+    const knopf = (x, stil, kurz) => {
       const wer = x.k.e ? name(x.k.e) : '';
+      // Kurze Termine (unter 50 Minuten) im Raster einzeilig: Uhrzeit und Titel nebeneinander
+      if (kurz) return `<button class="kal-ev kurz${x.k.e ? ' ok' : ''}" data-ev="${esc(x.ev.id)}" style="${stil}" title="${esc(hm(x.z.s) + ' bis ' + hm(x.z.e) + ' ' + (x.ev.summary || ''))}"><b>${hm(x.z.s)} ${esc(wer || x.ev.summary || '(ohne Titel)')}</b></button>`;
       return `<button class="kal-ev${x.k.e ? ' ok' : ''}" data-ev="${esc(x.ev.id)}"${stil ? ` style="${stil}"` : ''}>
         <span class="kal-t">${x.z.ganz ? 'ganztägig' : hm(x.z.s) + ' bis ' + hm(x.z.e)}</span>
         <b>${esc(x.ev.summary || '(ohne Titel)')}</b>${wer ? `<span class="kal-k">Akte: ${esc(wer)}</span>` : ''}</button>`;
@@ -108,19 +111,19 @@
 
     // Wochenansicht (Notebook, iPad quer) und Liste (iPhone, iPad hoch)
     const raster = `<div class="panel kal-grid" style="--h:${PX}px">
-      <div class="kal-kopf"><span></span>${tage.map(t => `<span class="${dkey(t) === heute ? 'heute' : ''}">${esc(t.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', ''))}<b>${t.getDate()}</b></span>`).join('')}</div>
+      <div class="kal-kopf"><span></span>${tage.map(t => { const n = proTag(t).length; return `<span class="${dkey(t) === heute ? 'heute' : ''}">${esc(t.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', ''))}<b>${t.getDate()}</b><em class="kal-anz${n ? '' : ' frei'}">${n ? n + (n === 1 ? ' Termin' : ' Termine') : 'frei'}</em></span>`; }).join('')}</div>
       ${items.some(x => x.z.ganz) ? `<div class="kal-ganz"><span class="kal-std">ganz&shy;tägig</span>${tage.map(t => `<div>${proTag(t).filter(x => x.z.ganz).map(x => knopf(x)).join('')}</div>`).join('')}</div>` : ''}
       <div class="kal-tage" style="height:${(maxH - minH) * PX}px">
         <div class="kal-zeiten">${[...Array(maxH - minH)].map((_, i) => `<span style="top:${i * PX}px">${pad(minH + i)}:00</span>`).join('')}</div>
         ${tage.map(t => `<div class="kal-tag${dkey(t) === heute ? ' heute' : ''}">${proTag(t).filter(x => !x.z.ganz).map(x => {
           const top = ((x.z.s.getHours() + x.z.s.getMinutes() / 60) - minH) * PX;
-          const h = Math.max(26, (x.z.e - x.z.s) / 36e5 * PX - 2);
-          return knopf(x, `top:${top}px;height:${h}px`);
+          const h = Math.max(24, (x.z.e - x.z.s) / 36e5 * PX - 2);
+          return knopf(x, `top:${top}px;height:${h}px`, (x.z.e - x.z.s) < 50 * 6e4);
         }).join('')}${dkey(t) === heute ? `<i class="kal-jetzt" style="top:${((new Date().getHours() + new Date().getMinutes() / 60) - minH) * PX}px"></i>` : ''}</div>`).join('')}
       </div></div>`;
     const liste = `<div class="kal-liste">${tage.map(t => { const l = proTag(t); return `<div class="panel card${dkey(t) === heute ? ' heute' : ''}">
-        <span class="label">${esc(t.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }))}${dkey(t) === heute ? ' · heute' : ''}</span>
-        ${l.length ? l.map(x => knopf(x)).join('') : '<p class="cmeta" style="margin:6px 0 0">Keine Termine.</p>'}</div>`; }).join('')}</div>`;
+        <div class="row between"><span class="label">${esc(t.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }))}${dkey(t) === heute ? ' · heute' : ''}</span><em class="kal-anz${l.length ? '' : ' frei'}">${l.length ? l.length + (l.length === 1 ? ' Termin' : ' Termine') : 'frei'}</em></div>
+        ${l.length ? l.map(x => knopf(x)).join('') : ''}</div>`; }).join('')}</div>`;
     el.querySelector('#kalBody').innerHTML = (items.length ? '' : '<p class="cmeta">In dieser Woche stehen keine Termine im Google Kalender.</p>') + raster + liste;
 
     el.querySelectorAll('[data-ev]').forEach(b => b.onclick = () => { gewaehlt = b.dataset.ev; detail(items.find(x => x.ev.id === gewaehlt)); });
@@ -183,14 +186,22 @@
     .kal-tage{position:relative}
     .kal-zeiten{position:relative}.kal-zeiten span{position:absolute;right:8px;font-size:11px;color:var(--muted);transform:translateY(-1px)}
     .kal-tag{position:relative;border-left:1px solid var(--line);background-image:linear-gradient(var(--line) 1px,transparent 1px);background-size:100% var(--h)}
-    .kal-tag.heute{background-color:color-mix(in srgb,var(--rose-soft) 45%,transparent)}
+    .kal-tag.heute{background-color:color-mix(in srgb,var(--rose-soft) 70%,transparent)}
+    .kal-anz{display:block;font-style:normal;font-size:10.5px;letter-spacing:.04em;text-transform:none;margin-top:3px;color:var(--rose-ink);font-weight:600}
+    .kal-anz.frei{color:var(--ok);font-weight:500}
+    .kal-leg{display:inline-flex;align-items:center;gap:6px 10px;flex-wrap:wrap;margin-left:auto;font-size:12.5px;color:var(--muted)}
+    .kal-leg i{width:14px;height:14px;border-radius:4px;display:inline-block;margin-left:6px}
+    .kal-f-ok{background:#a9725e}.kal-f-term{background:#4a3c34}.kal-f-frei{background:var(--paper);border:1px solid var(--line)}
     .kal-tag .kal-ev{position:absolute;left:3px;right:3px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-start}
-    .kal-ev{display:block;width:100%;text-align:left;border:1px solid var(--line);border-left:3px solid var(--muted);background:var(--paper);border-radius:8px;padding:4px 7px;font:inherit;font-size:12.5px;line-height:1.3;color:var(--ink);cursor:pointer;margin-top:6px}
+    /* Termine als kräftige, volle Blöcke: auf einen Blick sichtbar, wann belegt und wann frei ist */
+    .kal-ev{display:block;width:100%;text-align:left;border:0;background:#4a3c34;border-radius:8px;padding:5px 8px;font:inherit;font-size:12.5px;line-height:1.3;color:#fff;cursor:pointer;margin-top:8px;box-shadow:0 1px 3px rgba(30,20,15,.25)}
     .kal-tag .kal-ev{margin:0}
-    .kal-ev.ok{border-left-color:var(--rose);background:var(--rose-soft)}
-    .kal-ev:hover{border-color:var(--rose)}
-    .kal-ev b{display:block;font-weight:500;overflow:hidden;text-overflow:ellipsis}
-    .kal-t,.kal-k{display:block;font-size:11px;color:var(--muted)}.kal-k{color:var(--rose-ink)}
+    .kal-ev.kurz{padding:3px 8px;justify-content:center!important}.kal-ev.kurz b{white-space:nowrap;font-size:12px}
+    .kal-ev.ok{background:#a9725e}
+    .kal-ev:hover{filter:brightness(1.08)}
+    .kal-ev:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+    .kal-ev b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis}
+    .kal-t,.kal-k{display:block;font-size:11px;color:rgba(255,255,255,.85)}.kal-k{color:#fff;font-weight:500}
     .kal-jetzt{position:absolute;left:0;right:0;height:2px;background:var(--bad);pointer-events:none}
     .kal-liste{display:none;flex-direction:column;gap:10px}.kal-liste .heute{border-color:var(--rose)}
     .kal-det{margin-bottom:12px;border-color:var(--rose)}

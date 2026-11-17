@@ -259,16 +259,27 @@
     const nArch = Store.list(true).filter(e => e.archiv).length;
     ab.hidden = !nArch && !showArchiv;
     ab.textContent = showArchiv ? '← Zurück zu den aktiven Kundinnen' : `Archiv anzeigen (${nArch})`;
-    $('#clist').innerHTML = list.length ? list.map(c => `<li><button data-id="${esc(c.id)}" class="${c.id === activeId ? 'active' : ''}">
+    const tg = $('#listeToggle');
+    tg.hidden = !activeId;
+    tg.innerHTML = listeZu ? '»' : '‹ Liste einklappen';
+    tg.title = listeZu ? 'Alle Kundinnen zeigen' : 'Liste einklappen, Akte breiter';
+    tg.setAttribute('aria-label', tg.title);
+    const kuerzel = c => ((c.vorname || '').charAt(0) + (c.nachname || '').charAt(0)).toUpperCase() || '?';
+    $('#clist').innerHTML = list.length ? list.map(c => `<li><button data-id="${esc(c.id)}" class="${c.id === activeId ? 'active' : ''}" title="${esc(c.vorname)} ${esc(c.nachname)}">
+      <span class="cini" aria-hidden="true">${esc(kuerzel(c))}</span><span class="cvn" aria-hidden="true">${esc(c.vorname)}</span>
       <span><span class="cname">${esc(c.nachname)}, ${esc(c.vorname)}</span><br><span class="cmeta">${c.letzte ? 'zuletzt ' + fmt(c.letzte.datum) : 'noch keine Behandlung'}</span></span>
       ${c.letzte ? `<span class="tag">${esc(c.letzte.art)}</span>` : (c.nurKontakt ? '<span class="tag">Kontakt</span>' : '')}</button></li>`).join('')
       : `<li class="empty">${all.length ? 'Keine Kundin gefunden.' : 'Noch keine Kundin angelegt.'}</li>`;
   }
   $('#clist').addEventListener('click', e => { const b = e.target.closest('button[data-id]'); if (b) openCustomer(b.dataset.id); });
+  // Notebook und iPad: Beim Öffnen einer Akte klappt die Liste zur schmalen Leiste ein, »« klappt sie wieder auf
+  let listeZu = true;
+  $('#listeToggle').onclick = () => { listeZu = !listeZu; render(); };
   $('#search').addEventListener('input', renderList);
   $('#newCustBtn').addEventListener('click', () => openCustomerSheet(null));
 
   async function openCustomer(id) {
+    listeZu = true;
     activeId = id; active = null; loadingDetail = true; render();
     try {
       const e = Store.list(true).find(x => x.id === id);
@@ -310,6 +321,7 @@
   function renderDetail() {
     const el = $('#detail');
     $('#main').classList.toggle('has-detail', !!activeId);
+    $('#main').classList.toggle('liste-zu', !!activeId && listeZu);
     if (!activeId) { el.innerHTML = '<div class="panel empty">Wähle links eine Kundin aus oder lege eine neue an.</div>'; return; }
     if (loadingDetail || !active) { el.innerHTML = `<button class="back" id="backBtn">← Alle Kundinnen</button><div class="panel empty">${loadingDetail ? 'Akte wird geladen …' : 'Die Akte konnte nicht geladen werden.'}</div>`; $('#backBtn').onclick = back; return; }
     const c = active;
@@ -723,24 +735,86 @@
     draw();
   }
 
-  // Foto groß zeigen. aktionen = [{ txt, fn, gefahr, frage }]: Knöpfe unter dem Foto (z. B. Ausblenden, Löschen)
+  // Foto groß zeigen und zoomen (zwei Finger, Doppeltipp, Mausrad oder + / −). aktionen = [{ txt, fn, gefahr, frage }]: Knöpfe unter dem Foto
   function showPhoto(src, aktionen) {
     const o = document.createElement('div');
     o.className = 'lightbox';
-    o.innerHTML = `<img alt="Foto" src="${esc(src)}"><div class="row" style="flex-wrap:wrap;justify-content:center;gap:10px">${(aktionen || []).map((a, i) => `<button type="button" class="btn small ${a.gefahr ? 'lb-gefahr' : 'ghost lb-hell'}" data-a="${i}">${esc(a.txt)}</button>`).join('')}<button type="button" class="btn small" data-zu>Schließen</button></div>`;
-    o.onclick = e => { if (e.target === o || e.target.closest('[data-zu]') || e.target.tagName === 'IMG') o.remove(); };
+    o.innerHTML = `<div class="lb-buehne"><img alt="Foto" src="${esc(src)}" draggable="false"></div>
+      <div class="row" style="flex-wrap:wrap;justify-content:center;gap:10px">
+        <button type="button" class="btn small ghost lb-hell lb-zoom" data-z="-1" aria-label="Verkleinern">−</button><button type="button" class="btn small ghost lb-hell lb-zoom" data-z="1" aria-label="Vergrößern">+</button>
+        ${(aktionen || []).map((a, i) => `<button type="button" class="btn small ${a.gefahr ? 'lb-gefahr' : 'ghost lb-hell'}" data-a="${i}">${esc(a.txt)}</button>`).join('')}<button type="button" class="btn small" data-zu>Schließen</button></div>`;
+    const zu = () => { o.remove(); document.removeEventListener('keydown', taste); };
+    const taste = e => { if (e.key === '+') zoom(1.4); if (e.key === '-') zoom(1 / 1.4); };
+    o.onclick = e => { if (e.target === o || e.target.closest('[data-zu]')) zu(); };
     o.querySelectorAll('[data-a]').forEach(b => b.onclick = ev => {
       ev.stopPropagation();
       const a = aktionen[Number(b.dataset.a)];
       if (a.frage && b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = a.frage; return; }
-      busy(b, 'Speichert …', async () => { await a.fn(); o.remove(); }).catch(() => {});
+      busy(b, 'Speichert …', async () => { await a.fn(); zu(); }).catch(() => {});
     });
     document.body.append(o);
+    document.addEventListener('keydown', taste);
+
+    // Zoom und Verschieben: s = Vergrößerung, x/y = Verschiebung in Bildschirmpunkten
+    const buehne = o.querySelector('.lb-buehne'), img = buehne.querySelector('img');
+    let s = 1, x = 0, y = 0;
+    const basis = () => { const r = img.getBoundingClientRect(); return { l: r.left - x, t: r.top - y, w: r.width / s, h: r.height / s }; };
+    function setzen() {
+      const b = buehne.getBoundingClientRect(), r = basis();
+      if (s <= 1) { s = 1; x = 0; y = 0; }
+      else { // nicht aus dem Bild heraus schieben
+        const minX = Math.min(0, b.right - (r.l + r.w * s)), maxX = Math.max(0, b.left - r.l);
+        const minY = Math.min(0, b.bottom - (r.t + r.h * s)), maxY = Math.max(0, b.top - r.t);
+        x = Math.min(maxX, Math.max(minX, x)); y = Math.min(maxY, Math.max(minY, y));
+      }
+      img.style.transform = `translate(${x}px,${y}px) scale(${s})`;
+      buehne.classList.toggle('gross', s > 1);
+    }
+    function zoom(f, px, py) {
+      const r = basis(), b = buehne.getBoundingClientRect();
+      if (px == null) { px = b.left + b.width / 2; py = b.top + b.height / 2; }
+      const neu = Math.min(6, Math.max(1, s * f));
+      // Punkt unter Finger oder Maus bleibt an seiner Stelle
+      const ix = (px - r.l - x) / s, iy = (py - r.t - y) / s;
+      x = px - r.l - ix * neu; y = py - r.t - iy * neu; s = neu;
+      setzen();
+    }
+    o.querySelectorAll('[data-z]').forEach(b => b.onclick = ev => { ev.stopPropagation(); zoom(b.dataset.z === '1' ? 1.5 : 1 / 1.5); });
+    buehne.addEventListener('wheel', e => { e.preventDefault(); zoom(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY); }, { passive: false });
+    const finger = new Map();
+    let start = null, letzterTipp = 0;
+    buehne.addEventListener('pointerdown', e => {
+      buehne.setPointerCapture(e.pointerId);
+      finger.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (finger.size === 1) {
+        const jetzt = Date.now();
+        if (jetzt - letzterTipp < 300) { if (s > 1) { s = 1; setzen(); } else zoom(2.5, e.clientX, e.clientY); letzterTipp = 0; return; }
+        letzterTipp = jetzt;
+      }
+      const p = [...finger.values()];
+      start = { s, x, y, p: p.map(q => ({ ...q })), abstand: p.length > 1 ? Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) : 0 };
+    });
+    buehne.addEventListener('pointermove', e => {
+      if (!finger.has(e.pointerId) || !start) return;
+      finger.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const p = [...finger.values()];
+      if (p.length > 1 && start.abstand) {
+        const mx = (p[0].x + p[1].x) / 2, my = (p[0].y + p[1].y) / 2;
+        const f = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) / start.abstand;
+        s = start.s; x = start.x; y = start.y;
+        zoom(f, mx, my);
+      } else if (s > 1 && start.p.length === 1) {
+        x = start.x + (p[0].x - start.p[0].x); y = start.y + (p[0].y - start.p[0].y); setzen();
+      }
+    });
+    const los = e => { finger.delete(e.pointerId); const p = [...finger.values()]; start = p.length ? { s, x, y, p: p.map(q => ({ ...q })), abstand: 0 } : null; };
+    buehne.addEventListener('pointerup', los); buehne.addEventListener('pointercancel', los);
+    buehne.addEventListener('gesturestart', e => e.preventDefault()); // Safari: Seite nicht mitzoomen
   }
 
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
-    const lb = $('.lightbox'); if (lb) { lb.remove(); return; }
+    const lb = $('.lightbox'); if (lb) { const z = lb.querySelector('[data-zu]'); if (z) z.click(); else lb.remove(); return; }
     if ($('#sheetRoot').innerHTML) $('#sheetRoot').innerHTML = '';
   });
 

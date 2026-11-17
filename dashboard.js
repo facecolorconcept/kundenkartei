@@ -104,6 +104,7 @@
 
       <div class="dgrid">
         <div class="dcol">
+        <div id="dashHeute"></div>
         <div id="dashAufg"></div>
         <div class="panel card">
           <div class="row between"><div class="row" style="gap:6px"><button class="htap" data-f="todo"><h2>Jetzt dran ›</h2></button><button class="qhelp" data-hilfe="jetzt" aria-label="Hilfe zu Jetzt dran" title="Hilfe">?</button></div><span class="label">${t.length} ${t.length === 1 ? 'Punkt' : 'Punkte'}</span></div>
@@ -133,6 +134,7 @@
         </div>
       </div>`;
 
+    if (FCC.heuteKarte) FCC.heuteKarte(el.querySelector('#dashHeute'));
     if (FCC.aufgabenKarte) FCC.aufgabenKarte(el.querySelector('#dashAufg'));
     el.querySelectorAll('[data-task]').forEach(b => { b.onclick = () => { const e = Store.list(true).find(x => x.id === b.dataset.task); const nm = e ? name(e) : ''; const k = b.dataset.tk;
         const titel = k.startsWith('b:') ? `Nachfassen bei ${nm}` : k.startsWith('p:') ? `Ergebnis nachfragen bei ${nm}` : k === 'pmu-nach' ? `PMU-Nachbehandlung mit ${nm} vereinbaren` : k === 'pmu-auff' ? `PMU-Auffrischung anbieten: ${nm}` : k === 'lash' ? `${nm} an Lash Lift erinnern` : k === 'brow' ? `${nm} an Brow Lift erinnern` : k === 'fb' ? `Fragebogen von ${nm} einholen` : `${nm}: ${b.dataset.tt}`;

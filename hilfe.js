@@ -12,6 +12,7 @@
       'Oben rechts siehst du einen <b>grünen Punkt „Drive“</b>: Die Kartei ist verbunden und speichert in deinen Google-Drive-Ordner.',
       'Der <b>Halbkreis</b> daneben schaltet die Ansicht: automatisch (tagsüber hell, abends dunkel), immer hell, immer dunkel.',
       'Der <b>Pfeil im Kreis</b> lädt alles neu, zum Beispiel wenn du am Laptop etwas eingetragen hast.',
+      'Die <b>Bereiche</b> wie Übersicht, Kalender und Kundenkartei findest du am iPhone und am iPad hochkant unten, am Notebook und am iPad quer in der Leiste links.',
       'Die <b>Tür mit Pfeil</b> meldet dich ab. Mach das immer an fremden Geräten.'
     ], tipp: 'Google fragt etwa einmal pro Stunde kurz nach. Ein Tipp auf „Mit Google anmelden“ genügt, du arbeitest danach an derselben Stelle weiter.' },
     { id: 'termin', t: 'Ein Termin von Anfang bis Ende', k: 'Der ganze Ablauf auf einen Blick', s: [
@@ -32,6 +33,14 @@
       '<b>Zufriedenheit</b>: Antippen der Farbe zeigt die Kundinnen dazu.',
       '<b>Zuletzt behandelt</b> und <b>Balken</b>: Antippen öffnet die Kundinnen des Monats.'
     ] },
+    { id: 'kalender', t: 'Kalender und Online-Buchung', k: 'Termine aus Google, Kundin zuordnen', s: [
+      'Tippe auf <b>Kalender</b> (am iPhone unten, am Notebook in der Leiste links). Du siehst die Woche mit allen Terminen aus deinem Google Kalender, auch die Online-Buchungen.',
+      'Termine mit Akte sind <b>rosé</b> und zeigen den Namen der Kundin. Ein Tipp auf den Termin, dann <b>Akte öffnen</b>.',
+      'Neue Buchung ohne Akte: Termin antippen, dann <b>Als Kundin anlegen</b>. Name und E-Mail aus der Buchung sind schon eingetragen.',
+      'Mit <b>‹</b> und <b>›</b> blätterst du wochenweise, <b>Heute</b> springt zurück.',
+      'Termine anlegen, verschieben oder absagen machst du weiter im <b>Google Kalender</b>. Der Knopf oben rechts öffnet ihn.',
+      'Auf der <b>Übersicht</b> steht ganz oben „Heute im Studio“ mit allen Terminen des Tages.'
+    ], tipp: 'Die Kartei erkennt eine Kundin an ihrer E-Mail-Adresse aus der Buchung. Steht bei der Kundin keine oder eine andere E-Mail, sucht sie nach dem vollen Namen im Termintitel.' },
     { id: 'jetzt', t: 'Jetzt dran', k: 'Farben, Erledigt, Merken', s: [
       'Der farbige Streifen links zeigt, wie dringend etwas ist: <b>rot</b> = unzufriedene Kundin, bitte zuerst; <b>orange</b> = prüfen, zum Beispiel Fragebogen fehlt; <b>rosé</b> = fällig, zum Beispiel Nachbehandlung; <b>grün</b> = Hinweis, zum Beispiel neuer Kontakt.',
       'Tippe auf den <b>Namen</b>, um die Akte zu öffnen.',
@@ -45,7 +54,8 @@
       'Kontakte, die du in Google Kontakte mit dem Label „Facecolorconcept“ anlegst, erscheinen in der Liste als <b>Kontakt</b>. Öffnen und speichern macht daraus eine Akte.',
       '<b>Suche oben</b>: Name, Telefon, Pigment, Charge oder Notiz eintippen. Am Laptop springt die Taste „/“ in die Suche.',
       'In der Kartei schaltest du oben zwischen <b>Karten</b> und <b>Tabelle</b>. In der Tabelle sortierst du per Tipp auf die Überschrift und filterst über die Felder darüber.',
-      '<b>CSV exportieren</b> in der Tabelle: lädt eine Liste für Excel oder Numbers herunter, ohne Gesundheitsdaten.'
+      '<b>CSV exportieren</b> in der Tabelle: lädt eine Liste für Excel oder Numbers herunter, ohne Gesundheitsdaten.',
+      'Bei <b>Instagram</b> reicht der Name, zum Beispiel @laura.beauty. In der Akte wird er zum Link auf ihr Profil, und die Suche findet sie auch darüber.'
     ] },
     { id: 'behandlung', t: 'Behandlung dokumentieren', k: 'Bogen ausfüllen, Folgetermin', s: [
       'Öffne die Akte, tippe oben unter <b>Termin heute</b> auf die Behandlung, zum Beispiel <b>Lash Lift</b>, und dann auf <b>Lash Lift-Bogen öffnen</b>.',
@@ -76,6 +86,15 @@
       '<b>Dokumente</b>: die PDFs der digital unterschriebenen Formulare landen hier von selbst. Rechnungen oder alte Papier-Formulare lädst du mit „+ Dokument“ hoch (bis 5 MB). Alles liegt im Ordner der Kundin in Drive.',
       'Die Fotos werden vor dem Hochladen verkleinert, damit es auch unterwegs schnell geht.'
     ] },
+    { id: 'simulation', t: 'Brauen simulieren', k: 'Vorschau am Vorher-Foto für die Beratung', s: [
+      'Öffne die Akte der Kundin und tippe bei <b>Vorher / Nachher</b> auf <b>Brauen simulieren</b>. Das neueste Vorher-Foto ist schon geladen.',
+      'Kein passendes Foto? <b>+ Anderes Foto</b> antippen und ein Foto von vorne machen: gerade Kopfhaltung, gleichmäßiges Licht.',
+      'Zieh die Punkte auf <b>Anfang</b>, <b>Bogen</b> und <b>Ende</b>. Mit „Beide Seiten gleich“ wandert die andere Seite gespiegelt mit. Der kleine Punkt <b>Mitte</b> verschiebt die Mittellinie.',
+      '<b>Nah</b> zoomt auf die Brauen. <b>Mapping</b> zeigt Linien vom Nasenflügel zu Anfang, Bogen und Ende. Zieh dafür die zwei Nasenflügel-Punkte an die richtige Stelle.',
+      'Wähle <b>Technik</b> und <b>Farbton</b>. Mit Breite, Deckkraft und Weichheit passt du die Vorschau an.',
+      '<b>Vorher</b> gedrückt halten zeigt das Foto ohne Simulation.',
+      '<b>In Akte speichern</b> legt das Bild als Foto „Simulation“ in der Akte ab, mit Technik, Farbton und Hinweis im Bild.'
+    ], tipp: 'Die Simulation ist eine Hilfe für das Gespräch, keine Vorzeichnung. Die Farbtöne sind Annäherungen und keine Pigmente eines Herstellers. Das Foto wird nur im Browser bearbeitet und erst beim Speichern in deinen Drive-Ordner geladen.' },
     { id: 'aufgaben', t: 'Aufgaben und Erinnerungen', k: 'Nichts mehr vergessen', s: [
       'Tippe auf <b>+ Aufgabe</b>, in der Übersicht oder in einer Akte.',
       'Schreib, was zu tun ist, und wähle das <b>Fälligkeitsdatum</b>. Die <b>Kundin</b> ist freiwillig. Wählst du eine, steht die Aufgabe auch in ihrer Akte.',
@@ -95,7 +114,7 @@
       'Hat die Kundin Ja gesagt, trag das <b>Freigabe-Datum</b> ein. Erst dann gibt es die <b>6 Bilder für Instagram</b> und die Bildunterschrift.'
     ], tipp: 'Zieht eine Kundin ihr Okay zurück: „Einwilligung zurückgezogen“ tippen, Beitrag auf Instagram löschen, dann „Beitrag gelöscht, Fotos entfernen“.' },
     { id: 'bericht', t: 'Bericht und Nachweis', k: 'Auswertung als PDF, z. B. für die Förderung', s: [
-      'Tippe oben auf den Reiter <b>Bericht</b>.',
+      'Tippe auf <b>Bericht</b> (am iPhone unten, am Notebook in der Leiste links).',
       'Wähle den <b>Zeitraum</b>, zum Beispiel „Dieses Quartal“ oder „Eigener Zeitraum“ mit Von und Bis.',
       'Unter <b>Leistungen</b> kannst du auf PMU, Lash Lift, Brow Lift oder Waxing eingrenzen. „Alle“ nimmt alles.',
       'Unter <b>Namen im Bericht</b> wählst du „Abgekürzt“ (Sophia B.) oder „Vollständig“. Für Ämter und Förderstellen reicht meist abgekürzt.',
@@ -106,7 +125,7 @@
       'Druck das PDF aus oder öffne es am iPad und <b>unterschreibe</b> unten auf der letzten Seite.'
     ], tipp: 'Im Bericht stehen nur Datum, Kundin und Leistung. Gesundheitsdaten, Telefonnummern und Fotos sind nie darin. Preise kennt die Kartei nicht, für Umsätze nimm deine Abrechnung.' },
     { id: 'auswertung', t: 'Meine Auswertung', k: 'Aus den eigenen Behandlungen lernen', s: [
-      'Tippe unten auf <b>Bericht</b> und oben auf <b>Meine Auswertung</b>. „Nachweis“ bringt dich zurück zum Bericht für die Förderung.',
+      'Tippe auf <b>Bericht</b> und oben auf <b>Meine Auswertung</b>. „Nachweis“ bringt dich zurück zum Bericht für die Förderung.',
       '<b>Lerntagebuch</b>: zeigt alles, was du im Bogen unter „Nächstes Mal anders“ notiert hast, und was beim Termin danach herauskam.',
       '<b>Ergebnis nach Einstellung</b>: zeigt, bei welcher Einwirkzeit ein Lifting zu stark oder zu schwach wurde und bei welchem Hautbild das Pigment gut hält. Ein Tipp auf eine Zeile zeigt die Behandlungen dahinter.',
       '<b>Dauer</b>: Trag im Bogen oben die Minuten ein, dann siehst du, wie du schneller wirst.',

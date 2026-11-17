@@ -38,7 +38,7 @@
 
   function suchfelder(c) {
     const out = [
-      c.telefon && 'Telefon: ' + c.telefon, c.email && 'E-Mail: ' + c.email,
+      c.telefon && 'Telefon: ' + c.telefon, c.email && 'E-Mail: ' + c.email, c.instagram && 'Instagram: @' + c.instagram,
       c.allergien && 'Allergien: ' + c.allergien, c.notiz && 'Notiz: ' + c.notiz,
       ...(c.notizen || []).map(n => 'Notiz: ' + n.text)
     ];
@@ -66,7 +66,7 @@
   function entry(c, dateiId) {
     const last = [...(c.behandlungen || [])].sort((a, b) => b.datum.localeCompare(a.datum))[0];
     return {
-      id: c.id, vorname: c.vorname, nachname: c.nachname, telefon: c.telefon || '',
+      id: c.id, vorname: c.vorname, nachname: c.nachname, telefon: c.telefon || '', instagram: c.instagram || '',
       dateiId, ordnerId: c.ordnerId || '', kontaktId: c.kontaktId || '',
       letzte: last ? { datum: last.datum, art: last.art } : null,
       archiv: c.archiviert || '',
@@ -79,7 +79,7 @@
       // Suchtexte für die globale Suche (Telefon, Allergien, Notizen, Pigmente, Chargen …)
       // Brows-Reihe: Kurzform für Übersicht und Reiter
       w: (c.brows || []).map(x => window.FCC && FCC.browsKurz ? FCC.browsKurz(x) : { id: x.id, f: x.folge }),
-      f: suchfelder(c), v: 4
+      f: suchfelder(c), v: 5
     };
   }
 
@@ -212,7 +212,7 @@
         this.indexId = f.id;
         this.index = await (await this.api(`${API}/files/${f.id}?alt=media`)).json();
         // Ältere Verzeichnisse ohne Kurzfassung einmalig neu aufbauen
-        if (this.index.some(e => e.v !== 4)) await this.rebuildIndex();
+        if (this.index.some(e => e.v !== 5)) await this.rebuildIndex();
       } else {
         await this.rebuildIndex();
       }
@@ -469,6 +469,21 @@
       return r.json();
     },
 
+    // Termine aus dem Google Kalender lesen (auch Online-Buchungen über die Google-Terminbuchung). Nur lesen, nichts ändern.
+    async termine(von, bis) {
+      const out = [];
+      let page = '';
+      for (let i = 0; i < 5; i++) {
+        const u = `${CAL}/calendars/primary/events?singleEvents=true&orderBy=startTime&maxResults=250&timeMin=${encodeURIComponent(von.toISOString())}&timeMax=${encodeURIComponent(bis.toISOString())}` +
+          '&fields=' + encodeURIComponent('nextPageToken,items(id,status,summary,description,location,start,end,attendees(email,displayName,self,responseStatus),htmlLink,eventType)') + (page ? '&pageToken=' + encodeURIComponent(page) : '');
+        const r = await this.json(u);
+        (r.items || []).forEach(x => { if (x.status !== 'cancelled') out.push(x); });
+        if (!r.nextPageToken) break;
+        page = r.nextPageToken;
+      }
+      return out;
+    },
+
     async remind(title, date, desc) {
       const end = new Date(date + 'T12:00');
       end.setDate(end.getDate() + 1);
@@ -530,7 +545,17 @@
     async absender() { return 'info@facecolorconcept.de (Beispielmodus)'; },
     async mailSenden() { await new Promise(r => setTimeout(r, 400)); return { id: 'demo' }; },
     async erinnerungWeg() {},
-    async remind() {}
+    async remind() {},
+    // Beispieltermine für den Kalender (relativ zu heute)
+    async termine(von, bis) {
+      const mo = new Date(); mo.setHours(0, 0, 0, 0); mo.setDate(mo.getDate() - ((mo.getDay() + 6) % 7));
+      const t = (tag, h, m, dauer, summary, mail) => { const s = new Date(mo); s.setDate(s.getDate() + tag); s.setHours(h, m); const e = new Date(s.getTime() + dauer * 6e4);
+        return { id: 'demo' + tag + h, summary, start: { dateTime: s.toISOString() }, end: { dateTime: e.toISOString() }, attendees: mail ? [{ email: 'info@facecolorconcept.de', self: true }, { email: mail }] : [] }; };
+      const ich = this.data[0] || {}; const mail0 = ich.email || 'laura@example.com';
+      const l = [t(0, 10, 0, 90, 'Lash Lift (' + ((ich.vorname || 'Laura') + ' ' + (ich.nachname || '')).trim() + ')', mail0), t(1, 14, 0, 180, 'Powder Brows Ersttermin (Mia Neumann)', 'mia.neumann@example.com'),
+        t(2, 9, 30, 60, 'Brow Lift (' + ((ich.vorname || 'Laura') + ' ' + (ich.nachname || '')).trim() + ')', mail0), t(3, 16, 0, 45, 'Waxing Oberlippe (Sophie Krämer)', 'sophie@example.com'), t(4, 11, 0, 30, 'Steuerbüro', '')];
+      return l.filter(x => new Date(x.end.dateTime) > von && new Date(x.start.dateTime) < bis);
+    }
   };
 
   window.Store = C.CLIENT_ID ? Drive : Demo;

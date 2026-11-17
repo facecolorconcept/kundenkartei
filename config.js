@@ -13,5 +13,7 @@ window.FCC_CONFIG = {
   INHABERIN: 'Kati',
   // Voller Name für Berichte und Nachweise (PDF)
   INHABERIN_NAME: 'Katharina Perschka',
-  ADRESSE: 'Elisabeth-Silbereisen-Weg 7, 74931 Lobbach-Lobenfeld'
+  ADRESSE: 'Elisabeth-Silbereisen-Weg 7, 74931 Lobbach-Lobenfeld',
+  // Link zu deiner Google-Buchungsseite (Terminbuchung). Leer lassen = kein Knopf „Online-Buchung“ im Kalender.
+  BUCHUNG_URL: ''
 };

@@ -243,7 +243,7 @@
   function renderList() {
     const qy = $('#search').value.toLowerCase().trim();
     const all = showArchiv ? Store.list(true).filter(e => e.archiv) : Store.list();
-    const list = all.filter(c => (!listFilter || listFilter.test(c)) && ((c.vorname || '') + ' ' + (c.nachname || '') + ' ' + (c.telefon || '')).toLowerCase().includes(qy))
+    const list = all.filter(c => (!listFilter || listFilter.test(c)) && ((c.vorname || '') + ' ' + (c.nachname || '') + ' ' + (c.telefon || '') + ' ' + (c.instagram ? '@' + c.instagram : '')).toLowerCase().includes(qy))
       .sort(sortMode === 'zuletzt'
         ? (a, b) => ((b.letzte && b.letzte.datum) || '').localeCompare((a.letzte && a.letzte.datum) || '')
         : (a, b) => (a.nachname || '').localeCompare(b.nachname || '', 'de'));
@@ -320,6 +320,7 @@
         <div class="facts">
           <div><span class="label">Telefon</span><br>${tel}</div>
           <div><span class="label">E-Mail</span><br>${esc(c.email) || '–'}</div>
+          ${c.instagram ? `<div><span class="label">Instagram</span><br><a href="https://www.instagram.com/${encodeURIComponent(c.instagram)}/" target="_blank" rel="noopener noreferrer">@${esc(c.instagram)}</a></div>` : ''}
           ${c.geburtsdatum ? `<div><span class="label">Geburtsdatum</span><br>${fmt(c.geburtsdatum)}</div>` : ''}
           ${c.strasse || c.ort ? `<div><span class="label">Anschrift</span><br>${esc(c.strasse)}${c.strasse ? '<br>' : ''}${esc([c.plz, c.ort].filter(Boolean).join(' '))}</div>` : ''}
           <div><span class="label">Allergien</span><br>${esc(c.allergien) || '–'}</div>
@@ -339,7 +340,7 @@
       <div id="aufgSlot"></div>
       <div class="panel card">
         <div class="row between"><h2>Vorher / Nachher</h2>
-          <div class="row"><button class="btn small" data-cphoto="Vorher">+ Vorher-Foto</button><button class="btn small" data-cphoto="Nachher">+ Nachher-Foto</button></div></div>
+          <div class="row">${FCC.brauenSim ? '<button class="btn ghost small" id="simBtn">Brauen simulieren</button>' : ''}<button class="btn small" data-cphoto="Vorher">+ Vorher-Foto</button><button class="btn small" data-cphoto="Nachher">+ Nachher-Foto</button></div></div>
         <input type="file" id="cPhotoInput" accept="image/*" multiple hidden>
         ${allPhotos(c).length ? `<div class="thumbs" style="margin-top:12px">${allPhotos(c).map(p => `<div style="display:flex;flex-direction:column;gap:4px;min-width:0"><button type="button" class="thumb" data-fid="${esc(p.fileId)}" aria-label="Foto vergrößern"><img alt="" data-src="${esc(p.fileId)}"></button><span class="cmeta">${esc(p.typ)} · ${fmt(p.datum)}${p.art ? ' · ' + esc(p.art) : ''}</span></div>`).join('')}</div>`
           : '<p class="cmeta" style="margin-top:10px">Noch keine Fotos. Du kannst ein Foto machen oder aus deinen Bildern wählen.</p>'}
@@ -418,6 +419,8 @@
     // Vorher-/Nachher-Fotos direkt in der Akte
     let cTyp = 'Vorher';
     $$('[data-cphoto]').forEach(b => b.onclick = () => { cTyp = b.dataset.cphoto; $('#cPhotoInput').click(); });
+    // Brauen-Simulation am Vorher-Foto (simulation.js); das Ergebnis landet als Foto „Simulation“ in der Akte
+    if ($('#simBtn')) $('#simBtn').onclick = () => FCC.brauenSim(c, allPhotos(c), () => { if (active === c) render(); });
     $('#cPhotoInput').onchange = async e => {
       const files = [...e.target.files]; e.target.value = '';
       if (!files.length) return;
@@ -473,14 +476,17 @@
     return close;
   }
 
-  function openCustomerSheet(c) {
-    const d = c || { vorname: '', nachname: '', telefon: '', email: '', allergien: '', blutverduenner: '', fragebogen: '', notiz: '' };
-    ['geburtsdatum', 'strasse', 'plz', 'ort'].forEach(k => { if (d[k] == null) d[k] = ''; });
+  // Instagram-Name ohne @ und ohne Link speichern (aus „https://instagram.com/name“ oder „@name“ wird „name“)
+  const igName = v => { const m = String(v || '').trim().replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/^@/, '').split(/[/?#\s]/)[0]; return /^[A-Za-z0-9._]{1,30}$/.test(m) ? m : ''; };
+  function openCustomerSheet(c, pre) {
+    const d = c || { vorname: '', nachname: '', telefon: '', email: '', allergien: '', blutverduenner: '', fragebogen: '', notiz: '', ...(pre || {}) };
+    ['geburtsdatum', 'strasse', 'plz', 'ort', 'instagram'].forEach(k => { if (d[k] == null) d[k] = ''; });
     const close = sheetShell(c ? 'Daten ändern' : 'Neue Kundin', '', `<form class="wrap sec" id="cf"><div class="grid2">
       <div class="field"><label for="f-vn">Vorname *</label><input id="f-vn" autocomplete="off" value="${esc(d.vorname)}"></div>
       <div class="field"><label for="f-nn">Nachname *</label><input id="f-nn" autocomplete="off" value="${esc(d.nachname)}"></div>
       <div class="field"><label for="f-tel">Telefon</label><input id="f-tel" type="tel" value="${esc(d.telefon)}"></div>
       <div class="field"><label for="f-mail">E-Mail</label><input id="f-mail" type="email" value="${esc(d.email)}"></div>
+      <div class="field"><label for="f-ig">Instagram</label><input id="f-ig" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="@name" value="${esc(d.instagram)}"></div>
       <div class="field"><label for="f-gd">Geburtsdatum</label><input id="f-gd" type="date" value="${esc(d.geburtsdatum)}"></div>
       <div class="field"><label for="f-str">Straße und Hausnummer</label><input id="f-str" value="${esc(d.strasse)}"></div>
       <div class="field"><label for="f-plz">PLZ</label><input id="f-plz" inputmode="numeric" value="${esc(d.plz)}"></div>
@@ -499,7 +505,7 @@
     $('#f-vn').focus();
     $('#save').onclick = e => {
       const v = { vorname: $('#f-vn').value.trim(), nachname: $('#f-nn').value.trim(), telefon: $('#f-tel').value.trim(), email: $('#f-mail').value.trim(), allergien: $('#f-all').value.trim(), blutverduenner: $('#f-bv').value, fragebogen: $('#f-fb').value, notiz: $('#f-notiz').value.trim(),
-        geburtsdatum: $('#f-gd').value, strasse: $('#f-str').value.trim(), plz: $('#f-plz').value.trim(), ort: $('#f-ort').value.trim(),
+        instagram: igName($('#f-ig').value), geburtsdatum: $('#f-gd').value, strasse: $('#f-str').value.trim(), plz: $('#f-plz').value.trim(), ort: $('#f-ort').value.trim(),
         herkunft: [...$$('#f-hk .chip.on')].map(b => b.dataset.hk) };
       if (!v.vorname || !v.nachname) { toast('Bitte Vor- und Nachname eintragen.'); return; }
       busy(e.currentTarget, 'Speichert …', async () => {
@@ -707,7 +713,7 @@
   FCC.showPhoto = showPhoto;
   FCC.bogenZeilen = FCC_BOGEN_ZEILEN;
   FCC.toast = toast;
-  FCC.newCustomer = () => { FCC.show('kartei'); openCustomerSheet(null); };
+  FCC.newCustomer = pre => { FCC.show('kartei'); openCustomerSheet(null, pre && typeof pre === 'object' && !pre.target ? pre : null); };
   // Liste mit Filter öffnen, z. B. FCC.openList('Jetzt dran', e => …, 'zuletzt')
   FCC.openList = (label, test, sort) => {
     listFilter = test ? { label, test } : null; sortMode = sort || 'name';

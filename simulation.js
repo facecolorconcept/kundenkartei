@@ -1,6 +1,6 @@
 // Brauen-Simulation am Vorher-Foto. Läuft komplett im Browser: Das Foto verlässt das Gerät nur,
 // wenn du das Ergebnis in der Akte speicherst (dann in deinen eigenen Google-Drive-Ordner).
-// Keine Gesichtserkennung von fremden Servern: Du setzt Anfang, Bogen und Ende selbst, das passt zum Vorzeichnen nach Anatomie.
+// Keine Gesichtserkennung von fremden Servern: Du setzt die fünf Punkte A, A1, B, B1 und C selbst, wie beim Vorzeichnen nach Anatomie.
 (function () {
   const FCC = window.FCC = window.FCC || {};
   const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -40,19 +40,30 @@
     return out;
   }
 
-  // Form einer Braue aus Anfang (Mitte des Kopfes), Bogen (höchster Punkt oben) und Ende (Spitze)
-  function form(s, o) {
-    const L = len(sub(s.e, s.a));
-    const dir = nrm(sub(s.e, s.a));
+  // Form einer Braue aus fünf Punkten (wie beim Vorzeichnen):
+  // A = Anfang unten, A1 = Anfang oben, B = Bogen oben, B1 = Bogen unten, C = Ende (Spitze)
+  // Gerade Verbindung Ecke zu Ecke mit gleich vielen Stützpunkten wie spline(), damit beide gemischt werden können
+  function gerade(pts, n) {
+    const out = [];
+    for (let i = 0; i < pts.length - 1; i++) for (let k = 0; k < n; k++) { const t = k / n; out.push({ x: pts[i].x + (pts[i + 1].x - pts[i].x) * t, y: pts[i].y + (pts[i + 1].y - pts[i].y) * t }); }
+    out.push(pts[pts.length - 1]);
+    return out;
+  }
+  // Rundung: 0 = Ecke mit Ecke gerade verbunden, 1 = weicher Bogen durch die Punkte
+  const mischen = (a, b, r) => a.map((p, i) => ({ x: p.x + (b[i].x - p.x) * r, y: p.y + (b[i].y - p.y) * r }));
+  function form(s, o = {}) {
+    const kopfMitte = { x: (s.A.x + s.A1.x) / 2, y: (s.A.y + s.A1.y) / 2 };
+    const L = len(sub(s.C, kopfMitte));
+    const dir = nrm(sub(s.C, kopfMitte));
     let down = { x: -dir.y, y: dir.x }; if (down.y < 0) down = { x: -down.x, y: -down.y };
-    const T = L * 0.26 * o.breite;
-    const aTop = add(s.a, down, -T * 0.5), aBot = add(s.a, down, T * 0.5);
-    const bBot = add(s.b, down, T * 0.82);
+    const T = Math.max(len(sub(s.A, s.A1)), len(sub(s.B, s.B1)), L * 0.05);
     const back = { x: -dir.x, y: -dir.y };
-    const kopf = add(s.a, back, T * 0.38);
-    const top = spline([aTop, add(s.b, back, L * 0.02), s.b, s.e]);
-    const bot = spline([aBot, add(aBot, sub(bBot, aBot), 0.5), bBot, s.e]);
-    return { top, bot, kopf, aTop, aBot, T, L, dir, down };
+    // Kopf: weicher, runder Abschluss zwischen A und A1
+    const kopf = add(kopfMitte, back, len(sub(s.A, s.A1)) * 0.42);
+    const ro = o.rundOben == null ? 0.7 : o.rundOben, ru = o.rundUnten == null ? 0.7 : o.rundUnten;
+    const top = mischen(gerade([s.A1, s.B, s.C], 28), spline([s.A1, s.B, s.C], 28), ro);
+    const bot = mischen(gerade([s.A, s.B1, s.C], 28), spline([s.A, s.B1, s.C], 28), ru);
+    return { top, bot, kopf, aTop: s.A1, aBot: s.A, T, L, dir, down };
   }
 
   function pfad(ctx, f) {
@@ -65,14 +76,12 @@
   }
 
   // Zufall mit festem Startwert, damit die Härchen beim Verschieben nicht springen
-  function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+  function rng(seed) { let s = (seed * 2654435761) >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
   // Verlauf von vorne nach hinten: wie kräftig das Pigment an welcher Stelle wirkt
   function verlauf(ctx, f, s, technik, farbe, deck) {
-    const g = ctx.createLinearGradient(f.kopf.x, f.kopf.y, s.e.x, s.e.y);
-    const stops = technik === 'ombre' ? [[0, .08], [.3, .45], [.7, .95], [1, 1]]
-      : technik === 'kombi' ? [[0, 0], [.22, 0], [.4, .7], [.8, .95], [1, .9]]
-      : [[0, .3], [.25, .75], [.8, .95], [1, .85]];
+    const g = ctx.createLinearGradient(f.kopf.x, f.kopf.y, s.C.x, s.C.y);
+    const stops = STOPS[technik] || STOPS.powder;
     stops.forEach(([p, a]) => g.addColorStop(p, rgba(farbe, a * deck)));
     return g;
   }
@@ -85,11 +94,10 @@
     ctx.lineCap = 'round';
     for (let i = 0; i < n; i++) {
       const t = r() * (nurVorne ? 0.42 : 0.97);
-      const idx = Math.min(f.top.length - 1, Math.floor(t * (f.top.length - 1)));
-      const pt = f.top[idx], pb = f.bot[Math.min(f.bot.length - 1, idx)];
+      const pt = an(f.top, t), pb = an(f.bot, t);
       const u = 0.12 + r() * 0.8;
       const p = { x: pt.x + (pb.x - pt.x) * u, y: pt.y + (pb.y - pt.y) * u };
-      const vorBogen = s.b.x !== s.a.x ? (p.x - s.a.x) / (s.b.x - s.a.x) < 1 : true;
+      const vorBogen = s.B.x !== s.A.x ? (p.x - s.A.x) / (s.B.x - s.A.x) < 1 : true;
       const up = { x: -f.down.x, y: -f.down.y };
       // Richtung: vorne fast senkrecht, danach flacher, hinter dem Bogen leicht abwärts
       const steil = t < 0.18 ? 0.85 : vorBogen ? 0.45 : -0.05;
@@ -103,16 +111,52 @@
     }
   }
 
-  // Weichzeichnen ohne ctx.filter (auf älteren iPads nicht überall vorhanden): klein rechnen und wieder groß ziehen
-  function weich(cv, k) {
-    if (k <= 1.05) return cv;
-    const w = Math.max(1, Math.round(cv.width / k)), h = Math.max(1, Math.round(cv.height / k));
-    const t = document.createElement('canvas'); t.width = w; t.height = h;
-    const tc = t.getContext('2d'); tc.imageSmoothingQuality = 'high'; tc.drawImage(cv, 0, 0, w, h);
+  // Weichzeichnen: wo der Browser es kann mit echtem Unschärfe-Filter, sonst stufenweise (halbieren und wieder verdoppeln),
+  // damit keine Pixeltreppen entstehen
+  const FILTER_OK = (() => { try { const c = document.createElement('canvas').getContext('2d'); c.filter = 'blur(2px)'; return c.filter === 'blur(2px)'; } catch (e) { return false; } })();
+  function weich(cv, r) {
+    if (r < 0.4) return cv;
     const o = document.createElement('canvas'); o.width = cv.width; o.height = cv.height;
-    const oc = o.getContext('2d'); oc.imageSmoothingQuality = 'high'; oc.drawImage(t, 0, 0, cv.width, cv.height);
-    return o;
+    const oc = o.getContext('2d');
+    if (FILTER_OK) { oc.filter = `blur(${r.toFixed(2)}px)`; oc.drawImage(cv, 0, 0); return o; }
+    let stufen = Math.max(1, Math.min(6, Math.round(Math.log2(r * 1.4))));
+    let cur = cv;
+    const kette = [];
+    for (let i = 0; i < stufen; i++) {
+      const t = document.createElement('canvas'); t.width = Math.max(1, Math.round(cur.width / 2)); t.height = Math.max(1, Math.round(cur.height / 2));
+      const tc = t.getContext('2d'); tc.imageSmoothingQuality = 'high'; tc.drawImage(cur, 0, 0, t.width, t.height);
+      kette.push(cur); cur = t;
+    }
+    for (let i = kette.length - 1; i >= 0; i--) {
+      const t = document.createElement('canvas'); t.width = kette[i].width; t.height = kette[i].height;
+      const tc = t.getContext('2d'); tc.imageSmoothingQuality = 'high'; tc.drawImage(cur, 0, 0, t.width, t.height);
+      cur = t;
+    }
+    return cur;
   }
+
+  // Punkt auf einer Stützpunkt-Liste an Stelle t (0 bis 1), stufenlos zwischen den Stützpunkten
+  function an(l, t) { const x = Math.max(0, Math.min(1, t)) * (l.length - 1), i = Math.min(l.length - 2, Math.floor(x)), f = x - i; return { x: l[i].x + (l[i + 1].x - l[i].x) * f, y: l[i].y + (l[i + 1].y - l[i].y) * f }; }
+
+  // Pigment-Körnung: winzige Punkte wie beim maschinellen Schattieren, dichter dort, wo der Verlauf kräftiger ist
+  function koernung(ctx, f, s, o, seed, stops, sc) {
+    const r = rng(seed);
+    const flaeche = f.L * f.T * 0.8;
+    // Punktgröße an die Anzeige gekoppelt: am Bildschirm etwa ein halbes Pixel, damit es wie feine Pigmentierung wirkt und nicht wie ein Raster
+    const rad = Math.max(0.45 / (sc || 1), f.T * 0.0045);
+    const n = Math.min(26000, Math.round(flaeche / (rad * rad * 14)));
+    const staerke = t => { for (let i = 1; i < stops.length; i++) if (t <= stops[i][0]) { const [p0, a0] = stops[i - 1], [p1, a1] = stops[i]; return a0 + (a1 - a0) * (t - p0) / (p1 - p0 || 1); } return stops[stops.length - 1][1]; };
+    for (let i = 0; i < n; i++) {
+      const t = r();
+      const pt = an(f.top, t), pb = an(f.bot, t);
+      const u = r();
+      const a = staerke(t) * o.deck * (0.12 + r() * 0.38);
+      if (a < 0.02) continue;
+      ctx.fillStyle = rgba(o.farbe, a);
+      ctx.beginPath(); ctx.arc(pt.x + (pb.x - pt.x) * u, pt.y + (pb.y - pt.y) * u, rad * (0.6 + r() * 0.8), 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  const STOPS = { ombre: [[0, .06], [.3, .4], [.7, .95], [1, 1]], kombi: [[0, 0], [.22, 0], [.4, .7], [.8, .95], [1, .9]], powder: [[0, .28], [.22, .72], [.8, .95], [1, .85]] };
 
   // Ganze Szene zeichnen: Foto, Brauen (multipliziert, damit Hautstruktur durchscheint), Hilfslinien und Punkte
   function zeichne(ctx, W, H, st, view, o) {
@@ -122,22 +166,26 @@
     ctx.drawImage(st.bild, view.x, view.y, view.w, view.h, 0, 0, W, H);
     if (o.vorher) return;
     const seiten = ['L', 'R'].map(k => ({ k, s: st.p[k], f: form(st.p[k], st.o) }));
-    // Puder-Schicht
-    const pud = document.createElement('canvas'); pud.width = W; pud.height = H;
-    const pc = pud.getContext('2d'); pc.setTransform(sc, 0, 0, sc, -view.x * sc, -view.y * sc);
-    // Härchen-Schicht
-    const har = document.createElement('canvas'); har.width = W; har.height = H;
-    const hc = har.getContext('2d'); hc.setTransform(sc, 0, 0, sc, -view.x * sc, -view.y * sc);
+    const tech = st.o.technik, deck = st.o.deck;
+    const neu = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'); x.setTransform(sc, 0, 0, sc, -view.x * sc, -view.y * sc); return [c, x]; };
+    const [pud, pc] = neu();   // weicher Schleier (Weichheit wirkt hier)
+    const [kor, kc] = neu();   // scharfe Körnung und Härchen
     seiten.forEach(({ k, s, f }) => {
-      if (st.o.technik !== 'hair') { pfad(pc, f); pc.fillStyle = verlauf(pc, f, s, st.o.technik, st.o.farbe, st.o.deck); pc.fill(); }
-      else { pfad(pc, f); pc.fillStyle = verlauf(pc, f, s, 'powder', st.o.farbe, st.o.deck * 0.18); pc.fill(); }
-      if (st.o.technik === 'hair' || st.o.technik === 'kombi') { hc.save(); pfad(hc, f); hc.clip(); haerchen(hc, f, s, { farbe: st.o.farbe, deck: st.o.deck }, k === 'L' ? 7 : 11, st.o.technik === 'kombi'); hc.restore(); }
+      const stops = tech === 'hair' ? STOPS.powder : (STOPS[tech] || STOPS.powder);
+      // Schleier: bei Härchen nur ganz zart als Hautschatten
+      pfad(pc, f); pc.fillStyle = verlauf(pc, f, s, tech === 'hair' ? 'powder' : tech, st.o.farbe, deck * (tech === 'hair' ? 0.16 : 0.72)); pc.fill();
+      kc.save(); pfad(kc, f); kc.clip();
+      if (tech !== 'hair') koernung(kc, f, s, { farbe: st.o.farbe, deck }, k === 'L' ? 3 : 5, stops, sc);
+      if (tech === 'hair' || tech === 'kombi') haerchen(kc, f, s, { farbe: st.o.farbe, deck }, k === 'L' ? 7 : 11, tech === 'kombi');
+      kc.restore();
     });
     const tPx = Math.max(...seiten.map(x => x.f.T)) * sc;
+    // Weichheit 0 = klare Kontur, 100 = sehr weicher Übergang zur Haut
+    const rand = tPx * (0.004 + st.o.weich * 0.13);
     ctx.save();
     ctx.globalCompositeOperation = 'multiply';
-    ctx.drawImage(weich(pud, 1 + tPx * (0.04 + st.o.weich * 0.14)), 0, 0);
-    ctx.drawImage(weich(har, 1 + tPx * 0.012), 0, 0);
+    ctx.drawImage(weich(pud, rand), 0, 0);
+    ctx.drawImage(weich(kor, Math.min(rand * 0.18, tPx * 0.02)), 0, 0);
     ctx.restore();
 
     if (!o.punkte) return;
@@ -146,15 +194,15 @@
     ctx.lineWidth = 1.2;
     ctx.setLineDash([5, 5]);
     ctx.strokeStyle = 'rgba(255,255,255,.85)';
-    // Mittellinie und Waagerechte durch beide Anfänge und beide Bögen
+    // Mittellinie und Verbindungslinien A–A, A1–A1 und B–B: zeigen sofort, ob beide Seiten auf einer Höhe sind
     const mx = (st.mitte - view.x) * sc;
     ctx.beginPath(); ctx.moveTo(mx, 0); ctx.lineTo(mx, H); ctx.stroke();
-    [['a'], ['b']].forEach(([key]) => { const p = z(st.p.L[key]), q = z(st.p.R[key]); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke(); });
+    ['A', 'A1', 'B'].forEach(key => { const p = z(st.p.L[key]), q = z(st.p.R[key]); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke(); });
     if (st.mapping) {
       ctx.strokeStyle = 'rgba(214,170,140,.95)';
       ['L', 'R'].forEach(k => {
         const n = z(st.nase[k]);
-        ['a', 'b', 'e'].forEach(key => { const p = z(st.p[k][key]); ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(p.x + (p.x - n.x) * 0.25, p.y + (p.y - n.y) * 0.25); ctx.stroke(); });
+        ['A', 'B', 'C'].forEach(key => { const p = z(st.p[k][key]); ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(p.x + (p.x - n.x) * 0.25, p.y + (p.y - n.y) * 0.25); ctx.stroke(); });
         ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n.x, 0); ctx.stroke();
       });
     }
@@ -167,28 +215,32 @@
       if (g.txt && o.beschriftung) {
         ctx.font = '600 11px Jost, system-ui, sans-serif';
         const w = ctx.measureText(g.txt).width + 10;
-        ctx.fillStyle = 'rgba(30,22,18,.72)'; ctx.fillRect(p.x - w / 2, p.y - 30, w, 17);
-        ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(g.txt, p.x, p.y - 18);
+        const unten = g.key === 'A' || g.key === 'B1'; // untere Punkte beschriften wir unterhalb, damit nichts überlappt
+        const ty = unten ? p.y + 13 : p.y - 30;
+        ctx.fillStyle = 'rgba(30,22,18,.72)'; ctx.fillRect(p.x - w / 2, ty, w, 17);
+        ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(g.txt, p.x, ty + 12);
       }
     });
     ctx.restore();
   }
 
+  const PUNKTE = ['A', 'A1', 'B', 'B1', 'C'];
   function griffe(st) {
     const out = [];
     ['L', 'R'].forEach(k => {
-      [['a', 'Anfang'], ['b', 'Bogen'], ['e', 'Ende']].forEach(([key, txt]) => out.push({ k, key, p: st.p[k][key], txt }));
+      PUNKTE.forEach(key => out.push({ k, key, p: st.p[k][key], txt: key }));
       if (st.mapping) out.push({ k, key: 'n', p: st.nase[k], nase: true, txt: 'Nasenflügel' });
     });
-    const ys = ['L', 'R'].flatMap(k => ['a', 'b', 'e'].map(x => st.p[k][x].y));
-    const T = len(sub(st.p.L.e, st.p.L.a)) * 0.26;
+    const ys = ['L', 'R'].flatMap(k => PUNKTE.map(x => st.p[k][x].y));
+    const T = len(sub(st.p.L.C, st.p.L.A)) * 0.26;
     out.push({ k: 'M', key: 'm', p: { x: st.mitte, y: Math.min(...ys) - T * 1.6 }, klein: true, txt: 'Mitte' });
     return out;
   }
 
   function startPunkte(W, H) {
     const m = W / 2, y = H * 0.4, u = Math.min(W, H * 0.8);
-    const seite = f => ({ a: { x: m + f * u * 0.06, y }, b: { x: m + f * u * 0.16, y: y - u * 0.035 }, e: { x: m + f * u * 0.23, y: y - u * 0.005 } });
+    const seite = f => ({ A: { x: m + f * u * 0.06, y: y + u * 0.018 }, A1: { x: m + f * u * 0.065, y: y - u * 0.022 },
+      B: { x: m + f * u * 0.16, y: y - u * 0.04 }, B1: { x: m + f * u * 0.165, y: y - u * 0.005 }, C: { x: m + f * u * 0.23, y: y - u * 0.005 } });
     return { p: { L: seite(-1), R: seite(1) }, mitte: m, nase: { L: { x: m - u * 0.05, y: H * 0.6 }, R: { x: m + u * 0.05, y: H * 0.6 } } };
   }
 
@@ -214,7 +266,7 @@
     const zu = () => { root.remove(); document.documentElement.style.overflow = ''; window.removeEventListener('resize', neu); };
 
     const st = { bild: null, p: null, mitte: 0, nase: null, mapping: false, sym: true, nah: false, neuDatei: null,
-      o: { technik: 'powder', farbe: FARBEN[1][1], farbname: FARBEN[1][0], breite: 1, deck: 0.75, weich: 0.5 } };
+      o: { technik: 'powder', farbe: FARBEN[1][1], farbname: FARBEN[1][0], deck: 0.75, weich: 0.15, rundOben: 0.7, rundUnten: 0.7 } };
 
     root.innerHTML = `<div class="sim" role="dialog" aria-modal="true" aria-label="Brauen simulieren">
       <div class="sheet-head"><div class="wrap"><div><span class="label">${esc(c.vorname)} ${esc(c.nachname)}</span><h2>Brauen simulieren</h2></div><button class="btn ghost small" data-zu>Schließen</button></div></div>
@@ -231,13 +283,14 @@
           <div class="sim-unten"><span>Visuelle Simulation. Das abgeheilte Ergebnis kann abweichen.</span><button type="button" class="sim-pill" id="simVorher">Vorher</button></div>
           <div class="sim-leer" id="simLeer">${kandidaten.length ? 'Foto wird geladen …' : 'Mach ein Vorher-Foto von vorne, gerade Kopfhaltung, gleichmäßiges Licht.'}</div>
         </div>
-        <p class="cmeta sim-tipp">Zieh die Punkte auf <b>Anfang</b>, <b>Bogen</b> und <b>Ende</b> der Braue. „Vorher“ gedrückt halten zeigt das Foto ohne Simulation.</p>
+        <p class="cmeta sim-tipp">Zieh die Punkte auf die Braue: <b>A</b> Anfang unten, <b>A1</b> Anfang oben, <b>B</b> Bogen oben, <b>B1</b> Bogen unten, <b>C</b> Ende. „Vorher“ gedrückt halten zeigt das Foto ohne Simulation.</p>
         <div class="sim-ctl">
           <div><span class="flabel">Technik</span><div class="chips" id="simTech">${TECHNIK.map(t => `<button type="button" class="chip${t.k === st.o.technik ? ' on' : ''}" data-t="${t.k}" title="${esc(t.t)}">${esc(t.l)}</button>`).join('')}</div></div>
           <div><span class="flabel">Farbton <b id="simFn">${esc(st.o.farbname)}</b></span><div class="sim-farben" id="simFarb">${FARBEN.map(([n, h], i) => `<button type="button" class="${i === 1 ? 'on' : ''}" data-f="${h}" data-n="${esc(n)}" style="background:${h}" aria-label="${esc(n)}" title="${esc(n)}"></button>`).join('')}</div></div>
-          <label class="sim-reg">Breite<input type="range" min="60" max="140" value="100" data-o="breite"></label>
-          <label class="sim-reg">Deckkraft<input type="range" min="25" max="100" value="75" data-o="deck"></label>
-          <label class="sim-reg">Weichheit<input type="range" min="0" max="100" value="50" data-o="weich"></label>
+          <label class="sim-reg"><span>Deckkraft <b data-w="deck">75 %</b></span><input type="range" min="10" max="100" value="75" data-o="deck"></label>
+          <label class="sim-reg"><span>Rundung oben (Bogen bei B) <b data-w="rundOben">70 %</b></span><input type="range" min="0" max="100" value="70" data-o="rundOben"></label>
+          <label class="sim-reg"><span>Rundung unten (bei B1) <b data-w="rundUnten">70 %</b></span><input type="range" min="0" max="100" value="70" data-o="rundUnten"></label>
+          <label class="sim-reg"><span>Weichheit der Kontur <b data-w="weich">15 %</b></span><input type="range" min="0" max="100" value="15" data-o="weich"></label>
           <label class="sim-sw"><input type="checkbox" id="simSym" checked> Beide Seiten gleich (spiegeln an der Mitte)</label>
         </div>
       </div>
@@ -250,7 +303,7 @@
 
     function ansicht() {
       if (!st.nah) return { x: 0, y: 0, w: st.bild.width, h: st.bild.height };
-      const pts = ['L', 'R'].flatMap(k => ['a', 'b', 'e'].map(x => st.p[k][x]));
+      const pts = ['L', 'R'].flatMap(k => PUNKTE.map(x => st.p[k][x]));
       const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
       const bw = Math.max(...xs) - Math.min(...xs), cx = (Math.max(...xs) + Math.min(...xs)) / 2, cy = (Math.max(...ys) + Math.min(...ys)) / 2;
       const w = Math.min(st.bild.width, bw * 1.45), h = Math.min(st.bild.height, w * 0.62);
@@ -310,11 +363,11 @@
       st.o.farbe = b.dataset.f; st.o.farbname = b.dataset.n; $('#simFn').textContent = b.dataset.n;
       root.querySelectorAll('#simFarb button').forEach(x => x.classList.toggle('on', x === b)); malen();
     });
-    root.querySelectorAll('[data-o]').forEach(r => r.oninput = () => { st.o[r.dataset.o] = Number(r.value) / 100; malen(); });
+    root.querySelectorAll('[data-o]').forEach(r => { const w = () => { st.o[r.dataset.o] = Number(r.value) / 100; $(`[data-w="${r.dataset.o}"]`).textContent = r.value + ' %'; malen(); }; r.oninput = w; r.onchange = w; });
     $('#simSym').onchange = e => {
       st.sym = e.target.checked;
       if (st.sym && st.bild) { // rechte Seite an der Mitte spiegeln
-        ['a', 'b', 'e'].forEach(k => { st.p.R[k] = { x: 2 * st.mitte - st.p.L[k].x, y: st.p.L[k].y }; });
+        PUNKTE.forEach(k => { st.p.R[k] = { x: 2 * st.mitte - st.p.L[k].x, y: st.p.L[k].y }; });
         st.nase.R = { x: 2 * st.mitte - st.nase.L.x, y: st.nase.L.y };
         malen();
       }
@@ -350,7 +403,7 @@
       if (g.key === 'm') {
         const dx = p.x - ziehen.start.x;
         st.mitte = ziehen.mitte0 + dx;
-        ['L', 'R'].forEach(k => { ['a', 'b', 'e'].forEach(x => { st.p[k][x] = { x: ziehen.alt.p[k][x].x + dx, y: ziehen.alt.p[k][x].y }; }); st.nase[k] = { x: ziehen.alt.nase[k].x + dx, y: ziehen.alt.nase[k].y }; });
+        ['L', 'R'].forEach(k => { PUNKTE.forEach(x => { st.p[k][x] = { x: ziehen.alt.p[k][x].x + dx, y: ziehen.alt.p[k][x].y }; }); st.nase[k] = { x: ziehen.alt.nase[k].x + dx, y: ziehen.alt.nase[k].y }; });
       } else {
         const q = klemm(p);
         const anderes = g.k === 'L' ? 'R' : 'L';
@@ -431,7 +484,7 @@
     .sim-farben{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
     .sim-farben button{width:34px;height:34px;border-radius:50%;border:2px solid var(--paper);box-shadow:0 0 0 1px var(--line);padding:0}
     .sim-farben button.on{box-shadow:0 0 0 2px var(--rose)}
-    .sim-reg{display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--muted)}
+    .sim-reg{display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--muted)}.sim-reg b{color:var(--rose-ink);font-weight:500;font-variant-numeric:tabular-nums;margin-left:4px}
     .sim-reg input{width:100%;accent-color:var(--rose)}
     .sim-sw{display:flex;gap:8px;align-items:center;font-size:14px}
     .sim-sw input{width:20px;height:20px;accent-color:var(--rose)}`;

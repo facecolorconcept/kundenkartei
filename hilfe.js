@@ -89,9 +89,9 @@
     { id: 'simulation', t: 'Brauen simulieren', k: 'Vorschau am Vorher-Foto für die Beratung', s: [
       'Öffne die Akte der Kundin und tippe bei <b>Vorher / Nachher</b> auf <b>Brauen simulieren</b>. Das neueste Vorher-Foto ist schon geladen.',
       'Kein passendes Foto? <b>+ Anderes Foto</b> antippen und ein Foto von vorne machen: gerade Kopfhaltung, gleichmäßiges Licht.',
-      'Zieh die Punkte auf <b>Anfang</b>, <b>Bogen</b> und <b>Ende</b>. Mit „Beide Seiten gleich“ wandert die andere Seite gespiegelt mit. Der kleine Punkt <b>Mitte</b> verschiebt die Mittellinie.',
+      'Zieh die fünf Punkte auf die Braue: <b>A</b> Anfang unten, <b>A1</b> Anfang oben, <b>B</b> Bogen oben, <b>B1</b> Bogen unten, <b>C</b> Ende. Die gestrichelten Linien A–A, A1–A1 und B–B zeigen, ob beide Seiten auf einer Höhe sind. Mit „Beide Seiten gleich“ wandert die andere Seite gespiegelt mit. Der kleine Punkt <b>Mitte</b> verschiebt die Mittellinie.',
       '<b>Nah</b> zoomt auf die Brauen. <b>Mapping</b> zeigt Linien vom Nasenflügel zu Anfang, Bogen und Ende. Zieh dafür die zwei Nasenflügel-Punkte an die richtige Stelle.',
-      'Wähle <b>Technik</b> und <b>Farbton</b>. Mit Breite, Deckkraft und Weichheit passt du die Vorschau an.',
+      'Wähle <b>Technik</b> und <b>Farbton</b>. <b>Deckkraft</b> macht die Farbe kräftiger oder zarter. <b>Rundung oben</b> und <b>Rundung unten</b> machen aus Ecke zu Ecke einen weichen Bogen (0 % eckig, 100 % ganz rund). <b>Weichheit der Kontur</b> auf 0 % gibt eine klare Kante, höher wird der Rand zur Haut hin weich.',
       '<b>Vorher</b> gedrückt halten zeigt das Foto ohne Simulation.',
       '<b>In Akte speichern</b> legt das Bild als Foto „Simulation“ in der Akte ab, mit Technik, Farbton und Hinweis im Bild.'
     ], tipp: 'Die Simulation ist eine Hilfe für das Gespräch, keine Vorzeichnung. Die Farbtöne sind Annäherungen und keine Pigmente eines Herstellers. Das Foto wird nur im Browser bearbeitet und erst beim Speichern in deinen Drive-Ordner geladen.' },

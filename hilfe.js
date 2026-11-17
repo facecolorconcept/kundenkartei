@@ -84,6 +84,7 @@
       '<b>Vorher / Nachher</b> in der Akte: „+ Vorher-Foto“ oder „+ Nachher-Foto“. Du kannst fotografieren oder aus deinen Bildern wählen. Antippen vergrößert.',
       '<b>Notizen</b>: Text eintippen, „Notiz speichern“. Mit Datum, neueste oben.',
       '<b>Dokumente</b>: die PDFs der digital unterschriebenen Formulare landen hier von selbst. Rechnungen oder alte Papier-Formulare lädst du mit „+ Dokument“ hoch (bis 5 MB). Alles liegt im Ordner der Kundin in Drive.',
+      'Ein Foto passt nicht? Antippen, dann <b>Ausblenden</b> (bleibt gespeichert, „Ausgeblendete Fotos zeigen“ holt es zurück) oder <b>Löschen</b> (zweimal tippen; das Foto liegt danach noch 30 Tage im Papierkorb von Google Drive).',
       'Die Fotos werden vor dem Hochladen verkleinert, damit es auch unterwegs schnell geht.'
     ] },
     { id: 'simulation', t: 'Brauen simulieren', k: 'Vorschau am Vorher-Foto für die Beratung', s: [
@@ -91,9 +92,11 @@
       'Kein passendes Foto? <b>+ Anderes Foto</b> antippen und ein Foto von vorne machen: gerade Kopfhaltung, gleichmäßiges Licht.',
       'Zieh die fünf Punkte auf die Braue: <b>A</b> Anfang unten, <b>A1</b> Anfang oben, <b>B</b> Bogen oben, <b>B1</b> Bogen unten, <b>C</b> Ende. Die gestrichelten Linien A–A, A1–A1 und B–B zeigen, ob beide Seiten auf einer Höhe sind. Mit „Beide Seiten gleich“ wandert die andere Seite gespiegelt mit. Der kleine Punkt <b>Mitte</b> verschiebt die Mittellinie.',
       '<b>Nah</b> zoomt auf die Brauen. <b>Mapping</b> zeigt Linien vom Nasenflügel zu Anfang, Bogen und Ende. Zieh dafür die zwei Nasenflügel-Punkte an die richtige Stelle.',
-      'Wähle <b>Technik</b> und <b>Farbton</b>. <b>Deckkraft</b> macht die Farbe kräftiger oder zarter. <b>Rundung oben</b> und <b>Rundung unten</b> machen aus Ecke zu Ecke einen weichen Bogen (0 % eckig, 100 % ganz rund). <b>Weichheit der Kontur</b> auf 0 % gibt eine klare Kante, höher wird der Rand zur Haut hin weich.',
+      'Wähle <b>Technik</b> und <b>Farbton</b>. <b>Deckkraft</b> macht die Farbe kräftiger oder zarter. <b>Bogen bei B und B1</b> rundet oben und unten gemeinsam: 0 % verbindet die Punkte Ecke zu Ecke gerade, höher wölbt sich der Teil zum Ende wie an der Kante einer Schablone. <b>Weichheit der Kontur</b> auf 0 % gibt eine klare Kante, höher wird der Rand zur Haut hin weich.',
+      'Für feine Korrekturen tippst du einen Punkt an und schiebst ihn mit den <b>Pfeilen</b> unter dem Foto. Beim Ziehen springt der Punkt nicht unter den Finger, er wandert mit.',
+      '<b>Ansicht für Kundin</b> blendet Punkte, Linien und Regler aus und zeigt das Foto groß. <b>Punkte zeigen</b> holt alles zurück.',
       '<b>Vorher</b> gedrückt halten zeigt das Foto ohne Simulation.',
-      '<b>In Akte speichern</b> legt das Bild als Foto „Simulation“ in der Akte ab, mit Technik, Farbton und Hinweis im Bild.'
+      '<b>In Akte speichern</b> legt das Bild ohne Punkte als Foto „Simulation“ in der Akte ab, mit Technik, Farbton und Hinweis im Bild. Ist das Häkchen gesetzt, kommt zusätzlich eine Version mit Punkten und Linien für deine Doku dazu.'
     ], tipp: 'Die Simulation ist eine Hilfe für das Gespräch, keine Vorzeichnung. Die Farbtöne sind Annäherungen und keine Pigmente eines Herstellers. Das Foto wird nur im Browser bearbeitet und erst beim Speichern in deinen Drive-Ordner geladen.' },
     { id: 'aufgaben', t: 'Aufgaben und Erinnerungen', k: 'Nichts mehr vergessen', s: [
       'Tippe auf <b>+ Aufgabe</b>, in der Übersicht oder in einer Akte.',

@@ -293,11 +293,19 @@
   }
 
   // Alle Fotos der Kundin: aus den Behandlungsbögen und direkt in der Akte, neueste zuerst
-  function allPhotos(c) {
+  // Ausgeblendete Fotos fehlen in der Akte und in der Simulation, bleiben aber gespeichert (alle = true zeigt sie mit, z. B. für die Datenauskunft)
+  function allPhotos(c, alle) {
     const list = (c.fotos || []).map(p => ({ ...p }));
     (c.behandlungen || []).forEach(b => (b.fotos || []).forEach(p => list.push({ ...p, datum: p.datum || b.datum, art: b.art })));
-    return list.sort((a, b) => String(b.datum).localeCompare(String(a.datum)));
+    return list.filter(p => alle || !p.ausgeblendet).sort((a, b) => String(b.datum).localeCompare(String(a.datum)));
   }
+  // Wo liegt ein Foto? In der Akte (c.fotos) oder in einem Behandlungsbogen
+  function fotoOrt(c, fileId) {
+    const listen = [c.fotos || [], ...(c.behandlungen || []).map(b => b.fotos || [])];
+    for (const l of listen) { const i = l.findIndex(p => p.fileId === fileId); if (i >= 0) return { l, i, p: l[i] }; }
+    return null;
+  }
+  let zeigeAusgeblendet = false;
 
   function renderDetail() {
     const el = $('#detail');
@@ -342,8 +350,10 @@
         <div class="row between"><h2>Vorher / Nachher</h2>
           <div class="row">${FCC.brauenSim ? '<button class="btn ghost small" id="simBtn">Brauen simulieren</button>' : ''}<button class="btn small" data-cphoto="Vorher">+ Vorher-Foto</button><button class="btn small" data-cphoto="Nachher">+ Nachher-Foto</button></div></div>
         <input type="file" id="cPhotoInput" accept="image/*" multiple hidden>
-        ${allPhotos(c).length ? `<div class="thumbs" style="margin-top:12px">${allPhotos(c).map(p => `<div style="display:flex;flex-direction:column;gap:4px;min-width:0"><button type="button" class="thumb" data-fid="${esc(p.fileId)}" aria-label="Foto vergrößern"><img alt="" data-src="${esc(p.fileId)}"></button><span class="cmeta">${esc(p.typ)} · ${fmt(p.datum)}${p.art ? ' · ' + esc(p.art) : ''}</span></div>`).join('')}</div>`
+        ${(zeigeAusgeblendet ? allPhotos(c, true) : allPhotos(c)).length ? `<div class="thumbs" style="margin-top:12px">${(zeigeAusgeblendet ? allPhotos(c, true) : allPhotos(c)).map(p => `<div style="display:flex;flex-direction:column;gap:4px;min-width:0${p.ausgeblendet ? ';opacity:.5' : ''}"><button type="button" class="thumb" data-fid="${esc(p.fileId)}" aria-label="Foto vergrößern, ausblenden oder löschen"><img alt="" data-src="${esc(p.fileId)}"></button><span class="cmeta">${esc(p.typ)} · ${fmt(p.datum)}${p.art ? ' · ' + esc(p.art) : ''}${p.ausgeblendet ? ' · ausgeblendet' : ''}</span></div>`).join('')}</div>`
           : '<p class="cmeta" style="margin-top:10px">Noch keine Fotos. Du kannst ein Foto machen oder aus deinen Bildern wählen.</p>'}
+        ${allPhotos(c, true).some(p => p.ausgeblendet) ? `<button type="button" class="btn ghost small" id="ausgBtn" style="margin-top:10px">${zeigeAusgeblendet ? 'Ausgeblendete Fotos verstecken' : 'Ausgeblendete Fotos zeigen (' + allPhotos(c, true).filter(p => p.ausgeblendet).length + ')'}</button>` : ''}
+        ${allPhotos(c, true).length ? '<p class="cmeta" style="margin:8px 0 0">Foto antippen zum Vergrößern, Ausblenden oder Löschen.</p>' : ''}
       </div>
       <div class="panel card">
         <div class="row between"><h2>Behandlungsverlauf</h2><span class="label">${sorted.length} ${sorted.length === 1 ? 'Eintrag' : 'Einträge'}</span></div>
@@ -438,12 +448,33 @@
       if (ok) { try { await Store.save(c); } catch (err) { toast(err.message, true); } render(); toast(ok === 1 ? 'Foto gespeichert' : ok + ' Fotos gespeichert'); }
     };
     $$('#detail img[data-src]').forEach(async img => {
-      const p = allPhotos(c).find(x => x.fileId === img.dataset.src);
+      const p = allPhotos(c, true).find(x => x.fileId === img.dataset.src);
       try { img.src = await Store.photoUrl(p); } catch (err) { img.alt = 'Foto lädt nicht'; }
     });
-    $$('#detail .thumb').forEach(t => t.onclick = () => { const src = t.querySelector('img').src; if (src) showPhoto(src); });
+    if ($('#ausgBtn')) $('#ausgBtn').onclick = () => { zeigeAusgeblendet = !zeigeAusgeblendet; render(); };
+    // Foto groß ansehen, ausblenden (bleibt gespeichert) oder löschen (geht in den Drive-Papierkorb)
+    $$('#detail .thumb').forEach(t => t.onclick = () => {
+      const src = t.querySelector('img').src; if (!src) return;
+      const ort = fotoOrt(c, t.dataset.fid);
+      if (!ort) { showPhoto(src); return; }
+      const aus = !!ort.p.ausgeblendet;
+      showPhoto(src, [
+        { txt: aus ? 'Wieder einblenden' : 'Ausblenden', fn: async () => {
+          const alt = ort.p.ausgeblendet;
+          if (aus) delete ort.p.ausgeblendet; else ort.p.ausgeblendet = today();
+          try { await Store.save(c); } catch (err) { if (alt) ort.p.ausgeblendet = alt; else delete ort.p.ausgeblendet; throw err; }
+          render(); toast(aus ? 'Foto wieder eingeblendet' : 'Foto ausgeblendet. Unten bei „Ausgeblendete Fotos zeigen“ holst du es zurück.');
+        } },
+        { txt: 'Löschen', gefahr: true, frage: 'Wirklich löschen?', fn: async () => {
+          const [weg] = ort.l.splice(ort.i, 1);
+          try { await Store.save(c); } catch (err) { ort.l.splice(ort.i, 0, weg); throw err; }
+          try { await Store.trash(weg.fileId); } catch (err) {}
+          render(); toast('Foto gelöscht. Es liegt noch 30 Tage im Papierkorb von Google Drive.');
+        } }
+      ]);
+    });
     // DSGVO Art. 15: alle gespeicherten Angaben zur Kundin als lesbares PDF im Studio-Design
-    $('#auskunftBtn').onclick = e => { if (FCC.auskunftPdf) FCC.auskunftPdf(c, e.currentTarget, allPhotos(c)); };
+    $('#auskunftBtn').onclick = e => { if (FCC.auskunftPdf) FCC.auskunftPdf(c, e.currentTarget, allPhotos(c, true)); };
     $('#docBtn').onclick = () => $('#docInput').click();
     $('#docInput').onchange = e => {
       const file = e.target.files[0]; e.target.value = '';
@@ -570,7 +601,7 @@
     }
 
     function photos(typ) {
-      const list = d.fotos.filter(p => p.typ === typ);
+      const list = d.fotos.filter(p => p.typ === typ && !p.ausgeblendet);
       return `<div class="phbox"><div class="row between"><span class="label">${typ}</span><button type="button" class="btn ghost small" data-photo="${typ}">+ Foto</button></div>
         <div class="thumbs">${list.length ? list.map(p => `<button type="button" class="thumb" data-fid="${esc(p.fileId)}" aria-label="Foto ${typ} vergrößern"><img alt="" data-src="${esc(p.fileId)}"></button>`).join('') : '<span class="cmeta">noch kein Foto</span>'}</div></div>`;
     }
@@ -692,10 +723,18 @@
     draw();
   }
 
-  function showPhoto(src) {
+  // Foto groß zeigen. aktionen = [{ txt, fn, gefahr, frage }]: Knöpfe unter dem Foto (z. B. Ausblenden, Löschen)
+  function showPhoto(src, aktionen) {
     const o = document.createElement('div');
-    o.className = 'lightbox'; o.innerHTML = `<img alt="Foto" src="${esc(src)}"><button class="btn small">Schließen</button>`;
-    o.onclick = () => o.remove();
+    o.className = 'lightbox';
+    o.innerHTML = `<img alt="Foto" src="${esc(src)}"><div class="row" style="flex-wrap:wrap;justify-content:center;gap:10px">${(aktionen || []).map((a, i) => `<button type="button" class="btn small ${a.gefahr ? 'lb-gefahr' : 'ghost lb-hell'}" data-a="${i}">${esc(a.txt)}</button>`).join('')}<button type="button" class="btn small" data-zu>Schließen</button></div>`;
+    o.onclick = e => { if (e.target === o || e.target.closest('[data-zu]') || e.target.tagName === 'IMG') o.remove(); };
+    o.querySelectorAll('[data-a]').forEach(b => b.onclick = ev => {
+      ev.stopPropagation();
+      const a = aktionen[Number(b.dataset.a)];
+      if (a.frage && b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = a.frage; return; }
+      busy(b, 'Speichert …', async () => { await a.fn(); o.remove(); }).catch(() => {});
+    });
     document.body.append(o);
   }
 

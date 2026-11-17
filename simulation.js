@@ -60,9 +60,14 @@
     const back = { x: -dir.x, y: -dir.y };
     // Kopf: weicher, runder Abschluss zwischen A und A1
     const kopf = add(kopfMitte, back, len(sub(s.A, s.A1)) * 0.42);
-    const ro = o.rundOben == null ? 0.7 : o.rundOben, ru = o.rundUnten == null ? 0.7 : o.rundUnten;
-    const top = mischen(gerade([s.A1, s.B, s.C], 28), spline([s.A1, s.B, s.C], 28), ro);
-    const bot = mischen(gerade([s.A, s.B1, s.C], 28), spline([s.A, s.B1, s.C], 28), ru);
+    // Bogen (ein Regler für B und B1 zusammen): 0 = Ecke zu Ecke gerade, höher = runder und der Teil zum Ende (B zu C und B1 zu C)
+    // wölbt sich oben und unten gleich nach oben, wie an der Kante einer Brauen-Schablone
+    const bg = o.bogen == null ? 0.5 : o.bogen;
+    const top = mischen(gerade([s.A1, s.B, s.C], 28), spline([s.A1, s.B, s.C], 28), bg);
+    const bot = mischen(gerade([s.A, s.B1, s.C], 28), spline([s.A, s.B1, s.C], 28), bg);
+    const up = { x: -down.x, y: -down.y };
+    const woelben = (l, von) => { const lang = len(sub(s.C, von)); for (let i = 28; i < l.length; i++) { const t = (i - 28) / 28; const w = Math.sin(Math.PI * t) * bg * lang * 0.14; l[i] = add(l[i], up, w); } };
+    woelben(top, s.B); woelben(bot, s.B1);
     return { top, bot, kopf, aTop: s.A1, aBot: s.A, T, L, dir, down };
   }
 
@@ -191,8 +196,8 @@
     if (!o.punkte) return;
     const z = p => ({ x: (p.x - view.x) * sc, y: (p.y - view.y) * sc });
     ctx.save();
-    ctx.lineWidth = 1.2;
-    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1.2 * (o.gross || 1);
+    ctx.setLineDash([5 * (o.gross || 1), 5 * (o.gross || 1)]);
     ctx.strokeStyle = 'rgba(255,255,255,.85)';
     // Mittellinie und Verbindungslinien A–A, A1–A1 und B–B: zeigen sofort, ob beide Seiten auf einer Höhe sind
     const mx = (st.mitte - view.x) * sc;
@@ -209,16 +214,18 @@
     ctx.setLineDash([]);
     griffe(st).forEach(g => {
       const p = z(g.p);
-      ctx.beginPath(); ctx.arc(p.x, p.y, g.klein ? 6 : 8, 0, Math.PI * 2);
-      ctx.fillStyle = g.nase ? 'rgba(214,170,140,.95)' : '#fff'; ctx.fill();
-      ctx.lineWidth = 2; ctx.strokeStyle = '#a9725e'; ctx.stroke();
+      const gr = o.gross || 1;
+      const aktiv = st.aktiv && st.aktiv.k === g.k && st.aktiv.key === g.key;
+      ctx.beginPath(); ctx.arc(p.x, p.y, (g.klein ? 6 : aktiv ? 10 : 8) * gr, 0, Math.PI * 2);
+      ctx.fillStyle = aktiv ? '#a9725e' : g.nase ? 'rgba(214,170,140,.95)' : '#fff'; ctx.fill();
+      ctx.lineWidth = 2 * gr; ctx.strokeStyle = aktiv ? '#fff' : '#a9725e'; ctx.stroke();
       if (g.txt && o.beschriftung) {
-        ctx.font = '600 11px Jost, system-ui, sans-serif';
-        const w = ctx.measureText(g.txt).width + 10;
+        ctx.font = `600 ${11 * gr}px Jost, system-ui, sans-serif`;
+        const w = ctx.measureText(g.txt).width + 10 * gr;
         const unten = g.key === 'A' || g.key === 'B1'; // untere Punkte beschriften wir unterhalb, damit nichts überlappt
-        const ty = unten ? p.y + 13 : p.y - 30;
-        ctx.fillStyle = 'rgba(30,22,18,.72)'; ctx.fillRect(p.x - w / 2, ty, w, 17);
-        ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(g.txt, p.x, ty + 12);
+        const ty = unten ? p.y + 13 * gr : p.y - 30 * gr;
+        ctx.fillStyle = 'rgba(30,22,18,.72)'; ctx.fillRect(p.x - w / 2, ty, w, 17 * gr);
+        ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(g.txt, p.x, ty + 12 * gr);
       }
     });
     ctx.restore();
@@ -257,7 +264,7 @@
 
   // ---------- Oberfläche ----------
   FCC.brauenSim = async (c, fotos, gespeichert) => {
-    const kandidaten = (fotos || []).filter(p => p.typ !== 'Simulation').slice(0, 10);
+    const kandidaten = (fotos || []).filter(p => !/^Simulation/.test(p.typ || '')).slice(0, 10);
     const startFoto = kandidaten.find(p => p.typ === 'Vorher') || kandidaten[0] || null;
     const root = document.createElement('div');
     root.className = 'sim-bg';
@@ -265,8 +272,8 @@
     document.documentElement.style.overflow = 'hidden';
     const zu = () => { root.remove(); document.documentElement.style.overflow = ''; window.removeEventListener('resize', neu); };
 
-    const st = { bild: null, p: null, mitte: 0, nase: null, mapping: false, sym: true, nah: false, neuDatei: null,
-      o: { technik: 'powder', farbe: FARBEN[1][1], farbname: FARBEN[1][0], deck: 0.75, weich: 0.15, rundOben: 0.7, rundUnten: 0.7 } };
+    const st = { bild: null, p: null, mitte: 0, nase: null, mapping: false, sym: true, nah: false, neuDatei: null, kunde: false, aktiv: null,
+      o: { technik: 'powder', farbe: FARBEN[1][1], farbname: FARBEN[1][0], deck: 0.75, weich: 0.15, bogen: 0.5 } };
 
     root.innerHTML = `<div class="sim" role="dialog" aria-modal="true" aria-label="Brauen simulieren">
       <div class="sheet-head"><div class="wrap"><div><span class="label">${esc(c.vorname)} ${esc(c.nachname)}</span><h2>Brauen simulieren</h2></div><button class="btn ghost small" data-zu>Schließen</button></div></div>
@@ -279,19 +286,22 @@
         <div class="sim-buehne" id="simBuehne">
           <canvas id="simCv"></canvas>
           <div class="sim-oben"><div class="seg"><button type="button" data-v="0" class="on">Gesicht</button><button type="button" data-v="1">Nah</button></div>
-            <button type="button" class="sim-pill" id="simMap" aria-pressed="false">Mapping</button></div>
+            <button type="button" class="sim-pill" id="simMap" aria-pressed="false">Mapping</button>
+            <button type="button" class="sim-pill" id="simKunde" aria-pressed="false">Ansicht für Kundin</button></div>
           <div class="sim-unten"><span>Visuelle Simulation. Das abgeheilte Ergebnis kann abweichen.</span><button type="button" class="sim-pill" id="simVorher">Vorher</button></div>
           <div class="sim-leer" id="simLeer">${kandidaten.length ? 'Foto wird geladen …' : 'Mach ein Vorher-Foto von vorne, gerade Kopfhaltung, gleichmäßiges Licht.'}</div>
         </div>
+        <div class="sim-fein" id="simFein"><span>Feinjustierung <b id="simAktiv">Punkt antippen</b></span>
+          <div class="sim-pfeile"><button type="button" data-n="-1,0" aria-label="nach links">←</button><button type="button" data-n="0,-1" aria-label="nach oben">↑</button><button type="button" data-n="0,1" aria-label="nach unten">↓</button><button type="button" data-n="1,0" aria-label="nach rechts">→</button></div></div>
         <p class="cmeta sim-tipp">Zieh die Punkte auf die Braue: <b>A</b> Anfang unten, <b>A1</b> Anfang oben, <b>B</b> Bogen oben, <b>B1</b> Bogen unten, <b>C</b> Ende. „Vorher“ gedrückt halten zeigt das Foto ohne Simulation.</p>
         <div class="sim-ctl">
           <div><span class="flabel">Technik</span><div class="chips" id="simTech">${TECHNIK.map(t => `<button type="button" class="chip${t.k === st.o.technik ? ' on' : ''}" data-t="${t.k}" title="${esc(t.t)}">${esc(t.l)}</button>`).join('')}</div></div>
           <div><span class="flabel">Farbton <b id="simFn">${esc(st.o.farbname)}</b></span><div class="sim-farben" id="simFarb">${FARBEN.map(([n, h], i) => `<button type="button" class="${i === 1 ? 'on' : ''}" data-f="${h}" data-n="${esc(n)}" style="background:${h}" aria-label="${esc(n)}" title="${esc(n)}"></button>`).join('')}</div></div>
           <label class="sim-reg"><span>Deckkraft <b data-w="deck">75 %</b></span><input type="range" min="10" max="100" value="75" data-o="deck"></label>
-          <label class="sim-reg"><span>Rundung oben (Bogen bei B) <b data-w="rundOben">70 %</b></span><input type="range" min="0" max="100" value="70" data-o="rundOben"></label>
-          <label class="sim-reg"><span>Rundung unten (bei B1) <b data-w="rundUnten">70 %</b></span><input type="range" min="0" max="100" value="70" data-o="rundUnten"></label>
+          <label class="sim-reg"><span>Bogen bei B und B1 <b data-w="bogen">50 %</b></span><input type="range" min="0" max="100" value="50" data-o="bogen"></label>
           <label class="sim-reg"><span>Weichheit der Kontur <b data-w="weich">15 %</b></span><input type="range" min="0" max="100" value="15" data-o="weich"></label>
           <label class="sim-sw"><input type="checkbox" id="simSym" checked> Beide Seiten gleich (spiegeln an der Mitte)</label>
+          <label class="sim-sw"><input type="checkbox" id="simMitPunkten" checked> Beim Speichern zusätzlich eine Version mit Punkten und Linien für meine Doku</label>
         </div>
       </div>
       <div class="sheet-foot"><div class="wrap"><button class="btn ghost" data-zu>Abbrechen</button><button class="btn" id="simSave" disabled>In Akte speichern</button></div></div>
@@ -314,14 +324,14 @@
       if (!st.bild) return;
       const v = ansicht();
       const box = $('#simBuehne');
-      const maxH = Math.max(260, window.innerHeight * 0.56);
+      const maxH = Math.max(260, window.innerHeight * (st.kunde ? 0.8 : 0.56));
       let cssW = box.clientWidth, cssH = cssW * v.h / v.w;
       if (cssH > maxH) { cssH = maxH; cssW = cssH * v.w / v.h; }
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       cv.style.width = cssW + 'px'; cv.style.height = cssH + 'px';
       cv.width = Math.round(cssW * dpr); cv.height = Math.round(cssH * dpr);
       anzeige = { v, sc: cv.width / v.w, dpr };
-      zeichne(ctx, cv.width, cv.height, st, v, { vorher, punkte: !vorher, beschriftung: st.nah || cssW > 560 });
+      zeichne(ctx, cv.width, cv.height, st, v, { vorher, punkte: !vorher && !st.kunde, beschriftung: st.nah || cssW > 560 });
     }
     const neu = () => malen();
     window.addEventListener('resize', neu);
@@ -376,6 +386,31 @@
       st.nah = b.dataset.v === '1'; root.querySelectorAll('.seg [data-v]').forEach(x => x.classList.toggle('on', x === b)); malen();
     });
     $('#simMap').onclick = e => { st.mapping = !st.mapping; e.currentTarget.classList.toggle('on', st.mapping); e.currentTarget.setAttribute('aria-pressed', st.mapping); malen(); };
+    // Ansicht für Kundin: ohne Punkte und Linien, Foto groß, Regler ausgeblendet
+    $('#simKunde').onclick = e => {
+      st.kunde = !st.kunde;
+      root.querySelector('.sim').classList.toggle('kunde', st.kunde);
+      e.currentTarget.classList.toggle('on', st.kunde); e.currentTarget.setAttribute('aria-pressed', st.kunde);
+      e.currentTarget.textContent = st.kunde ? 'Punkte zeigen' : 'Ansicht für Kundin';
+      malen();
+    };
+    // Feinjustierung mit Pfeilen: bewegt den zuletzt angetippten Punkt um wenige Bildpunkte
+    function verschiebe(g, dx, dy) {
+      const W = st.bild.width, H = st.bild.height;
+      const ziel = g.key === 'n' ? st.nase : null;
+      const alt = g.key === 'n' ? st.nase[g.k] : st.p[g.k][g.key];
+      const q = { x: Math.max(0, Math.min(W, alt.x + dx)), y: Math.max(0, Math.min(H, alt.y + dy)) };
+      if (ziel) st.nase[g.k] = q; else st.p[g.k][g.key] = q;
+      if (st.sym) { const sp = { x: 2 * st.mitte - q.x, y: q.y }; const o2 = g.k === 'L' ? 'R' : 'L'; if (ziel) st.nase[o2] = sp; else st.p[o2][g.key] = sp; }
+    }
+    const NAMEN = { A: 'A Anfang unten', A1: 'A1 Anfang oben', B: 'B Bogen oben', B1: 'B1 Bogen unten', C: 'C Ende', n: 'Nasenflügel' };
+    const aktivAnzeigen = () => { $('#simAktiv').textContent = st.aktiv ? (NAMEN[st.aktiv.key] || '') + (st.aktiv.k === 'L' ? ' links im Bild' : ' rechts im Bild') : 'Punkt antippen'; };
+    root.querySelectorAll('.sim-pfeile [data-n]').forEach(b => b.onclick = () => {
+      if (!st.aktiv || !anzeige || st.aktiv.key === 'm') return;
+      const [nx, ny] = b.dataset.n.split(',').map(Number);
+      const schritt = anzeige.v.w / cv.getBoundingClientRect().width; // ein Bildschirmpunkt
+      verschiebe(st.aktiv, nx * schritt, ny * schritt); malen();
+    });
     const vb = $('#simVorher');
     const vAn = e => { e.preventDefault(); vorher = true; malen(); }, vAus = () => { if (vorher) { vorher = false; malen(); } };
     vb.addEventListener('pointerdown', vAn); vb.addEventListener('pointerup', vAus); vb.addEventListener('pointerleave', vAus); vb.addEventListener('pointercancel', vAus);
@@ -386,11 +421,14 @@
       if (!st.bild || !anzeige) return;
       const p = bildPunkt(e);
       const r = cv.getBoundingClientRect(); const proPx = anzeige.v.w / r.width;
-      let best = null, bd = 26 * proPx;
+      let best = null, bd = 34 * proPx;
       griffe(st).forEach(g => { const d = Math.hypot(g.p.x - p.x, g.p.y - p.y); if (d < bd) { bd = d; best = g; } });
       if (!best) return;
       e.preventDefault();
-      ziehen = { g: best, start: p, mitte0: st.mitte, alt: JSON.parse(JSON.stringify({ p: st.p, nase: st.nase })) };
+      // Abstand Finger zu Punkt merken: der Punkt springt nicht unter den Finger, sondern wandert mit
+      const gp = best.key === 'm' ? best.p : best.key === 'n' ? st.nase[best.k] : st.p[best.k][best.key];
+      ziehen = { g: best, start: p, versatz: { x: gp.x - p.x, y: gp.y - p.y }, mitte0: st.mitte, alt: JSON.parse(JSON.stringify({ p: st.p, nase: st.nase })) };
+      if (best.key !== 'm') { st.aktiv = { k: best.k, key: best.key }; aktivAnzeigen(); malen(); }
       cv.setPointerCapture(e.pointerId);
     });
     cv.addEventListener('pointermove', e => {
@@ -405,7 +443,7 @@
         st.mitte = ziehen.mitte0 + dx;
         ['L', 'R'].forEach(k => { PUNKTE.forEach(x => { st.p[k][x] = { x: ziehen.alt.p[k][x].x + dx, y: ziehen.alt.p[k][x].y }; }); st.nase[k] = { x: ziehen.alt.nase[k].x + dx, y: ziehen.alt.nase[k].y }; });
       } else {
-        const q = klemm(p);
+        const q = klemm({ x: p.x + ziehen.versatz.x, y: p.y + ziehen.versatz.y });
         const anderes = g.k === 'L' ? 'R' : 'L';
         if (g.key === 'n') st.nase[g.k] = q; else st.p[g.k][g.key] = q;
         if (st.sym) {
@@ -444,6 +482,17 @@
         const n = c.fotos.filter(p => p.typ === 'Simulation' && p.datum === today()).length + 1;
         const p = await Store.addPhoto(c, datei, `${today()}_Simulation_${n}.jpg`);
         c.fotos.push({ ...p, typ: 'Simulation', datum: today(), sim: { technik: tech, farbe: st.o.farbname } });
+        if ($('#simMitPunkten').checked) { // Doku-Version mit Punkten A bis C und Hilfslinien, nur für dich
+          const o2 = document.createElement('canvas'); o2.width = W; o2.height = H;
+          zeichne(o2.getContext('2d'), W, H, st, { x: 0, y: 0, w: W, h: H }, { vorher: false, punkte: true, beschriftung: true, gross: Math.max(1, W / 900) });
+          const oc2 = o2.getContext('2d'); oc2.setTransform(1, 0, 0, 1, 0, 0);
+          oc2.fillStyle = 'rgba(30,22,18,.62)'; oc2.fillRect(0, H - fs * 2.2, W, fs * 2.2);
+          oc2.fillStyle = '#fff'; oc2.font = `500 ${fs}px Jost, system-ui, sans-serif`; oc2.textBaseline = 'middle'; oc2.textAlign = 'left';
+          oc2.fillText(`Vorzeichnung · ${tech} · ${st.o.farbname} · ${fmt(today())}`, fs * 0.8, H - fs * 1.1);
+          const b2 = await new Promise(r => o2.toBlob(r, 'image/jpeg', 0.9));
+          const p2 = await Store.addPhoto(c, new File([b2], 'vorzeichnung.jpg', { type: 'image/jpeg' }), `${today()}_Simulation-Punkte_${n}.jpg`);
+          c.fotos.push({ ...p2, typ: 'Simulation (Punkte)', datum: today(), sim: { technik: tech, farbe: st.o.farbname } });
+        }
         await Store.save(c);
         FCC.toast && FCC.toast('Simulation in der Akte gespeichert');
         zu();
@@ -487,6 +536,11 @@
     .sim-reg{display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--muted)}.sim-reg b{color:var(--rose-ink);font-weight:500;font-variant-numeric:tabular-nums;margin-left:4px}
     .sim-reg input{width:100%;accent-color:var(--rose)}
     .sim-sw{display:flex;gap:8px;align-items:center;font-size:14px}
-    .sim-sw input{width:20px;height:20px;accent-color:var(--rose)}`;
+    .sim-sw input{width:20px;height:20px;accent-color:var(--rose);flex-shrink:0}
+    .sim-fein{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;font-size:13.5px;color:var(--muted)}
+    .sim-fein b{color:var(--rose-ink);font-weight:500;margin-left:4px}
+    .sim-pfeile{display:flex;gap:8px}.sim-pfeile button{width:48px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--paper);font-size:20px;color:var(--ink);touch-action:manipulation}
+    .sim-pfeile button:active{background:var(--rose-soft)}
+    .sim.kunde .sim-ctl,.sim.kunde .sim-tipp,.sim.kunde .sim-fotos,.sim.kunde .sim-fein,.sim.kunde #simMap,.sim.kunde .seg{display:none}`;
   document.head.append(css);
 })();

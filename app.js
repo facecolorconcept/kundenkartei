@@ -362,7 +362,7 @@
         <div class="row between"><h2>Vorher / Nachher</h2>
           <div class="row">${FCC.brauenSim ? '<button class="btn ghost small" id="simBtn">Brauen simulieren</button>' : ''}<button class="btn small" data-cphoto="Vorher">+ Vorher-Foto</button><button class="btn small" data-cphoto="Nachher">+ Nachher-Foto</button></div></div>
         <input type="file" id="cPhotoInput" accept="image/*" multiple hidden>
-        ${(zeigeAusgeblendet ? allPhotos(c, true) : allPhotos(c)).length ? `<div class="thumbs" style="margin-top:12px">${(zeigeAusgeblendet ? allPhotos(c, true) : allPhotos(c)).map(p => `<div style="display:flex;flex-direction:column;gap:4px;min-width:0${p.ausgeblendet ? ';opacity:.5' : ''}"><button type="button" class="thumb" data-fid="${esc(p.fileId)}" aria-label="Foto vergrößern, ausblenden oder löschen"><img alt="" data-src="${esc(p.fileId)}"></button><span class="cmeta">${esc(p.typ)} · ${fmt(p.datum)}${p.art ? ' · ' + esc(p.art) : ''}${p.ausgeblendet ? ' · ausgeblendet' : ''}</span></div>`).join('')}</div>`
+        ${(zeigeAusgeblendet ? allPhotos(c, true) : allPhotos(c)).length ? `<div class="thumbs" style="margin-top:12px">${(zeigeAusgeblendet ? allPhotos(c, true) : allPhotos(c)).map(p => `<div style="display:flex;flex-direction:column;gap:4px;min-width:0${p.ausgeblendet ? ';opacity:.5' : ''}"><button type="button" class="thumb" data-fid="${esc(p.fileId)}" aria-label="Foto vergrößern, ausblenden oder löschen"><img alt="" data-src="${esc(p.fileId)}"></button><span class="cmeta">${esc(p.typ)}${p.bearbeitet ? ' bearbeitet' : ''} · ${fmt(p.datum)}${p.art ? ' · ' + esc(p.art) : ''}${p.ausgeblendet ? ' · ausgeblendet' : ''}</span></div>`).join('')}</div>`
           : '<p class="cmeta" style="margin-top:10px">Noch keine Fotos. Du kannst ein Foto machen oder aus deinen Bildern wählen.</p>'}
         ${allPhotos(c, true).some(p => p.ausgeblendet) ? `<button type="button" class="btn ghost small" id="ausgBtn" style="margin-top:10px">${zeigeAusgeblendet ? 'Ausgeblendete Fotos verstecken' : 'Ausgeblendete Fotos zeigen (' + allPhotos(c, true).filter(p => p.ausgeblendet).length + ')'}</button>` : ''}
         ${allPhotos(c, true).length ? '<p class="cmeta" style="margin:8px 0 0">Foto antippen zum Vergrößern, Ausblenden oder Löschen.</p>' : ''}
@@ -471,6 +471,7 @@
       if (!ort) { showPhoto(src); return; }
       const aus = !!ort.p.ausgeblendet;
       showPhoto(src, [
+        ...(ort.p.typ === 'Nachher' && FCC.retusche ? [{ txt: 'Bearbeiten', fn: async () => retusche(c, ort.p, src) }] : []),
         { txt: aus ? 'Wieder einblenden' : 'Ausblenden', fn: async () => {
           const alt = ort.p.ausgeblendet;
           if (aus) delete ort.p.ausgeblendet; else ort.p.ausgeblendet = today();
@@ -712,7 +713,15 @@
         const p = d.fotos.find(x => x.fileId === img.dataset.src);
         try { img.src = await Store.photoUrl(p); } catch (e) { img.alt = 'Foto lädt nicht'; }
       });
-      $$('.thumb').forEach(t => t.onclick = () => { const src = t.querySelector('img').src; if (src) showPhoto(src); });
+      $$('.thumb').forEach(t => t.onclick = () => {
+        const src = t.querySelector('img').src; if (!src) return;
+        const p = d.fotos.find(x => x.fileId === t.dataset.fid);
+        if (!p || p.typ !== 'Nachher' || !FCC.retusche) { showPhoto(src); return; }
+        showPhoto(src, [{ txt: 'Bearbeiten', fn: async () => retusche(c, p, src, neu => {
+          const i = d.fotos.indexOf(p); d.fotos.splice(i >= 0 ? i + 1 : d.fotos.length, 0, neu);
+          if ($('.sheet')) { readInputs(); draw(); }
+        }) }]);
+      });
 
       $('#save').onclick = e => {
         if (uploading) { toast('Bitte warten, bis das Foto hochgeladen ist.'); return; }
@@ -733,6 +742,22 @@
       };
     }
     draw();
+  }
+
+  // Nachher-Foto retuschieren (retusche.js). Das Original bleibt, das Ergebnis kommt direkt dahinter in dieselbe Liste
+  // (Akte oder Behandlungsbogen). ziel: eigene Ablage, z. B. im offenen Bogen, der erst mit „Bogen speichern“ gesichert wird.
+  function retusche(c, foto, src, ziel) {
+    FCC.retusche({ src, titel: 'Nachher bearbeiten', meldung: ziel ? 'Bearbeitetes Foto ist im Bogen. Tipp unten auf „Bogen speichern“.' : '', speichern: async file => {
+      const n = allPhotos(c, true).filter(p => p.bearbeitet && p.datum === today()).length + 1;
+      const p = await Store.addPhoto(c, file, `${today()}_Nachher-bearbeitet_${n}.jpg`);
+      const neu = { ...p, typ: 'Nachher', datum: today(), bearbeitet: foto.fileId };
+      if (ziel) { ziel(neu); return; }
+      const ort = fotoOrt(c, foto.fileId), liste = ort ? ort.l : (c.fotos = c.fotos || []);
+      liste.splice(ort ? ort.i + 1 : liste.length, 0, neu);
+      try { await Store.save(c); }
+      catch (err) { liste.splice(liste.indexOf(neu), 1); try { await Store.trash(p.fileId); } catch (e) {} throw err; }
+      if (active === c) render();
+    } });
   }
 
   // Foto groß zeigen und zoomen (zwei Finger, Doppeltipp, Mausrad oder + / −). aktionen = [{ txt, fn, gefahr, frage }]: Knöpfe unter dem Foto

@@ -144,7 +144,7 @@
 
     // Wer eine Kundin öffnet oder eine gefilterte Liste aus der Übersicht holt, landet in der Kartenansicht
     const openC = FCC.openCustomer, openL = FCC.openList;
-    if (openC) FCC.openCustomer = id => { setMode('karten'); openC(id); };
+    if (openC) FCC.openCustomer = id => { setMode('karten'); return openC(id); };
     if (openL) FCC.openList = (...a) => { setMode('karten'); openL(...a); };
   }
   FCC.refreshTable = () => { if (mode === 'tabelle') renderTable(); };

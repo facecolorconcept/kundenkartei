@@ -197,6 +197,9 @@
   let sortMode = 'name';
   let showArchiv = false; // Archiv-Ansicht der Kundenliste
   let folgeHinweis = null; // { cid, f } – Vorschlag nach dem Speichern eines Bogens
+  let pflegeHinweis = null; // { cid, bid } – Pflegehinweise per Mail anbieten nach dem Speichern eines neuen Bogens
+  let ewOffen = null; // angetippte Einwilligung in der Akte (zeigt Herkunft und Widerruf)
+  let schnellFilter = 'alle'; // Filter-Chips über der Kundenliste
 
   // ---------- Start ----------
   function setStatus() {
@@ -209,6 +212,9 @@
 
   async function startApp() {
     await Store.start();
+    // Material und Einstellungen aus „Administration“ im Hintergrund laden (Bogen, Übersicht)
+    Promise.all([FCC.materialLaden ? FCC.materialLaden() : null, FCC.einstellungenLaden ? FCC.einstellungenLaden() : null])
+      .then(() => { if (FCC.current && FCC.current() === 'uebersicht' && FCC.renderUebersicht) FCC.renderUebersicht(); }).catch(() => {});
     $('#login').hidden = true;
     $('#app').hidden = false;
     setStatus();
@@ -243,7 +249,10 @@
   function renderList() {
     const qy = $('#search').value.toLowerCase().trim();
     const all = showArchiv ? Store.list(true).filter(e => e.archiv) : Store.list();
-    const list = all.filter(c => (!listFilter || listFilter.test(c)) && ((c.vorname || '') + ' ' + (c.nachname || '') + ' ' + (c.telefon || '') + ' ' + (c.instagram ? '@' + c.instagram : '')).toLowerCase().includes(qy))
+    const SF = { alle: () => true, offen: c => !c.nurKontakt && (c.b || []).length > 0 && !((c.ew || {}).daten === 1 && (c.ew || {}).beh === 1), web: c => (c.ew || {}).web === 1, mail: c => (c.ew || {}).mail === 1 };
+    const sfTest = SF[schnellFilter] || SF.alle;
+    renderSchnellFilter(all, SF);
+    const list = all.filter(c => sfTest(c) && (!listFilter || listFilter.test(c)) && ((c.vorname || '') + ' ' + (c.nachname || '') + ' ' + (c.telefon || '') + ' ' + (c.instagram ? '@' + c.instagram : '')).toLowerCase().includes(qy))
       .sort(sortMode === 'zuletzt'
         ? (a, b) => ((b.letzte && b.letzte.datum) || '').localeCompare((a.letzte && a.letzte.datum) || '')
         : (a, b) => (a.nachname || '').localeCompare(b.nachname || '', 'de'));
@@ -297,7 +306,7 @@
     const f = FORMS[b.art];
     return `<div class="lasttime">
       <div class="row between"><span class="label">Beim letzten Mal · ${esc(b.art)} · ${fmt(b.datum)}${b.nr ? ' · Nr. ' + esc(b.nr) : ''}</span>
-      <button class="btn ghost small" data-open="${esc(b.id)}">Bogen öffnen</button></div>
+      <span class="row">${FCC.pflegeMail ? `<button class="btn ghost small" data-pflege="${esc(b.id)}" title="${b.pflegeMail ? 'Gesendet am ' + fmt(b.pflegeMail.slice(0, 10)) : 'Pflegehinweise per Mail an die Kundin'}">${b.pflegeMail ? '✓ Pflegehinweise' : 'Pflegehinweise senden'}</button>` : ''}<button class="btn ghost small" data-open="${esc(b.id)}">Bogen öffnen</button></span></div>
       ${b.naechstes ? `<div class="hint">„${esc(b.naechstes)}“</div>` : ''}
       <div class="kv">${f ? f.summary(b.daten || {}).map(([k, v]) => `<div><span class="label">${esc(k)}</span><b>${esc(v)}</b></div>`).join('') : ''}</div>
     </div>`;
@@ -350,17 +359,19 @@
           <div style="grid-column:span 2"><span class="label">Google-Bewertung</span><div class="chips" style="margin-top:4px">${[['gebeten', 'gebeten'], ['erhalten', 'erhalten']].map(([k, l]) => { const on = !!(c.bewertung || {})[k]; return `<button type="button" class="chip ${on ? 'on' : ''}" data-bew="${k}" aria-pressed="${on}" title="${on ? 'am ' + fmt(c.bewertung[k]) : ''}">${on ? '✓ ' : ''}${l}</button>`; }).join('')}</div></div>
         </div>
         ${c.notiz ? `<p class="cnote">${esc(c.notiz)}</p>` : ''}
+        ${einwilligungZeile(c)}
       </div>
       ${FCC.formCard ? '<div id="formSlot"></div>' : `<div class="panel card">
         <span class="label">Neue Behandlung</span>
         <div class="chips">${ARTS.map(a => `<button class="chip add" data-new="${esc(a)}">+ ${esc(a)}</button>`).join('')}</div>
       </div>`}
       ${folgeHinweis && folgeHinweis.cid === c.id ? `<div class="banner" id="folgeHinweis" style="margin-top:0"><span><b>Folgetermin merken?</b> ${esc(folgeHinweis.f.text)}, also am ${fmt(folgeHinweis.f.due)}. Mit Erinnerung 1 Tag vorher.</span><span class="row"><button class="btn small" id="fhJa">Als Aufgabe anlegen</button><button class="btn ghost small" id="fhNein">Nein danke</button></span></div>` : ''}
+      ${pflegeHinweis && pflegeHinweis.cid === c.id && FCC.pflegeMail ? `<div class="banner" id="pflegeHinweis" style="margin-top:0"><span><b>Pflegehinweise per Mail senden?</b> ${c.email ? 'An ' + esc(c.email) + '.' : 'Es fehlt noch eine E-Mail-Adresse, du kannst sie gleich eintragen.'}</span><span class="row"><button class="btn small" id="phJa">Ansehen und senden</button><button class="btn ghost small" id="phNein">Nein danke</button></span></div>` : ''}
       ${lastTimeCard(c)}
       <div id="aufgSlot"></div>
       <div class="panel card">
         <div class="row between"><h2>Vorher / Nachher</h2>
-          <div class="row">${FCC.brauenSim ? '<button class="btn ghost small" id="simBtn">Brauen simulieren</button>' : ''}<button class="btn small" data-cphoto="Vorher">+ Vorher-Foto</button><button class="btn small" data-cphoto="Nachher">+ Nachher-Foto</button></div></div>
+          <div class="row">${FCC.brauenSim ? '<button class="btn ghost small" id="simBtn">Brauen beraten</button>' : ''}${FCC.lippenSim ? '<button class="btn ghost small" id="simLipBtn">Lippen beraten</button>' : ''}<button class="btn small" data-cphoto="Vorher">+ Vorher-Foto</button><button class="btn small" data-cphoto="Nachher">+ Nachher-Foto</button></div></div>
         <input type="file" id="cPhotoInput" accept="image/*" multiple hidden>
         ${(zeigeAusgeblendet ? allPhotos(c, true) : allPhotos(c)).length ? `<div class="thumbs" style="margin-top:12px">${(zeigeAusgeblendet ? allPhotos(c, true) : allPhotos(c)).map(p => `<div style="display:flex;flex-direction:column;gap:4px;min-width:0${p.ausgeblendet ? ';opacity:.5' : ''}"><button type="button" class="thumb" data-fid="${esc(p.fileId)}" aria-label="Foto vergrößern, ausblenden oder löschen"><img alt="" data-src="${esc(p.fileId)}"></button><span class="cmeta">${esc(p.typ)}${p.bearbeitet ? ' bearbeitet' : ''} · ${fmt(p.datum)}${p.art ? ' · ' + esc(p.art) : ''}${p.ausgeblendet ? ' · ausgeblendet' : ''}</span></div>`).join('')}</div>`
           : '<p class="cmeta" style="margin-top:10px">Noch keine Fotos. Du kannst ein Foto machen oder aus deinen Bildern wählen.</p>'}
@@ -404,6 +415,7 @@
     if (FCC.formCard) FCC.formCard(c, $('#formSlot'), formU);
     if (FCC.formListe) FCC.formListe(c, $('#foListe'), formU);
     $('#editCust').onclick = () => openCustomerSheet(c);
+    einwilligungBinden(c);
     // Google-Bewertung: gebeten / erhalten, ein Tipp speichert sofort
     $$('[data-bew]').forEach(b => b.onclick = e => {
       const k = b.dataset.bew; const bw = c.bewertung = c.bewertung || {};
@@ -443,6 +455,7 @@
     $$('[data-cphoto]').forEach(b => b.onclick = () => { cTyp = b.dataset.cphoto; $('#cPhotoInput').click(); });
     // Brauen-Simulation am Vorher-Foto (simulation.js); das Ergebnis landet als Foto „Simulation“ in der Akte
     if ($('#simBtn')) $('#simBtn').onclick = () => FCC.brauenSim(c, allPhotos(c), () => { if (active === c) render(); });
+    if ($('#simLipBtn')) $('#simLipBtn').onclick = () => FCC.lippenSim(c, allPhotos(c), () => { if (active === c) render(); });
     $('#cPhotoInput').onchange = async e => {
       const files = [...e.target.files]; e.target.value = '';
       if (!files.length) return;
@@ -500,6 +513,12 @@
       }).catch(() => {});
     };
     // Vorschlag für den Folgetermin nach dem Speichern eines Behandlungsbogens
+    const ph = $('#pflegeHinweis');
+    if (ph) {
+      $('#phJa').onclick = () => { const b = c.behandlungen.find(x => x.id === pflegeHinweis.bid); pflegeHinweis = null; ph.remove(); if (b) FCC.pflegeMail(c, b, () => { if (active === c) render(); }); };
+      $('#phNein').onclick = () => { pflegeHinweis = null; ph.remove(); };
+    }
+    $$('[data-pflege]').forEach(b => b.onclick = () => { const t = c.behandlungen.find(x => x.id === b.dataset.pflege); if (t && FCC.pflegeMail) FCC.pflegeMail(c, t, () => { if (active === c) render(); }); });
     const fh = $('#folgeHinweis');
     if (fh) {
       $('#fhJa').onclick = () => { const f = folgeHinweis.f; folgeHinweis = null; fh.remove(); FCC.folgeAnlegen(c, f); };
@@ -507,6 +526,37 @@
     }
   }
   function back() { activeId = null; active = null; render(); }
+
+  // ---------- Einwilligungen in der Akte ----------
+  function einwilligungZeile(c) {
+    if (!FCC.einwilligungen) return '';
+    const e = FCC.einwilligungen(c);
+    const chip = x => { const v = e[x.k].v; const cls = v === true ? 'ok' : v === false ? 'nein' : 'offen';
+      return `<button type="button" class="ew-chip ${cls} ${ewOffen === x.k ? 'on' : ''}" data-ew="${x.k}" aria-expanded="${ewOffen === x.k}" title="${esc(x.lang)}"><i aria-hidden="true">${v === true ? '✓' : v === false ? '✕' : '?'}</i>${esc(x.l)}</button>`; };
+    let det = '';
+    if (ewOffen && e[ewOffen]) {
+      const x = FCC.einwilligungTypen.find(t => t.k === ewOffen), o = e[ewOffen];
+      const txt = o.v === true ? `Erteilt: ${o.quelle}${o.datum ? ', ' + fmt(o.datum) : ''}.` : o.v === false ? (o.widerruf ? `${o.quelle}.` : `Abgelehnt: ${o.quelle}${o.datum ? ', ' + fmt(o.datum) : ''}.`) : 'Noch keine Angabe in einem unterschriebenen Formular.';
+      const knopf = (ewOffen === 'web' || ewOffen === 'mail') && o.v === true ? `<button type="button" class="btn ghost small" id="ewWider">Widerruf eintragen</button>`
+        : ewOffen === 'mail' && o.v !== true ? `<button type="button" class="btn small" id="ewHolen">Einwilligung einholen</button>`
+        : o.widerruf ? `<button type="button" class="btn ghost small" id="ewWiderWeg">Widerruf zurücknehmen</button>` : '';
+      det = `<div class="banner ew-det"><span><b>${esc(x.lang)}</b><br>${esc(txt)}</span>${knopf}</div>`;
+    }
+    return `<div class="ew-zeile"><span class="label">Einwilligungen</span><div class="ew-chips">${FCC.einwilligungTypen.map(chip).join('')}</div>${det}</div>`;
+  }
+  function einwilligungBinden(c) {
+    $$('[data-ew]').forEach(b => b.onclick = () => { ewOffen = ewOffen === b.dataset.ew ? null : b.dataset.ew; render(); });
+    const wd = $('#ewWider');
+    if (wd) wd.onclick = e => {
+      const b = e.currentTarget;
+      if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Wirklich? Widerruf heute eintragen'; return; }
+      busy(b, 'Speichert …', async () => { c.widerrufe = c.widerrufe || {}; c.widerrufe[ewOffen] = today(); await Store.save(c); render(); toast('Widerruf eingetragen. Ab heute gilt: nein.', true); }).catch(() => {});
+    };
+    const ww = $('#ewWiderWeg');
+    if (ww) ww.onclick = e => busy(e.currentTarget, 'Speichert …', async () => { delete (c.widerrufe || {})[ewOffen]; await Store.save(c); render(); toast('Widerruf entfernt'); }).catch(() => {});
+    const ho = $('#ewHolen');
+    if (ho) ho.onclick = () => FCC.formStart && FCC.formStart(c, 'service', { u: { rerender: render } });
+  }
 
   // ---------- Kundin anlegen/ändern ----------
   function sheetShell(title, sub, body, saveLabel) {
@@ -610,13 +660,36 @@
       }
       const type = it.date ? 'date' : 'text';
       const ph = pv ? `zuletzt: ${pv}` : '';
-      return `<div class="field"><label for="d-${it.k}">${esc(it.l)}</label><input id="d-${it.k}" data-dk="${it.k}" type="${type}" ${it.num ? 'inputmode="decimal"' : ''} placeholder="${esc(ph)}" value="${esc(val || '')}"></div>`;
+      // Haltbarkeit überschritten: deutlich warnen
+      const alt = it.k === 'haltbar' && val && val < d.datum ? `<div class="note">Achtung: Haltbarkeit am ${fmt(val)} abgelaufen.</div>` : '';
+      return `${materialChips(it.k)}<div class="field"><label for="d-${it.k}">${esc(it.l)}</label><input id="d-${it.k}" data-dk="${it.k}" type="${type}" ${it.num ? 'inputmode="decimal"' : ''} placeholder="${esc(ph)}" value="${esc(val || '')}">${alt}</div>`;
     }
 
     function photos(typ) {
       const list = d.fotos.filter(p => p.typ === typ && !p.ausgeblendet);
       return `<div class="phbox"><div class="row between"><span class="label">${typ}</span><button type="button" class="btn ghost small" data-photo="${typ}">+ Foto</button></div>
         <div class="thumbs">${list.length ? list.map(p => `<button type="button" class="thumb" data-fid="${esc(p.fileId)}" aria-label="Foto ${typ} vergrößern"><img alt="" data-src="${esc(p.fileId)}"></button>`).join('') : '<span class="cmeta">noch kein Foto</span>'}</div></div>`;
+    }
+
+    // Material aus der Bibliothek (Administration → Material): ein Tipp füllt Pigment, Charge und Haltbarkeit bzw. Gerät oder Nadel
+    function materialChips(k) {
+      if (art !== 'PMU' || !FCC.material) return '';
+      const M = FCC.material();
+      const ber = liste(d.daten.bereich);
+      const passt = p => !p.bereich || p.bereich === 'Alle' || !ber.length || ber.some(b => b.startsWith(p.bereich) || (p.bereich === 'Lidstrich' && /^Lidstrich/.test(b)));
+      const ab = p => FCC.ablaufTag && FCC.ablaufTag(p.ablauf) && FCC.ablaufTag(p.ablauf) < d.datum;
+      // Favoriten zuerst, abgelaufene ganz hinten
+      const fav = l => [...l].filter(x => !x.aus).sort((a, b) => (ab(a) ? 1 : 0) - (ab(b) ? 1 : 0) || (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || String(a.name).localeCompare(String(b.name), 'de'));
+      let l = [], typ = '';
+      if (k === 'pigment1') { l = fav(M.pigmente).filter(passt); typ = 'pig'; }
+      else if (k === 'geraet') { l = fav(M.geraete); typ = 'ger'; }
+      else if (k === 'nadel') { l = fav(M.nadeln); typ = 'nad'; }
+      else return '';
+      if (!l.length) return k === 'pigment1' && !(M.pigmente || []).length ? '<p class="cmeta field full" style="margin:0">Tipp: Lege deine Pigmente unter Administration → Material an. Dann reicht hier ein Tipp.</p>' : '';
+      return `<div class="field full"><span class="flabel">${typ === 'pig' ? 'Aus deinem Material (Pigment 1, dann Pigment 2)' : typ === 'ger' ? 'Gerät aus deinem Material' : 'Nadel oder Modul aus deinem Material'}</span><div class="chips">${l.map(x => {
+        const txt = typ === 'pig' ? (FCC.pigmentText ? FCC.pigmentText(x) : x.name) + (x.charge ? ' · ' + x.charge : '') : x.name;
+        return `<button type="button" class="chip add${ab(x) ? ' mat-alt' : ''}" data-mat="${typ}|${esc(x.id)}" title="${ab(x) ? 'abgelaufen' : ''}">${typ === 'pig' && /^#[0-9a-f]{6}$/i.test(x.farbe || '') ? `<span class="mat-farbe" style="background:${x.farbe}"></span>` : ''}${esc(txt)}${ab(x) ? ' · abgelaufen' : ''}</button>`;
+      }).join('')}</div></div>`;
     }
 
     const startNr = f.augen ? Object.keys(EYE).length : 0;
@@ -626,6 +699,7 @@
             <div class="field"><label for="t-datum">Datum</label><input id="t-datum" type="date" value="${esc(d.datum)}"></div>
             <div class="field"><label for="t-nr">Behandlung Nr.</label><input id="t-nr" inputmode="numeric" value="${esc(d.nr)}"></div>
             <div class="field"><label for="d-dauer">Dauer in Minuten</label><input id="d-dauer" data-dk="dauer" inputmode="numeric" placeholder="${prev && prev.daten && prev.daten.dauer ? 'zuletzt: ' + esc(prev.daten.dauer) : 'z. B. 60'}" value="${esc(d.daten.dauer || '')}"></div>
+            <div class="field"><label for="d-preis">Preis in €</label><input id="d-preis" data-dk="preis" inputmode="decimal" placeholder="${prev && prev.daten && prev.daten.preis ? 'zuletzt: ' + esc(prev.daten.preis) : 'z. B. 350'}" value="${esc(d.daten.preis || '')}"></div>
           </div>
           ${FCC.formBanner ? FCC.formBanner(c, art) : ''}
           ${prev ? `<div class="banner"><span>Letzte ${esc(art)}-Behandlung am ${fmt(prev.datum)}.${prev.naechstes ? ' <b>Nächstes Mal anders:</b> ' + esc(prev.naechstes) : ''}</span><button type="button" class="btn small" id="takeOver">Werte übernehmen</button></div>
@@ -677,6 +751,20 @@
         else umschalten(d.daten[k] = liste(d.daten[k]), o, it.solo);
       }));
       $$('.chip[data-check]').forEach(b => b.onclick = () => redraw(() => { const x = b.dataset.check; const i = d.check.indexOf(x); i >= 0 ? d.check.splice(i, 1) : d.check.push(x); }));
+      $$('.chip[data-mat]').forEach(b => b.onclick = () => redraw(() => {
+        const [typ, id] = b.dataset.mat.split('|'); const M = FCC.material();
+        if (typ === 'pig') {
+          const p = M.pigmente.find(x => x.id === id); if (!p) return;
+          const txt = FCC.pigmentText(p);
+          const slot = !d.daten.pigment1 || d.daten.pigment1 === txt ? 1 : 2;
+          d.daten['pigment' + slot] = txt; d.daten['charge' + slot] = p.charge || '';
+          const t = FCC.ablaufTag(p.ablauf);
+          if (t && (!d.daten.haltbar || t < d.daten.haltbar || slot === 1)) d.daten.haltbar = t;
+          if (t && t < d.datum) toast('Achtung: Dieses Pigment ist laut Bibliothek abgelaufen.', true);
+          else toast('Pigment ' + slot + ' eingetragen');
+        } else if (typ === 'ger') { const g = M.geraete.find(x => x.id === id); if (g) { d.daten.geraet = g.name + (g.typ ? ' (' + g.typ + ')' : ''); if (g.einstellung || g.hub) d.daten.stufe = [g.hub ? 'Hub ' + g.hub : '', g.einstellung].filter(Boolean).join(' · '); } }
+        else if (typ === 'nad') { const n = M.nadeln.find(x => x.id === id); if (n) d.daten.nadel = n.name; }
+      }));
       if (FCC.formBind) FCC.formBind($('.sheet'), c, art, () => { if (!$('.sheet')) return; redraw(() => FCC.formChecks(c, art, d.datum).forEach(x => { if (f.checks.includes(x) && !d.check.includes(x)) d.check.push(x); })); }, { rerender: render });
       const tk = $('#takeOver');
       if (tk) tk.onclick = () => redraw(() => {
@@ -733,6 +821,7 @@
           if ((d.check.includes('Fragebogen unterschrieben') || d.check.includes('Einwilligung unterschrieben')) && !c.fragebogen) c.fragebogen = d.datum;
           try { await Store.save(c); }
           catch (err) { Object.assign(c, before); throw err; }
+          if (isNew && FCC.pflegeMail && FCC.pflegeSchluessel && FCC.pflegeSchluessel(d).length) pflegeHinweis = { cid: c.id, bid: d.id };
           if (isNew && FCC.folgeFuer) {
             const f = FCC.folgeFuer(d);
             folgeHinweis = f && !(FCC.aufgabeVorhanden && FCC.aufgabeVorhanden(c.id, f.t)) ? { cid: c.id, f } : null;
@@ -858,6 +947,16 @@
     activeId = null; active = null; $('#search').value = '';
     FCC.show('kartei'); render();
   };
+
+  // Chips über der Liste: Alle · Einwilligung offen · Darf gepostet werden · Mail-Erinnerung erlaubt
+  function renderSchnellFilter(all, SF) {
+    let el = document.getElementById('schnellFilter');
+    if (!el) { el = document.createElement('div'); el.id = 'schnellFilter'; el.className = 'chips sf-chips'; $('#search').after(el); }
+    const L = [['alle', 'Alle'], ['offen', 'Einwilligung offen'], ['web', 'Darf gepostet werden'], ['mail', 'Mail-Erinnerung erlaubt']];
+    el.hidden = showArchiv;
+    el.innerHTML = L.map(([k, l]) => { const n = all.filter(SF[k]).length; return `<button type="button" class="chip ${schnellFilter === k ? 'on' : ''}" data-sf="${k}" aria-pressed="${schnellFilter === k}">${esc(l)}${k === 'alle' ? '' : ' · ' + n}</button>`; }).join('');
+    el.querySelectorAll('[data-sf]').forEach(b => b.onclick = () => { schnellFilter = b.dataset.sf; renderList(); });
+  }
 
   function renderFilterChip(n) {
     let el = document.getElementById('filterChip');

@@ -29,6 +29,13 @@
   }
   FCC.kalenderNeu = () => { Object.keys(cache).forEach(k => delete cache[k]); };
 
+  // Anzahlungen je Termin (Administration/anzahlungen.json): { [Termin-ID]: { betrag, erhalten (Datum), titel, start, kunde } }
+  let anz = null;
+  async function anzLaden() { if (!anz) { try { anz = (Store.adminLesen && await Store.adminLesen('anzahlungen.json', {})) || {}; } catch (e) { anz = {}; } } return anz; }
+  FCC.anzahlungenLaden = anzLaden;
+  const euro = v => { const n = parseFloat(String(v || '').replace(/[^\d,.-]/g, '').replace(',', '.')); return isFinite(n) ? n : null; };
+  const euroTxt = n => n == null ? '' : n.toLocaleString('de-DE', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }) + ' €';
+
   // Termin einer Kundin zuordnen: zuerst über die E-Mail-Adresse der Buchung, sonst über den Namen im Titel
   function zuordnen(ev) {
     const list = Store.list(true).filter(e => !e.nurKontakt);
@@ -87,7 +94,7 @@
     el.querySelectorAll('[data-hilfe]').forEach(b => { b.onclick = () => FCC.hilfe && FCC.hilfe(b.dataset.hilfe); });
 
     let evs;
-    try { evs = await laden(woche, bis); }
+    try { await anzLaden(); evs = await laden(woche, bis); }
     catch (err) {
       const msg = /\(403\)/.test(err.message) ? 'Google erlaubt der Kartei gerade keinen Blick in den Kalender. Bitte einmal abmelden, neu anmelden und beim Google-Fenster alle Häkchen setzen.' : err.message;
       el.querySelector('#kalBody').innerHTML = `<div class="panel empty">Der Kalender konnte nicht geladen werden. ${esc(msg)}</div>`;
@@ -101,10 +108,11 @@
 
     const knopf = (x, stil, kurz) => {
       const wer = x.k.e ? name(x.k.e) : '';
+      const a = anz[x.ev.id]; const az = a && a.betrag != null ? `<span class="kal-anzlg ${a.erhalten ? 'ok' : ''}" title="Anzahlung ${esc(euroTxt(a.betrag))} ${a.erhalten ? 'erhalten' : 'offen'}">€${a.erhalten ? ' ✓' : ''}</span>` : '';
       // Kurze Termine (unter 50 Minuten) im Raster einzeilig: Uhrzeit und Titel nebeneinander
-      if (kurz) return `<button class="kal-ev kurz${x.k.e ? ' ok' : ''}" data-ev="${esc(x.ev.id)}" style="${stil}" title="${esc(hm(x.z.s) + ' bis ' + hm(x.z.e) + ' ' + (x.ev.summary || ''))}"><b>${hm(x.z.s)} ${esc(wer || x.ev.summary || '(ohne Titel)')}</b></button>`;
+      if (kurz) return `<button class="kal-ev kurz${x.k.e ? ' ok' : ''}" data-ev="${esc(x.ev.id)}" style="${stil}" title="${esc(hm(x.z.s) + ' bis ' + hm(x.z.e) + ' ' + (x.ev.summary || ''))}"><b>${az}${hm(x.z.s)} ${esc(wer || x.ev.summary || '(ohne Titel)')}</b></button>`;
       return `<button class="kal-ev${x.k.e ? ' ok' : ''}" data-ev="${esc(x.ev.id)}"${stil ? ` style="${stil}"` : ''}>
-        <span class="kal-t">${x.z.ganz ? 'ganztägig' : hm(x.z.s) + ' bis ' + hm(x.z.e)}</span>
+        <span class="kal-t">${az}${x.z.ganz ? 'ganztägig' : hm(x.z.s) + ' bis ' + hm(x.z.e)}</span>
         <b>${esc(x.ev.summary || '(ohne Titel)')}</b>${wer ? `<span class="kal-k">Akte: ${esc(wer)}</span>` : ''}</button>`;
     };
     const proTag = t => items.filter(x => x.z.ganz ? (x.z.s <= t && x.z.e > t) : dkey(x.z.s) === dkey(t)).sort((a, b) => a.z.s - b.z.s);
@@ -145,8 +153,33 @@
         ${x.k.e ? `<button class="btn small" id="kalAkte">Akte von ${esc(name(x.k.e))} öffnen</button>`
           : `<button class="btn small" id="kalNeu">Als Kundin anlegen</button><span class="cmeta">Noch keiner Akte zugeordnet.</span>`}
         ${link ? `<a class="btn ghost small" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Im Google Kalender öffnen</a>` : ''}
-      </div></div>`;
+      </div>
+      ${x.z.ganz ? '' : (() => { const a = (anz || {})[x.ev.id] || {}; return `<div class="kal-anzbox">
+        <span class="label">Anzahlung</span>
+        <div class="row" style="margin-top:6px;flex-wrap:wrap">
+          <input id="kalAnzB" inputmode="decimal" placeholder="Betrag in €" value="${a.betrag != null ? esc(String(a.betrag).replace('.', ',')) : ''}" aria-label="Anzahlung in Euro" style="width:130px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)">
+          <button type="button" class="chip ${a.erhalten ? 'on' : ''}" id="kalAnzE" aria-pressed="${!!a.erhalten}">${a.erhalten ? '✓ erhalten am ' + esc(a.erhalten.split('-').reverse().join('.')) : 'noch nicht erhalten'}</button>
+          <button type="button" class="btn small" id="kalAnzS">Speichern</button>
+          ${a.betrag != null ? '<button type="button" class="btn ghost small" id="kalAnzW">Entfernen</button>' : ''}
+        </div>
+        <p class="cmeta" style="margin:6px 0 0">Nur als Merkzettel für dich. Den Zahlungseingang prüfst du bei PayPal oder auf dem Konto.</p></div>`; })()}
+      </div>`;
     d.querySelector('#kalZu').onclick = () => { gewaehlt = null; d.innerHTML = ''; };
+    const anzE = d.querySelector('#kalAnzE');
+    let erh = ((anz || {})[x.ev.id] || {}).erhalten || '';
+    if (anzE) anzE.onclick = () => { erh = erh ? '' : dkey(new Date()); anzE.classList.toggle('on', !!erh); anzE.setAttribute('aria-pressed', !!erh); anzE.textContent = erh ? '✓ erhalten am ' + erh.split('-').reverse().join('.') : 'noch nicht erhalten'; };
+    const speichernAnz = async (weg, btn) => {
+      const betrag = euro(d.querySelector('#kalAnzB').value);
+      if (!weg && betrag == null) { FCC.toast && FCC.toast('Bitte einen Betrag eintragen, zum Beispiel 50.'); return; }
+      const alt = JSON.parse(JSON.stringify(anz));
+      if (weg) delete anz[x.ev.id];
+      else anz[x.ev.id] = { betrag, erhalten: erh, titel: x.ev.summary || '', start: x.z.s.toISOString(), kunde: x.k.e ? x.k.e.id : '' };
+      btn.disabled = true;
+      try { await Store.adminSchreiben('anzahlungen.json', anz); FCC.toast && FCC.toast(weg ? 'Anzahlung entfernt' : 'Anzahlung gespeichert'); render(); }
+      catch (err) { anz = alt; btn.disabled = false; FCC.toast && FCC.toast(err.message, true); }
+    };
+    const anzS = d.querySelector('#kalAnzS'); if (anzS) anzS.onclick = () => speichernAnz(false, anzS);
+    const anzW = d.querySelector('#kalAnzW'); if (anzW) anzW.onclick = () => speichernAnz(true, anzW);
     const a = d.querySelector('#kalAkte'); if (a) a.onclick = () => FCC.openCustomer(x.k.e.id);
     const n = d.querySelector('#kalNeu'); if (n) n.onclick = () => FCC.newCustomer && FCC.newCustomer({ vorname: vn || '', nachname: nn.join(' '), email: x.k.mail || '' });
     d.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -205,6 +238,8 @@
     .kal-jetzt{position:absolute;left:0;right:0;height:2px;background:var(--bad);pointer-events:none}
     .kal-liste{display:none;flex-direction:column;gap:10px}.kal-liste .heute{border-color:var(--rose)}
     .kal-det{margin-bottom:12px;border-color:var(--rose)}
+    .kal-anzbox{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+    .kal-anzlg{display:inline-block;background:var(--warn);color:#fff;border-radius:6px;padding:0 5px;margin-right:5px;font-size:10.5px;font-weight:700;line-height:16px}.kal-anzlg.ok{background:var(--ok)}
     .kal-uhr{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13.5px;min-width:46px;padding-top:2px}
     @media(max-width:900px){.kal-grid{display:none}.kal-liste{display:flex}}
     @media(max-width:820px){.modnav{gap:0;padding-left:4px;padding-right:4px}.modnav button{min-width:0;padding:6px 1px;font-size:10.5px}.modnav button span{white-space:normal;line-height:1.15;text-align:center;-webkit-hyphens:auto;hyphens:auto;overflow-wrap:anywhere;max-width:100%}}`;

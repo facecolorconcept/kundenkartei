@@ -22,14 +22,19 @@
       '<b>Schau kurz in die Akte</b>: Hat sie etwas angekreuzt, steht es orange unter „Angekreuzt“. Entscheide dann, ob du behandelst.',
       '<b>Behandlung</b>: Bei <b>2 Behandlung dokumentieren</b> auf <b>Bogen öffnen</b> tippen und ausfüllen. Vorher-Foto direkt im Bogen machen.',
       '<b>Nur beim PMU</b>: Nach dem Vorzeichnen in der Akte auf <b>Freigabe der Vorzeichnung unterschreiben lassen</b>, nach der Behandlung auf <b>Abnahme unterschreiben lassen</b>.',
-      '<b>Nach der Behandlung</b>: Nachher-Foto, Ergebnis und „Kundin zufrieden“ eintragen, <b>Bogen speichern</b>.',
+      '<b>Folgetermin mit gültigem Bogen</b>: Statt des ganzen Gesundheitsbogens fragt die Kartei nur „Hat sich seitdem etwas geändert?“. Tippe auf <b>Kurzcheck ausfüllen lassen</b>. Sagt die Kundin Ja, lässt du den ausführlichen Bogen neu ausfüllen.',
+      '<b>E-Mail-Service</b> (freiwillig): Ein Tipp auf <b>Fragen</b>, die Kundin trägt ihre E-Mail ein und sagt, ob du sie an Nachbehandlungen erinnern darfst.',
+      '<b>Nach der Behandlung</b>: Nachher-Foto, Ergebnis und „Kundin zufrieden“ eintragen, <b>Bogen speichern</b>. Danach bietet die Kartei an, die <b>Pflegehinweise per Mail</b> zu schicken.',
       '<b>Folgetermin</b>: Die Kartei schlägt ihn vor. Ein Tipp auf <b>Als Aufgabe anlegen</b>, und du wirst rechtzeitig erinnert.'
     ], tipp: 'Mehr musst du dir nicht merken. Alles Weitere, zum Beispiel PDFs und Nachweise, legt die Kartei selbst in Drive ab.' },
     { id: 'uebersicht', t: 'Die Übersicht', k: 'Was heute wichtig ist', s: [
       'Die Übersicht ist deine Startseite. <b>Alles darauf lässt sich antippen.</b>',
+      '<b>Schnellstart</b> ganz oben: <b>Neue Kundin</b>, <b>Behandlung dokumentieren</b> (Kundin wählen, die Akte öffnet sich bei „Termin heute“) und <b>Vorher-Foto</b> (Kundin wählen, Kamera geht auf, das Foto landet in ihrer Akte).',
+      '<b>Nachbehandlungen in 30 Tagen</b>: Kundinnen, bei denen eine PMU-Nachbehandlung oder ein Lifting bald fällig oder schon fällig ist.',
       '<b>Kennzahlen oben</b>: Ein Tipp auf die Zahl zeigt genau diese Kundinnen in der Kartei.',
       '<b>Aufgaben</b>: alles, was du dir vorgenommen hast, sortiert nach überfällig, heute, morgen und später.',
-      '<b>Jetzt dran</b>: Dinge, die die Kartei selbst erkennt, zum Beispiel fällige Nachbehandlungen.',
+      '<b>Jetzt dran</b>: Dinge, die die Kartei selbst erkennt, zum Beispiel fällige Nachbehandlungen. Hat die Kundin Erinnerungen per E-Mail erlaubt, steht daneben <b>Mail</b>. Oben fasst <b>Erinnerungen per Mail</b> alle zusammen: Text prüfen, Häkchen setzen, senden.',
+      '<b>Sicherung</b>: Ist die letzte Sicherung älter als 30 Tage, erinnert dich die Kartei hier daran.',
       '<b>Zufriedenheit</b>: Antippen der Farbe zeigt die Kundinnen dazu.',
       '<b>Zuletzt behandelt</b> und <b>Balken</b>: Antippen öffnet die Kundinnen des Monats.'
     ] },
@@ -39,7 +44,8 @@
       'Neue Buchung ohne Akte: Termin antippen, dann <b>Als Kundin anlegen</b>. Name und E-Mail aus der Buchung sind schon eingetragen.',
       'Mit <b>‹</b> und <b>›</b> blätterst du wochenweise, <b>Heute</b> springt zurück.',
       'Termine anlegen, verschieben oder absagen machst du weiter im <b>Google Kalender</b>. Der Knopf oben rechts öffnet ihn.',
-      'Auf der <b>Übersicht</b> steht ganz oben „Heute im Studio“ mit allen Terminen des Tages.'
+      'Auf der <b>Übersicht</b> steht ganz oben „Heute im Studio“ mit allen Terminen des Tages.',
+      '<b>Anzahlung</b>: Termin antippen, unten den Betrag eintragen und <b>Speichern</b>. Ist das Geld da, tippst du auf <b>noch nicht erhalten</b>, dann steht dort „erhalten“. Im Kalender zeigt ein kleines <b>€</b> offene Anzahlungen, <b>€ ✓</b> erhaltene.'
     ], tipp: 'Die Kartei erkennt eine Kundin an ihrer E-Mail-Adresse aus der Buchung. Steht bei der Kundin keine oder eine andere E-Mail, sucht sie nach dem vollen Namen im Termintitel.' },
     { id: 'jetzt', t: 'Jetzt dran', k: 'Farben, Erledigt, Merken', s: [
       'Der farbige Streifen links zeigt, wie dringend etwas ist: <b>rot</b> = unzufriedene Kundin, bitte zuerst; <b>orange</b> = prüfen, zum Beispiel Fragebogen fehlt; <b>rosé</b> = fällig, zum Beispiel Nachbehandlung; <b>grün</b> = Hinweis, zum Beispiel neuer Kontakt.',
@@ -64,8 +70,11 @@
       'Fülle die Abschnitte von oben nach unten aus. Antippen wählt aus, noch einmal antippen nimmt es zurück.',
       'Bei jeder Auswahl kannst du <b>mehrere Felder</b> antippen, zum Beispiel zwei Techniken oder Zupfen und Waxing. Nur bei Ja/Nein-Fragen und bei „Kundin zufrieden“ gilt eine Antwort. Tippst du „keine“ an, gehen die anderen Felder aus.',
       'Trag unter <b>Kundin zufrieden</b> ja, teils oder nein ein. Das erscheint in der Übersicht.',
+      'Trag oben den <b>Preis in €</b> ein. Daraus rechnet der Bereich Umsatz.',
+      'Beim <b>PMU</b> siehst du über den Feldern dein <b>Material</b> aus der Administration. Ein Tipp auf ein Pigment trägt Name, Charge und Haltbarkeit ein, der zweite Tipp füllt Pigment 2. Genauso bei Gerät und Nadel. Abgelaufene Pigmente stehen orange ganz hinten.',
       'Fotos machst du direkt im Bogen unter <b>Fotos</b>: „+ Foto“ bei Vorher oder Nachher.',
-      'Tippe auf <b>Bogen speichern</b>. Danach schlägt die Kartei den passenden <b>Folgetermin</b> vor. Ein Tipp auf „Als Aufgabe anlegen“, fertig.'
+      'Tippe auf <b>Bogen speichern</b>. Danach bietet die Kartei die <b>Pflegehinweise per Mail</b> an und schlägt den passenden <b>Folgetermin</b> vor. Ein Tipp auf „Als Aufgabe anlegen“, fertig.',
+      'Pflegehinweise später schicken: in der Akte bei <b>Beim letzten Mal</b> auf <b>Pflegehinweise senden</b>. Wurden sie schon geschickt, steht dort ein Haken.'
     ] },
     { id: 'formulare', t: 'Formulare und Unterschrift', k: 'Kundin füllt am iPad aus, PDF als Nachweis', s: [
       'Öffne die Akte. Ganz oben unter <b>Termin heute</b> tippst du auf die Behandlung, zum Beispiel <b>Lash Lift</b>. Bei Schritt <b>1 Formulare</b> siehst du, was nötig ist und was schon unterschrieben ist. Der TFP-Vertrag für Model-Termine steht als Link darunter.',
@@ -106,19 +115,27 @@
       'Mehr Platz fürs Foto: Tipp auf den <b>Griff</b> oben am Bedienfeld. Die Werkzeuge klappen ein, Reiter und Häkchen bleiben.',
       '<b>In Akte speichern</b> legt das Ergebnis als zusätzliches Nachher-Foto ab, gekennzeichnet mit „bearbeitet“. Das Original bleibt immer erhalten. Im Bogen wird es mit „Bogen speichern“ gesichert.'
     ], tipp: 'Pigmentierte Stellen wie Brauen, Lidstrich und Lippen immer auslassen. Deine Arbeit soll echt bleiben, sonst sieht die Kundin in echt etwas anderes als auf Instagram. Das Foto wird nur im Browser bearbeitet und erst beim Speichern in deinen Drive-Ordner geladen.' },
-    { id: 'simulation', t: 'Brauen simulieren', k: 'Vorschau am Vorher-Foto für die Beratung', s: [
-      'Öffne die Akte der Kundin und tippe bei <b>Vorher / Nachher</b> auf <b>Brauen simulieren</b>. Das neueste Vorher-Foto ist schon geladen.',
-      'Kein passendes Foto? <b>+ Anderes Foto</b> antippen und ein Foto von vorne machen: gerade Kopfhaltung, gleichmäßiges Licht.',
-      'Zieh die fünf Punkte auf die Braue: <b>A</b> Anfang unten, <b>A1</b> Anfang oben, <b>B</b> Bogen oben, <b>B1</b> Bogen unten, <b>C</b> Ende. Die gestrichelten Linien A–A, A1–A1 und B–B zeigen, ob beide Seiten auf einer Höhe sind. Mit „Beide Seiten gleich“ wandert die andere Seite gespiegelt mit. Der kleine Punkt <b>Mitte</b> verschiebt die Mittellinie.',
-      '<b>Nah</b> zoomt auf die Brauen. <b>Mapping</b> zeigt Linien vom Nasenflügel zu Anfang, Bogen und Ende. Zieh dafür die zwei Nasenflügel-Punkte an die richtige Stelle.',
-      'Wähle <b>Technik</b> und <b>Farbton</b>. <b>Deckkraft</b> macht die Farbe kräftiger oder zarter. <b>Bogen bei B und B1</b> rundet oben und unten gemeinsam: 0 % verbindet die Punkte Ecke zu Ecke gerade, höher wölbt sich der Teil zum Ende wie an der Kante einer Schablone. <b>Weichheit der Kontur</b> auf 0 % gibt eine klare Kante, höher wird der Rand zur Haut hin weich.',
-      'Ein Punkt bewegt sich erst, wenn du den Finger ein kleines Stück schiebst, und dann nur halb so weit wie der Finger. So zuckt beim Antippen nichts und du triffst die Stelle genau. Für ganz feine Korrekturen tippst du den Punkt an und nimmst die <b>Pfeile</b> unter dem Foto.',
-      '<b>Zoomen</b>: mit zwei Fingern auseinanderziehen, doppelt neben die Punkte tippen oder <b>+</b> und <b>−</b> am rechten Rand. Ein Finger neben den Punkten verschiebt das Bild. <b>Gesicht</b> zeigt wieder alles.',
-      '<b>Punkte fixieren</b> sperrt alle Punkte. Dann kannst du in Ruhe zoomen, verschieben und schauen, ohne aus Versehen etwas zu verstellen. Nochmal tippen gibt die Punkte wieder frei.',
-      '<b>Ansicht für Kundin</b> blendet Punkte, Linien und Regler aus und zeigt das Foto groß. <b>Punkte zeigen</b> holt alles zurück.',
-      '<b>Vorher</b> gedrückt halten zeigt das Foto ohne Simulation.',
-      '<b>In Akte speichern</b> legt das Bild ohne Punkte als Foto „Simulation“ in der Akte ab, mit Technik, Farbton und Hinweis im Bild. Ist das Häkchen gesetzt, kommt zusätzlich eine Version mit Punkten und Linien für deine Doku dazu.'
-    ], tipp: 'Die Simulation ist eine Hilfe für das Gespräch, keine Vorzeichnung. Die Farbtöne sind Annäherungen und keine Pigmente eines Herstellers. Das Foto wird nur im Browser bearbeitet und erst beim Speichern in deinen Drive-Ordner geladen.' },
+    { id: 'simulation', t: 'Beratung: Brauen und Lippen', k: 'Simulation am Vorher-Foto in sechs Schritten', s: [
+      'Öffne die Akte und tippe bei <b>Vorher / Nachher</b> auf <b>Brauen beraten</b> oder <b>Lippen beraten</b>. Oben siehst du sechs Schritte. Mit <b>Weiter</b> und <b>Zurück</b> gehst du durch, ein Tipp auf einen Schritt springt direkt dorthin.',
+      '<b>1 Foto</b>: Das neueste Vorher-Foto ist schon geladen. Sonst <b>+ Anderes Foto</b>: von vorne, Kopf gerade, neutraler Ausdruck, gleichmäßiges Licht. Bei Lippen am besten locker geschlossen.',
+      '<b>2 Punkte</b>: Tippe auf <b>Automatisch erkennen</b>. Die Kartei setzt die Punkte auf Brauen oder Lippen und auf die Pupillen. Prüf jeden Punkt und korrigiere nach Anatomie. Beim ersten Mal lädt die Erkennung etwa 18 MB, danach geht es schnell.',
+      'Brauen: <b>A</b> Anfang unten, <b>A1</b> Anfang oben, <b>B</b> Bogen oben, <b>B1</b> Bogen unten, <b>C</b> Ende. Lippen: Punkte genau auf die natürliche Lippenlinie und die Mundspalte. Die blauen <b>Pupillen-Punkte</b> gehören in die Mitte der Pupillen.',
+      'Ein Punkt bewegt sich erst, wenn du den Finger ein kleines Stück schiebst, und dann nur halb so weit. Für ganz feine Korrekturen: Punkt antippen, dann die <b>Pfeile</b>. <b>Beide Seiten gleich</b> spiegelt an der Mittellinie, <b>Raster</b> zeigt 5-mm-Kästchen, <b>Punkte fixieren</b> sperrt alles.',
+      'Unter den Punkten stehen die <b>Messwerte in Millimetern</b>: bei Brauen zum Beispiel Abstand der Anfänge, Länge, Bogenhöhe und Höhenunterschied, bei Lippen Breite, Höhe von Ober- und Unterlippe und Symmetrie. Maßstab ist ein mittlerer Pupillenabstand von 62 mm, also Richtwerte.',
+      '<b>3 Technik</b>: Technik und Farbton antippen. Die Farben sind Annäherungen, keine Herstellerpigmente.',
+      '<b>4 Anpassen</b>: Deckkraft, Bogen und Weichheit. Bei Brauen gibt es den <b>Feinschliff in Millimetern</b> für Dicke, Bogen, Ende und Länge. Über 2 mm warnt die Kartei, passend zu deinem Grundsatz. Bei Lippen gibt es <b>Kontur nach innen</b>, nie nach außen.',
+      '<b>5 Vergleich</b>: Alle Techniken nebeneinander auf demselben Foto. Antippen wählt. Mit <b>Aktuellen Stil merken</b> sammelst du Varianten und vergleichst sie.',
+      '<b>6 Speichern</b>: Notiz eintragen und <b>In Akte speichern</b>. Das Bild kommt als Foto „Simulation“ in die Akte, auf Wunsch zusätzlich mit Punkten. Technik, Farbe, Messwerte und Notiz stehen als Notiz in der Akte.',
+      '<b>Ansicht für Kundin</b> zeigt nur das Foto groß. <b>Vorher</b> gedrückt halten zeigt das Foto ohne Simulation. <b>Nah</b> zoomt auf Brauen oder Lippen, <b>Gesicht</b> zeigt alles.'
+    ], tipp: 'Die Simulation ist eine Hilfe für das Gespräch, keine Vorzeichnung. Foto und Erkennung bleiben auf dem Gerät, erst beim Speichern kommt das Bild in deinen Drive-Ordner.' },
+    { id: 'einwilligung', t: 'Einwilligungen und E-Mail-Service', k: 'Was die Kundin erlaubt hat, auf einen Blick', s: [
+      'In jeder Akte steht unter den Stammdaten die Zeile <b>Einwilligungen</b>: Daten, Behandlung, Fotos Akte, Veröffentlichung und Mail-Erinnerung. <b>Grün</b> = erteilt, <b>rot</b> = abgelehnt oder widerrufen, <b>orange</b> = noch keine Angabe.',
+      'Die Kartei liest das aus den unterschriebenen Formularen. Ein Tipp auf eine Einwilligung zeigt, aus welchem Formular sie stammt und von wann.',
+      '<b>Widerruf</b>: Zieht eine Kundin ihr Okay für Veröffentlichung oder Erinnerungen zurück, tippst du auf die Einwilligung und dann auf <b>Widerruf eintragen</b>. Ab dann gilt nein.',
+      '<b>E-Mail-Service</b>: Bei „Mail-Erinnerung“ ohne Angabe gibt es den Knopf <b>Einwilligung einholen</b>. Die Kundin füllt das kurze Formular am iPad aus und unterschreibt.',
+      'In der Kundenliste helfen die Knöpfe über der Liste: <b>Einwilligung offen</b>, <b>Darf gepostet werden</b> und <b>Mail-Erinnerung erlaubt</b>. Vor jedem Instagram-Post ein Blick auf „Darf gepostet werden“.',
+      '<b>Pflegehinweise</b> gehören zur Behandlung und gehen an jede Kundin mit E-Mail-Adresse. <b>Erinnerungen</b> gehen nur an Kundinnen mit Einwilligung. Unter jeder Erinnerung steht, wie sie sich abmelden.'
+    ], tipp: 'Antwortet eine Kundin mit „Abmelden“: Akte öffnen, auf Mail-Erinnerung tippen, Widerruf eintragen.' },
     { id: 'aufgaben', t: 'Aufgaben und Erinnerungen', k: 'Nichts mehr vergessen', s: [
       'Tippe auf <b>+ Aufgabe</b>, in der Übersicht oder in einer Akte.',
       'Schreib, was zu tun ist, und wähle das <b>Fälligkeitsdatum</b>. Die <b>Kundin</b> ist freiwillig. Wählst du eine, steht die Aufgabe auch in ihrer Akte.',
@@ -147,7 +164,7 @@
       'Tippe auf <b>PDF herunterladen</b>. Auf dem iPhone findest du es danach in der App <b>Dateien › Downloads</b>, am Computer im Ordner <b>Downloads</b>. Eine Kopie landet in Google Drive unter <b>Administration › Berichte</b>.',
       'Willst du das PDF direkt verschicken, tippe unten auf <b>PDF teilen</b> und wähle Mail oder WhatsApp.',
       'Druck das PDF aus oder öffne es am iPad und <b>unterschreibe</b> unten auf der letzten Seite.'
-    ], tipp: 'Im Bericht stehen nur Datum, Kundin und Leistung. Gesundheitsdaten, Telefonnummern und Fotos sind nie darin. Preise kennt die Kartei nicht, für Umsätze nimm deine Abrechnung.' },
+    ], tipp: 'Im Bericht stehen nur Datum, Kundin und Leistung. Gesundheitsdaten, Telefonnummern und Fotos sind nie darin. Preise stehen nur im Bereich Umsatz, nie im Nachweis.' },
     { id: 'auswertung', t: 'Meine Auswertung', k: 'Aus den eigenen Behandlungen lernen', s: [
       'Tippe auf <b>Bericht</b> und oben auf <b>Meine Auswertung</b>. „Nachweis“ bringt dich zurück zum Bericht für die Förderung.',
       '<b>Lerntagebuch</b>: zeigt alles, was du im Bogen unter „Nächstes Mal anders“ notiert hast, und was beim Termin danach herauskam.',
@@ -157,6 +174,30 @@
       '<b>Woher kommen die Kundinnen?</b> Tippe beim Anlegen oder unter „Daten ändern“ an, wie sie dich gefunden hat. Mehrere Angaben sind möglich.',
       '<b>Google-Bewertung</b>: In der Akte oben tippst du „gebeten“ und später „erhalten“ an. Die Auswertung zeigt dir zufriedene Kundinnen, die du noch nicht gefragt hast.'
     ], tipp: 'Bei wenigen Behandlungen zeigen die Zahlen nur eine Richtung. Die Auswertung ist nur für dich und steht in keinem PDF.' },
+    { id: 'umsatz', t: 'Umsatz', k: 'Was deine Behandlungen einbringen', s: [
+      'Tippe auf <b>Bericht</b> und oben auf <b>Umsatz</b>.',
+      'Die Zahlen kommen aus dem Feld <b>Preis in €</b> im Behandlungsbogen. Fehlt der Preis, zeigt die Kachel <b>Behandlungen ohne Preis</b>, wo du nachtragen kannst.',
+      'Oben wählst du den <b>Zeitraum</b>. Die Kacheln zeigen Umsatz und Schnitt pro Behandlung, die Balken die letzten zwölf Monate.',
+      '<b>Je Behandlung</b>: Ein Tipp auf eine Zeile filtert die Liste darunter. In der Liste sortierst du per Tipp auf die Überschrift, oben suchst du nach Namen.',
+      'Offene <b>Anzahlungen</b> aus dem Kalender stehen oben als Hinweis.'
+    ], tipp: 'Die Übersicht ersetzt keine Buchhaltung. Rechnungen und Kasse laufen weiter über SumUp und Lexware.' },
+    { id: 'admin', t: 'Administration', k: 'Material, Mail-Texte, Sicherung', s: [
+      'Tippe auf <b>Administration</b> (am iPhone unten ganz rechts, am Notebook in der Leiste links). Drei Kacheln: <b>Sicherung</b>, <b>Material</b> und <b>Mail-Texte</b>.',
+      '<b>Material</b>: Oben zwischen Pigmente, Geräte und Nadeln & Module wechseln. <b>+ Pigment</b> öffnet das Formular: Name, Marke, Farbe, Bereich, Charge und Haltbar bis. Pro Flasche mit eigener Charge ein Eintrag.',
+      'Der <b>Stern</b> macht einen Eintrag zum Favoriten, er steht dann im Bogen vorne. Überschriften antippen sortiert, das Suchfeld filtert.',
+      '<b>Aufgebraucht</b>: Eintrag ändern, dann <b>Aufgebraucht / nicht mehr nutzen</b>. Er verschwindet aus dem Bogen, bleibt aber für die Rückverfolgung gespeichert.',
+      '<b>Rückruf eines Herstellers</b>: In der Spalte <b>Kundinnen</b> steht, wie viele Kundinnen diese Charge bekommen haben. Ein Tipp zeigt sie in der Kartei.',
+      '<b>Mail-Texte</b>: Pflegehinweise je Behandlung und Erinnerungen. Aufklappen, Text ändern, Speichern. <b>Standardtext wiederherstellen</b> holt den ursprünglichen Text zurück.'
+    ], tipp: 'Die Pflegetexte stammen aus deinen Formularen. Bitte prüf vor allem den Text für Lippen und ergänze, was du dort zusätzlich sagst.' },
+    { id: 'sicherung', t: 'Sicherung auf dem Rechner', k: 'Alles verschlüsselt, mit eigenem Passwort', s: [
+      'Am besten am <b>Notebook</b>: <b>Administration</b> öffnen und auf <b>Sicherung</b> tippen.',
+      'Denk dir ein <b>Passwort</b> mit mindestens 10 Zeichen aus, zum Beispiel einen Satz aus vier Wörtern. <b>Schreib es auf Papier</b> und leg es an einen sicheren Ort. Ohne Passwort lässt sich die Sicherung nie mehr öffnen.',
+      'Passwort zweimal eintippen und auf <b>Sicherung erstellen</b> tippen. Die Kartei lädt alle Akten, Fotos und Dokumente, packt sie zusammen und verschlüsselt sie. Je nach Anzahl der Fotos dauert das ein bis fünf Minuten.',
+      'Die Datei heißt zum Beispiel <b>Facecolorconcept-Sicherung-2026-11-23.html</b> und liegt in deinen Downloads. Leg sie in einen festen Ordner, zum Beispiel <b>Dokumente/Sicherungen</b>, und zusätzlich auf einen <b>USB-Stick</b>.',
+      '<b>Öffnen</b>: Doppelklick auf die Datei, Passwort eingeben, <b>Entschlüsseln</b>. Der Browser speichert eine ZIP-Datei mit allem. Das geht ohne Internet und ohne die Kartei.',
+      '<b>Prüfen</b>: Unter „Sicherung prüfen“ die Datei wählen und das Passwort eintippen. Die Kartei zeigt, wie viele Akten und Fotos drin sind.',
+      'Mach das <b>einmal im Monat</b>. Die Übersicht erinnert dich, wenn die letzte Sicherung älter als 30 Tage ist.'
+    ], tipp: 'Verschlüsselt mit AES-256. Wer die Datei findet, kann ohne Passwort nichts lesen. Das Passwort speichert die Kartei nirgends.' },
     { id: 'archiv', t: 'Archivieren statt Löschen', k: 'Nichts geht verloren', s: [
       'In der Akte ganz unten bei Dokumente auf <b>Akte archivieren</b>, dann noch einmal bestätigen.',
       'Die Akte bleibt vollständig erhalten, taucht aber nicht mehr in Übersicht, Liste und Tabelle auf.',
@@ -170,7 +211,9 @@
       'Schütz dein iPhone mit <b>Code und Face ID</b> und dein Google-Konto mit <b>Bestätigung in zwei Schritten</b>.',
       'Melde dich an fremden Geräten immer <b>ab</b>.',
       'Verlangt eine Kundin <b>Auskunft über ihre Daten</b>: Akte öffnen, ganz unten bei Dokumente auf <b>Datenauskunft (PDF)</b> tippen. Das PDF enthält alles, was über sie gespeichert ist, und ihre Rechte. Gib es nur ihr persönlich, zum Beispiel per E-Mail an ihre eigene Adresse.',
-      'Allergien und Kontraindikationen sind Gesundheitsdaten. Mit <b>Google Workspace</b> bekommst du einen Vertrag zur Auftragsverarbeitung mit Google, mit einem privaten Gmail-Konto nicht.'
+      'Allergien und Kontraindikationen sind Gesundheitsdaten. Mit <b>Google Workspace</b> bekommst du einen Vertrag zur Auftragsverarbeitung mit Google, mit einem privaten Gmail-Konto nicht.',
+      'Die <b>automatische Erkennung</b> in der Beratung läuft nur auf deinem Gerät. Die Dateien dafür liegen im eigenen Projekt, kein Foto geht an Google oder andere.',
+      'Mach regelmäßig eine <b>verschlüsselte Sicherung</b> auf deinen Rechner (siehe „Sicherung auf dem Rechner“).'
     ] },
     { id: 'probleme', t: 'Wenn etwas nicht klappt', k: 'Häufige Fragen', faq: [
       ['Ich sehe noch die alte Ansicht.', 'App ganz schließen (vom unteren Rand hochwischen und wegschieben) und neu öffnen.'],
@@ -179,6 +222,8 @@
       ['Eine Kundin fehlt auf dem iPhone.', 'Oben rechts auf den Pfeil im Kreis tippen. Das lädt alles neu, auch die Google Kontakte.'],
       ['Ein neuer Google-Kontakt erscheint nicht.', 'Prüfen, ob der Kontakt das Label „Facecolorconcept“ hat. Dann neu laden.'],
       ['Die Erinnerung kommt nicht aufs Handy.', 'Google-Kalender-App installieren und Mitteilungen erlauben, oder das Studio-Konto unter Einstellungen → Kalender → Accounts einrichten.'],
+      ['Ich habe das Passwort der Sicherung vergessen.', 'Dann lässt sich diese Sicherung nicht mehr öffnen, auch nicht von mir. Mach gleich eine neue Sicherung mit einem neuen Passwort und schreib es auf.'],
+      ['„Automatisch erkennen“ findet kein Gesicht.', 'Foto von vorne nehmen, Gesicht gut beleuchtet und nicht zu klein im Bild. Klappt es nicht, setzt du die Punkte von Hand. Auf sehr alten iPads kann die Erkennung fehlen.'],
       ['Das Anmeldefenster öffnet sich nicht.', 'In Safari den Popup-Blocker für die Kartei ausschalten (Einstellungen → Safari → Popups blockieren).'],
       ['Beim Mail-Versand kommt „Google-Fenster konnte nicht geöffnet werden“.', 'Noch einmal auf „Senden“ tippen. Beim ersten Versand fragt Google einmal, ob die Kartei Mails über info@facecolorconcept.de senden darf. Dort das Häkchen setzen.']
     ] }

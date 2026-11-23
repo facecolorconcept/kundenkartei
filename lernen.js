@@ -17,10 +17,11 @@
   const de = n => n == null ? '–' : String(n).replace('.', ',');
 
   const st = { modus: 'nachweis', arts: [], alleNotizen: false, detail: null };
-  FCC.lernenModus = () => st.modus === 'lernen';
+  FCC.lernenModus = () => st.modus !== 'nachweis';
   FCC.lernenSchalter = () => `<div class="seg l-seg" role="group" aria-label="Bericht oder Auswertung">
     <button type="button" data-lmod="nachweis" aria-pressed="${st.modus === 'nachweis'}">Nachweis</button>
-    <button type="button" data-lmod="lernen" aria-pressed="${st.modus === 'lernen'}">Meine Auswertung</button></div>`;
+    <button type="button" data-lmod="lernen" aria-pressed="${st.modus === 'lernen'}">Meine Auswertung</button>
+    ${FCC.umsatz ? `<button type="button" data-lmod="umsatz" aria-pressed="${st.modus === 'umsatz'}">Umsatz</button>` : ''}</div>`;
   document.addEventListener('click', ev => {
     const b = ev.target.closest && ev.target.closest('[data-lmod]');
     if (!b) return;
@@ -174,6 +175,7 @@
   }
 
   FCC.lernen = el => {
+    if (st.modus === 'umsatz' && FCC.umsatz) { FCC.umsatz(el, FCC.lernenSchalter()); return; }
     const D = daten();
     const notizen = D.rows.filter(x => x.b.nx).length;
     const mehrfach = D.kund.filter(e => (e.b || []).length > 1).length, mitB = D.kund.filter(e => (e.b || []).length).length;

@@ -6,8 +6,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="robots" content="noindex, nofollow">
-<!-- Sicherheit: nur eigene Dateien und Google-Dienste erlaubt, keine fremden Skripte, keine Weitergabe der Adresse -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style; font-src https://fonts.gstatic.com; img-src 'self' blob: data:; connect-src https://www.googleapis.com https://gmail.googleapis.com https://people.googleapis.com https://tasks.googleapis.com https://oauth2.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<!-- Sicherheit: nur eigene Dateien und Google-Dienste erlaubt, keine fremden Skripte, keine Weitergabe der Adresse.
+     wasm-unsafe-eval erlaubt nur WebAssembly (für die Gesichtserkennung aus dem eigenen Ordner mp/), kein eval von JavaScript.
+     connect-src 'self' erlaubt das Laden dieser eigenen Dateien. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style; font-src https://fonts.gstatic.com; img-src 'self' blob: data:; connect-src 'self' https://www.googleapis.com https://gmail.googleapis.com https://people.googleapis.com https://tasks.googleapis.com https://oauth2.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <!-- iPhone: als App auf dem Home-Bildschirm -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -252,6 +254,17 @@ button.kpi:hover::after{color:var(--rose-ink)}
   header.top .modnav button span{white-space:normal;line-height:1.15;-webkit-hyphens:manual;hyphens:manual;overflow-wrap:normal}
   header.top .modnav svg{width:22px;height:22px}
 }
+/* Einwilligungen in der Akte: auf einen Blick, antippen zeigt Herkunft und Widerruf */
+.ew-zeile{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.ew-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.ew-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:transparent;border-radius:99px;padding:5px 12px 5px 6px;font-size:13.5px;min-height:34px;color:var(--ink)}
+.ew-chip i{font-style:normal;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;color:#fff;background:var(--muted)}
+.ew-chip.ok i{background:var(--ok)}.ew-chip.nein i{background:var(--bad)}.ew-chip.offen i{background:var(--warn)}
+.ew-chip.on{border-color:var(--rose);background:var(--rose-soft)}
+.ew-det{margin-top:10px}
+.sf-chips{margin-top:0}.sf-chips .chip{font-size:13.5px;padding:6px 12px;min-height:34px}
+.mat-farbe{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:6px;vertical-align:-2px;box-shadow:0 0 0 1px var(--line)}
+.chip.mat-alt{border-color:var(--warn);color:var(--warn)}
 </style>
 <script src="theme.js?v=1"></script>
 </head>
@@ -290,6 +303,7 @@ button.kpi:hover::after{color:var(--rose-ink)}
   <section id="mod-brows" class="wrap dash" hidden></section>
   <section id="mod-bericht" class="wrap dash" hidden></section>
   <section id="mod-hilfe" class="wrap dash" hidden></section>
+  <section id="mod-admin" class="wrap dash" hidden></section>
 
   <main id="main" class="wrap" hidden>
     <section class="list-col">
@@ -309,22 +323,26 @@ button.kpi:hover::after{color:var(--rose-ink)}
 <div id="toastRoot"></div>
 
 <script src="config.js?v=12"></script>
-<script src="store.js?v=18"></script>
+<script src="store.js?v=19"></script>
 <script src="shell.js?v=9"></script>
 <script src="tasks.js?v=3"></script>
 <script src="brows.js?v=5"></script>
-<script src="hilfe.js?v=20"></script>
+<script src="hilfe.js?v=21"></script>
 <script src="logo.js?v=1"></script>
-<script src="formulare.js?v=7"></script>
-<script src="app.js?v=24"></script>
+<script src="formulare.js?v=8"></script>
+<script src="service.js?v=1"></script>
+<script src="app.js?v=25"></script>
 <!-- Weitere Bereiche: einfach als eigene Datei hier ergänzen -->
-<script src="kalender.js?v=2"></script>
-<script src="simulation.js?v=4"></script>
+<script src="kalender.js?v=3"></script>
+<script src="gesicht.js?v=1"></script>
+<script src="simulation.js?v=5"></script>
 <script src="retusche.js?v=3"></script>
-<script src="dashboard.js?v=17"></script>
+<script src="dashboard.js?v=18"></script>
 <script src="search.js?v=10"></script>
-<script src="table.js?v=12"></script>
-<script src="lernen.js?v=1"></script>
+<script src="table.js?v=13"></script>
+<script src="lernen.js?v=2"></script>
+<script src="umsatz.js?v=1"></script>
 <script src="bericht.js?v=3"></script>
+<script src="admin.js?v=1"></script>
 </body>
 </html>

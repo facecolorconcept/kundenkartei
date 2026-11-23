@@ -57,7 +57,8 @@
     const d = x.daten || {}, a = x.augen || {}, j = v => liste(v).join(', ');
     const o = { m: d.dauer, l1: d.lotion1, l2: d.lotion2, pad: [d.padL, d.padR].filter(Boolean).join(' / '),
       ws: [...new Set(liste((a.staerke || {}).L).concat(liste((a.staerke || {}).R)))].join(', '),
-      hb: j(d.haut), te: j(d.technik), au: j(d.aufnahme), re: j(d.reaktion), er: j(liste(d.biegung).concat(liste(d.ergebnis))), ab: d.abgeheilt };
+      hb: j(d.haut), te: j(d.technik), au: j(d.aufnahme), re: j(d.reaktion), er: j(liste(d.biegung).concat(liste(d.ergebnis))), ab: d.abgeheilt,
+      pr: d.preis, ch: [d.charge1, d.charge2].filter(Boolean).join(', ') };
     Object.keys(o).forEach(k => { if (!o[k]) delete o[k]; });
     return o;
   }
@@ -66,7 +67,7 @@
   function entry(c, dateiId) {
     const last = [...(c.behandlungen || [])].sort((a, b) => b.datum.localeCompare(a.datum))[0];
     return {
-      id: c.id, vorname: c.vorname, nachname: c.nachname, telefon: c.telefon || '', instagram: c.instagram || '',
+      id: c.id, vorname: c.vorname, nachname: c.nachname, telefon: c.telefon || '', instagram: c.instagram || '', email: c.email || '',
       dateiId, ordnerId: c.ordnerId || '', kontaktId: c.kontaktId || '',
       letzte: last ? { datum: last.datum, art: last.art } : null,
       archiv: c.archiviert || '',
@@ -76,10 +77,13 @@
         z: (x.daten || {}).zufrieden || '', p: auffaellig(x.daten || {}), n: x.nachgefasst || '',
         nx: String(x.naechstes || '').slice(0, 300), r: kurzBogen(x) })),
       hk: liste(c.herkunft), bw: c.bewertung || {},
+      // Einwilligungen in Kurzform (1 = ja, 0 = nein, fehlt = unbekannt) für Filter und Erinnerungs-Mails
+      ew: window.FCC && FCC.einwilligungKurz ? FCC.einwilligungKurz(c) : {},
+      pm: c.pflegeMail || '', em: (c.erinnerungsMails || []).slice(-1)[0] || '',
       // Suchtexte für die globale Suche (Telefon, Allergien, Notizen, Pigmente, Chargen …)
       // Brows-Reihe: Kurzform für Übersicht und Reiter
       w: (c.brows || []).map(x => window.FCC && FCC.browsKurz ? FCC.browsKurz(x) : { id: x.id, f: x.folge }),
-      f: suchfelder(c), v: 5
+      f: suchfelder(c), v: 6
     };
   }
 
@@ -212,7 +216,7 @@
         this.indexId = f.id;
         this.index = await (await this.api(`${API}/files/${f.id}?alt=media`)).json();
         // Ältere Verzeichnisse ohne Kurzfassung einmalig neu aufbauen
-        if (this.index.some(e => e.v !== 5)) await this.rebuildIndex();
+        if (this.index.some(e => e.v !== 6)) await this.rebuildIndex();
       } else {
         await this.rebuildIndex();
       }
@@ -314,6 +318,46 @@
     async trash(fileId) {
       await this.api(`${API}/files/${fileId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trashed: true }) });
     },
+
+    // ---------- Ordner „Administration“: Einstellungen, Material, Anzahlungen (je eine JSON-Datei) ----------
+    // Die Kartei liest den Ordner nie als Kundinnen-Akte (siehe rebuildIndex).
+    async adminOrdner() {
+      if (!this.adminId) this.adminId = await this.folder('Administration', this.rootId);
+      return this.adminId;
+    },
+    async adminLesen(name, leer) {
+      const ord = await this.adminOrdner();
+      this.adminIds = this.adminIds || {};
+      if (!this.adminIds[name]) { const f = (await this.find(`name='${q(name)}' and '${ord}' in parents and trashed=false`))[0]; if (f) this.adminIds[name] = f.id; }
+      if (!this.adminIds[name]) return leer === undefined ? null : JSON.parse(JSON.stringify(leer));
+      return (await this.api(`${API}/files/${this.adminIds[name]}?alt=media`)).json();
+    },
+    async adminSchreiben(name, obj) {
+      const ord = await this.adminOrdner();
+      this.adminIds = this.adminIds || {};
+      if (!this.adminIds[name]) await this.adminLesen(name);
+      const r = await this.upload({ name, parent: ord, mime: 'application/json', data: JSON.stringify(obj, null, 1), fileId: this.adminIds[name] });
+      this.adminIds[name] = r.id;
+    },
+
+    // ---------- Sicherung: alle Dateien im Kartei-Ordner (mit Unterordnern) ----------
+    async alleDateien(fortschritt) {
+      const out = [];
+      const gehe = async (ordner, pfad) => {
+        let page = '';
+        do {
+          const r = await this.json(`${API}/files?q=${encodeURIComponent(`'${ordner}' in parents and trashed=false`)}&fields=${encodeURIComponent('nextPageToken,files(id,name,mimeType,size,modifiedTime)')}&pageSize=1000&spaces=drive${page ? '&pageToken=' + encodeURIComponent(page) : ''}`);
+          for (const f of r.files || []) {
+            if (f.mimeType === FOLDER) await gehe(f.id, pfad + f.name + '/');
+            else if (!/^application\/vnd\.google-apps\./.test(f.mimeType)) { out.push({ id: f.id, name: f.name, pfad: pfad + f.name, groesse: Number(f.size || 0), geaendert: f.modifiedTime || '' }); if (fortschritt) fortschritt(out.length); }
+          }
+          page = r.nextPageToken || '';
+        } while (page);
+      };
+      await gehe(this.rootId, '');
+      return out;
+    },
+    async dateiLaden(f) { return new Uint8Array(await (await this.api(`${API}/files/${f.id}?alt=media`)).arrayBuffer()); },
 
     // ---------- Google Kontakte ----------
     async kontaktGruppe() {
@@ -452,12 +496,16 @@
       const utf8b64 = t => btoa(unescape(encodeURIComponent(t)));
       const kopf = t => '=?UTF-8?B?' + utf8b64(t) + '?=';
       const grenze = 'fcc' + Math.random().toString(36).slice(2);
-      const mime = [
+      // Ohne Anhang (z. B. Pflegehinweise, Erinnerungen) nur Text
+      const mime = (anhang ? [
         `To: ${an}`, `Subject: ${kopf(betreff)}`, 'MIME-Version: 1.0', `Content-Type: multipart/mixed; boundary="${grenze}"`, '',
         `--${grenze}`, 'Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: base64', '', utf8b64(text).replace(/.{76}/g, '$&\r\n'), '',
         `--${grenze}`, `Content-Type: application/pdf; name="${kopf(anhang.name)}"`, `Content-Disposition: attachment; filename="${kopf(anhang.name)}"`, 'Content-Transfer-Encoding: base64', '',
         await b64(anhang.blob), '', `--${grenze}--`, ''
-      ].join('\r\n');
+      ] : [
+        `To: ${an}`, `Subject: ${kopf(betreff)}`, 'MIME-Version: 1.0', 'Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: base64', '',
+        utf8b64(text).replace(/.{76}/g, '$&\r\n'), ''
+      ]).join('\r\n');
       const roh = utf8b64(mime).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
       const r = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify({ raw: roh }) });
       if (!r.ok) {
@@ -522,6 +570,27 @@
     async photoUrl(p) { return p.data || ''; },
     async addDoc(c, file) { return { fileId: 'demo_' + Date.now(), name: file.name, link: '', datum: today() }; },
     async trash() {},
+    // Administration im Beispielmodus: nur im Browser
+    async adminLesen(name, leer) { try { const v = JSON.parse(localStorage.getItem('fcc_demo_admin_' + name)); if (v != null) return v; } catch (e) {} return leer === undefined ? null : JSON.parse(JSON.stringify(leer)); },
+    async adminSchreiben(name, obj) { try { localStorage.setItem('fcc_demo_admin_' + name, JSON.stringify(obj)); } catch (e) {} },
+    // Sicherung im Beispielmodus: Akten als JSON, Fotos aus dem Browser
+    async alleDateien() {
+      const out = [{ id: 'idx', name: '_verzeichnis.json', pfad: '_verzeichnis.json', daten: JSON.stringify(this.list(true)) }];
+      this.data.forEach(c => {
+        const ord = `${c.nachname}_${c.vorname}_${String(c.id).slice(-4)}/`;
+        out.push({ id: c.id, name: 'kundin.json', pfad: ord + 'kundin.json', daten: JSON.stringify(c, null, 1) });
+        const fotos = (c.fotos || []).concat(...(c.behandlungen || []).map(b => b.fotos || []));
+        fotos.filter(p => p.data).forEach((p, i) => out.push({ id: p.fileId, name: `foto_${i + 1}.jpg`, pfad: ord + `fotos/foto_${i + 1}.jpg`, daten: p.data }));
+      });
+      Object.keys(localStorage).filter(k => k.startsWith('fcc_demo_admin_')).forEach(k => out.push({ id: k, name: k.slice(15), pfad: 'Administration/' + k.slice(15), daten: localStorage.getItem(k) }));
+      out.forEach(f => { f.groesse = String(f.daten).length; });
+      return out;
+    },
+    async dateiLaden(f) {
+      const d = String(f.daten);
+      if (d.startsWith('data:')) { const b = atob(d.split(',')[1]); const u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
+      return new TextEncoder().encode(d);
+    },
     // Aufgaben im Beispielmodus: nur im Browser
     tk: 'fcc_demo_tasks',
     _t() { try { return JSON.parse(localStorage.getItem(this.tk)) || null; } catch (e) { return null; } },

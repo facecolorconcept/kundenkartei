@@ -229,6 +229,37 @@
           { t: 'feld', k: 'v_vorname', l: 'Vorname', req: 1, half: 1 }, { t: 'feld', k: 'v_nachname', l: 'Nachname', req: 1, half: 1 },
           { t: 'feld', k: 'v_telefon', l: 'Telefon', typ: 'tel', half: 1 }] }
       ] }]
+    },
+
+    // Kurz-Check bei Folgeterminen: statt des ganzen Fragebogens nur „Hat sich etwas geändert?“
+    // Bei Ja bittet die Kartei, den ausführlichen Bogen neu ausfüllen zu lassen.
+    kurzcheck: {
+      id: 'kurzcheck', titel: 'Gesundheits-Kurzcheck', kurz: 'Kurzcheck Gesundheit', du: true, optional: true, kurzcheck: true,
+      unter: 'bei Folgeterminen', fuer: ['PMU', 'Lash Lift', 'Brow Lift', 'Waxing'], gesundheit: true,
+      rollen: { kundin: 'Kundin' },
+      teile: [{ id: 'check', h: 'Kurzcheck', wann: 'bei jedem Folgetermin', sign: ['kundin'], seiten: [
+        { h: 'Seit dem letzten Mal', items: [
+          { t: 'info', text: 'Deinen ausführlichen Gesundheitsbogen hast du am {seit} ausgefüllt. Hat sich seitdem etwas geändert? Zum Beispiel eine Schwangerschaft, neue Medikamente, eine Erkrankung, eine Operation oder eine neue Allergie.' },
+          JN('geaendert', 'Hat sich seitdem etwas geändert?', { detail: 'Was hat sich geändert?' })] },
+        { h: 'Bestätigung', items: [
+          { t: 'info', text: 'Ich habe die Frage vollständig und wahrheitsgemäß beantwortet. Ändert sich etwas an meiner Gesundheit, sage ich es vor der nächsten Behandlung.' },
+          { t: 'ok', k: 'bestaetigt', l: 'Ich bestätige das.', req: 1 }] }
+      ] }]
+    },
+
+    // Einwilligung in E-Mails vom Studio (Pflegehinweise bekommt jede Kundin, Erinnerungen nur mit Ja)
+    service: {
+      id: 'service', titel: 'Einwilligung E-Mail-Service', kurz: 'E-Mail-Service', du: true, optional: true, service: true,
+      unter: 'Pflegehinweise und Erinnerungen per E-Mail', fuer: ['PMU', 'Lash Lift', 'Brow Lift', 'Waxing'],
+      rollen: { kundin: 'Kundin' },
+      teile: [{ id: 'einwilligung', h: 'Einwilligung', wann: 'einmalig', sign: ['kundin'], seiten: [
+        { h: 'E-Mails von ' + S.name, items: [
+          { t: 'info', text: `Nach deiner Behandlung schicke ich dir deine Pflegehinweise per E-Mail, damit du sie zu Hause nachlesen kannst. Auf Wunsch erinnere ich dich auch an deine Nachbehandlung oder Auffrischung.` },
+          { ...F.email, req: 1, half: 0 },
+          { t: 'wahl', k: 'erinnerung', l: 'Darf ich dich per E-Mail an Nachbehandlung und Auffrischung erinnern?', req: 1, o: [['ja', 'Ja, gerne', 'Erinnerungen erlaubt'], ['nein', 'Nein, danke', 'keine Erinnerungen']] },
+          { t: 'info', text: `Deine E-Mail-Adresse nutze ich nur dafür und gebe sie nicht weiter. Du kannst die Erinnerungen jederzeit abbestellen, zum Beispiel mit einer kurzen Nachricht an ${S.mail}.` }] },
+        { h: 'Bestätigung', items: [{ t: 'ok', k: 'bestaetigt', l: 'Ich bin einverstanden.', req: 1 }] }
+      ] }]
     }
   };
   const ARTS = ['PMU', 'Lash Lift', 'Brow Lift', 'Waxing'];
@@ -335,10 +366,55 @@
       const f = ersteUnterschrift(rec);
       if (!f) return;
       if (rec.typ === 'kontra-ll' && f.slice(0, 10) === tag) out.add('Fragebogen unterschrieben');
+      if (rec.typ === 'kurzcheck' && f.slice(0, 10) === tag && (rec.werte || {}).geaendert === 'nein' && ['Lash Lift', 'Brow Lift', 'Waxing'].includes(art)) out.add('Fragebogen unterschrieben');
       if (rec.typ === 'lashbrow' && art === 'Brow Lift' && f.slice(0, 10) === tag) out.add('Fragebogen unterschrieben');
     });
     return [...out];
   };
+
+  // ---------- Einwilligungen auf einen Blick ----------
+  // Aus den unterschriebenen Formularen: Daten speichern, Behandlung, Fotos für die Akte, Veröffentlichung, E-Mail-Erinnerungen.
+  // Ein eingetragener Widerruf (c.widerrufe) gilt immer vor der Unterschrift.
+  const EW = [
+    { k: 'daten', l: 'Daten', lang: 'Speicherung der Daten' },
+    { k: 'beh', l: 'Behandlung', lang: 'Einwilligung in die Behandlung' },
+    { k: 'foto', l: 'Fotos Akte', lang: 'Fotos für die Akte' },
+    { k: 'web', l: 'Veröffentlichung', lang: 'Fotos veröffentlichen (Website, Instagram)' },
+    { k: 'mail', l: 'Mail-Erinnerung', lang: 'Erinnerungen per E-Mail' }
+  ];
+  FCC.einwilligungTypen = EW;
+  FCC.einwilligungen = c => {
+    const out = {}; EW.forEach(x => { out[x.k] = { v: null, quelle: '' }; });
+    const setze = (k, v, quelle, datum) => { const o = out[k]; if (o.datum && datum && o.datum > datum) return; o.v = v; o.quelle = quelle; o.datum = datum; };
+    (c.formulare || []).forEach(rec => {
+      const def = DEFS[rec.typ]; if (!def) return;
+      const w = rec.werte || {}; const d = ersteUnterschrift(rec); if (!d) return;
+      const tag = d.slice(0, 10);
+      if (rec.typ === 'pmu') {
+        setze('daten', true, def.kurz, tag); setze('beh', true, def.kurz, tag); setze('foto', true, def.kurz, tag);
+        if (w.werbung) setze('web', w.werbung === 'ja', def.kurz, tag);
+      }
+      if (rec.typ === 'lashbrow') {
+        if (w.datenschutz) setze('daten', true, def.kurz, tag);
+        setze('beh', true, def.kurz, tag);
+        if (w.foto) setze('foto', w.foto === 'ja', def.kurz, tag);
+        if (w.foto) setze('web', w.foto === 'ja' && w.nutzung === 'oeffentlich', def.kurz, tag);
+      }
+      if (rec.typ === 'waxing' && w.datenschutz) setze('daten', w.datenschutz === 'ja', def.kurz, tag);
+      if (rec.typ === 'tfp' && w.einwilligung) { setze('foto', true, def.kurz, tag); setze('web', true, def.kurz, tag); }
+      if (rec.typ === 'service' && w.erinnerung) { setze('daten', true, def.kurz, tag); setze('mail', w.erinnerung === 'ja', def.kurz, tag); }
+    });
+    const wr = c.widerrufe || {};
+    Object.keys(wr).forEach(k => { if (out[k] && wr[k] && (!out[k].datum || wr[k] >= out[k].datum)) { out[k] = { v: false, quelle: 'Widerruf vom ' + fmt(wr[k]), datum: wr[k], widerruf: true }; } });
+    return out;
+  };
+  FCC.einwilligungKurz = c => { const e = FCC.einwilligungen(c); const o = {}; Object.keys(e).forEach(k => { if (e[k].v != null) o[k] = e[k].v ? 1 : 0; }); return o; };
+
+  // Neuester ausführlicher Gesundheitsbogen für eine Behandlung (für den Kurz-Check)
+  const gesundBogen = (c, art) => defsFuer(art).filter(d => d.gesundheit && !d.optional).map(d => neuestes(c, d.id)).filter(r => r && istFertig(r))
+    .sort((a, b) => ersteUnterschrift(b).localeCompare(ersteUnterschrift(a)))[0];
+  const kurzcheckHeute = c => (c.formulare || []).filter(r => r.typ === 'kurzcheck' && istFertig(r) && ersteUnterschrift(r).slice(0, 10) === heute())
+    .sort((a, b) => ersteUnterschrift(b).localeCompare(ersteUnterschrift(a)))[0];
 
   // Hinweiszeile oben im Behandlungsbogen
   FCC.formBanner = (c, art) => {
@@ -378,10 +454,21 @@
         return `<li><span><b style="font-weight:500">${esc(d.kurz)}</b><br><span class="fo-st ${s.k}">${s.k === 'ok' ? '✓ ' : ''}${esc(s.text)}</span></span>${knopf}</li>`;
       };
       const alleOk = pflicht(offeneArt).every(d => status(c, d).k === 'ok');
-      const tfp = defsFuer(offeneArt).find(d => d.optional);
+      const tfp = defsFuer(offeneArt).find(d => d.optional && !d.kurzcheck && !d.service);
+      // Folgetermin: Gesundheitsbogen liegt vor, aber nicht von heute → kurzer Check statt ganzer Bogen
+      const gb = alleOk ? gesundBogen(c, offeneArt) : null;
+      const kc = kurzcheckHeute(c);
+      let kurz = '';
+      if (gb && ersteUnterschrift(gb).slice(0, 10) !== heute()) {
+        if (!kc) kurz = `<li><span><b style="font-weight:500">Gesundheit seit ${esc(fmt(ersteUnterschrift(gb)))} geändert?</b><br><span class="fo-st fehlt">Kurzcheck vor dem Folgetermin</span></span><button class="btn small" data-fogo="kurzcheck">Kurzcheck ausfüllen lassen</button></li>`;
+        else if ((kc.werte || {}).geaendert === 'ja') kurz = `<li><span><b style="font-weight:500">Kundin hat Änderungen angegeben</b><br><span class="fo-st alt">${esc((kc.werte || {}).geaendert_text || 'ohne Angabe')}. Bitte den ausführlichen Bogen neu ausfüllen lassen.</span></span><button class="btn small" data-fogo="${esc(gb.typ)}" data-neu="1">${esc(DEFS[gb.typ].kurz)} neu</button></li>`;
+        else kurz = `<li><span><b style="font-weight:500">Kurzcheck Gesundheit</b><br><span class="fo-st ok">✓ heute, keine Änderung</span></span></li>`;
+      }
+      const sv = neuestes(c, 'service');
+      const service = !sv || !istFertig(sv) ? `<li><span><b style="font-weight:500">E-Mail-Service</b> <span class="cmeta">freiwillig</span><br><span class="fo-st">Pflegehinweise und Erinnerungen per Mail</span></span><button class="btn ghost small" data-fogo="service">Fragen</button></li>` : '';
       schritte = `<ol class="fo-schritte">
         <li><span class="fo-nr ${alleOk ? 'ok' : ''}">${alleOk ? '✓' : '1'}</span><div><b>Formulare</b> <span class="cmeta">Kundin füllt am iPad aus</span>
-          <ul class="docs fo-liste">${pflicht(offeneArt).map(zeile).join('')}</ul>
+          <ul class="docs fo-liste">${pflicht(offeneArt).map(zeile).join('')}${kurz}${service}</ul>
           ${tfp ? `<button type="button" class="fo-link" data-fogo="${esc(tfp.id)}">Model-Termin? ${esc(tfp.kurz)} ausfüllen lassen</button>` : ''}</div></li>
         <li><span class="fo-nr">2</span><div><b>Behandlung dokumentieren</b>
           <div style="margin-top:8px"><button class="btn ${alleOk ? '' : 'ghost'} small" data-fobogen="${esc(offeneArt)}">${esc(offeneArt)}-Bogen öffnen</button></div></div></li>
@@ -419,6 +506,8 @@
 
   // ---------- Kundinnen-Ansicht (Vollbild) ----------
   let sess = null;
+  // Von außen starten, z. B. „Einwilligung einholen“ in der Akte
+  FCC.formStart = (c, typ, o) => starte(c, typ, o || {});
   function starte(c, typ, o) {
     o = o || {};
     const def = DEFS[typ]; if (!def) return;
@@ -429,6 +518,7 @@
     if (neu) {
       const w = { vorname: c.vorname || '', nachname: c.nachname || '', geburtsdatum: c.geburtsdatum || '', strasse: c.strasse || '', plz: c.plz || '', ort: c.ort || '', telefon: c.telefon || '', email: c.email || '' };
       alleItems(def).forEach(it => { if (it.dflt && w[it.k] == null) w[it.k] = it.dflt(o.art); });
+      if (def.kurzcheck) { const gb = gesundBogen(c, o.art || 'PMU'); w.seit = gb ? fmt(ersteUnterschrift(gb)) : (c.fragebogen ? fmt(c.fragebogen) : 'beim letzten Mal'); }
       rec = { id: uid(), typ, version: 1, titel: def.titel, start: heute(), art: o.art || def.fuer[0], werte: w, teile: {} };
     }
     const teil = offenerTeil(rec);
@@ -701,7 +791,9 @@
       if (w.blutverd) c.blutverduenner = w.blutverd;
     }
     if (def.id === 'kontra-ll' && !c.allergien) c.allergien = (w.allergien || []).length ? w.allergien.join(', ') : (w.allergien_keins ? 'keine bekannt' : '');
-    if (def.gesundheit) { const d = heute(); if (!c.fragebogen || c.fragebogen < d) c.fragebogen = d; }
+    if (def.gesundheit && !(def.kurzcheck && w.geaendert === 'ja')) { const d = heute(); if (!c.fragebogen || c.fragebogen < d) c.fragebogen = d; }
+    // Neue Einwilligung für Erinnerungen hebt einen früheren Widerruf auf
+    if (def.service && w.erinnerung === 'ja' && c.widerrufe && c.widerrufe.mail) delete c.widerrufe.mail;
   }
 
   // ---------- Ansehen (nur lesen) ----------
